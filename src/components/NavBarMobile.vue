@@ -32,7 +32,6 @@
               </svg>
             </button>
             <div v-show="walletOpen" class="absolute right-0 mt-2 w-48 bg-white text-secondary rounded-lg shadow-card overflow-hidden z-20">
-               <button @click="checkClient" class="w-full text-left block px-4 py-2 hover:bg-gray-50">Check Client</button>
               <router-link @click="walletOpen=false" to="/my-bets" class="block px-4 py-2 hover:bg-gray-50">My Bets</router-link>
               <button @click="doDisconnect" class="w-full text-left block px-4 py-2 hover:bg-gray-50">Disconnect</button>
             </div>
@@ -107,19 +106,6 @@ function onClickOutside(e: MouseEvent){
   const inDesktop = walletDesktopMenuRef.value?.contains(target) ?? false
   const inMobile = walletMobileMenuRef.value?.contains(target) ?? false
   if (walletOpen.value && !inDesktop && !inMobile) walletOpen.value = false
-}
-
-async function checkClient(){
-  client.value.onNotification(notification => {
-    console.log('Notification:', notification);  
-  });
-
-
-  /** Este es un comentario para que vercel haga el demly nuevo */
-  const counter = await client.value.frontend().application('2b1a0df8868206a4b7d6c2fdda911e4355d6c0115b896d4947ef8e535ee3c6b8');
-  const response = await counter.query('{ "query": "query { value }" }');
-  console.log(JSON.parse(response).data.value);
-  
 }
 
 onMounted(async () => {
