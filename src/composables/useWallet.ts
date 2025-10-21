@@ -30,7 +30,7 @@ export async function connect() {
     const signer = await new signerLinera.MetaMask()
     const wallet = await faucetClient.value.createWallet()
     const owner = await signer.address();
-    const claim = await faucetClient.value.claimChain(wallet, owner)
+    //const claim = await faucetClient.value.claimChain(wallet, owner)
     clientRef.value = await new linera.Client(wallet, signer, true);
 
 

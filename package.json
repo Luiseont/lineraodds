@@ -14,9 +14,13 @@
     "type-check": "vue-tsc --build"
   },
   "dependencies": {
+    "@apollo/client": "^3.14.0",
     "@linera/client": "^0.15.4",
     "@linera/signer": "^0.15.4",
     "@tailwindcss/vite": "^4.1.14",
+    "@vue/apollo-composable": "^4.2.2",
+    "graphql": "^16.11.0",
+    "graphql-tag": "^2.12.6",
     "pinia": "^3.0.3",
     "vue": "^3.5.22",
     "vue-router": "^4.5.1"

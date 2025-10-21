@@ -8,7 +8,7 @@
       <span class="badge border-primary text-primary bg-primary-soft">Football</span>
     </div>
     <ul>
-      <li v-for="fixture in fixtures" :key="fixture.id" class="border-b last:border-b-0 py-4 flex justify-between items-center">
+      <li v-for="fixture in props.fixtures" :key="fixture.id" class="border-b last:border-b-0 py-4 flex justify-between items-center">
         <div>
           <p class="font-semibold">{{ fixture.teams.home }} vs {{ fixture.teams.away }}</p>
           <p class="text-sm text-gray-500">{{ fixture.league }} - {{ fixture.date }}</p>
@@ -30,36 +30,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { defineProps } from 'vue';
 
-const fixtures = ref([
-  {
-    id: 1,
-    teams: { home: 'Real Madrid', away: 'Barcelona' },
-    league: 'La Liga',
-    date: '2025-10-26 16:00',
-    odds: { home: (Math.random() * 2 + 1.5).toFixed(2), draw: (Math.random() * 1.5 + 3).toFixed(2), away: (Math.random() * 2.5 + 2).toFixed(2) }
-  },
-  {
-    id: 2,
-    teams: { home: 'Manchester United', away: 'Liverpool' },
-    league: 'Premier League',
-    date: '2025-10-25 15:00',
-    odds: { home: (Math.random() * 2 + 1.5).toFixed(2), draw: (Math.random() * 1.5 + 3).toFixed(2), away: (Math.random() * 2.5 + 2).toFixed(2) }
-  },
-  {
-    id: 3,
-    teams: { home: 'Bayern Munich', away: 'Borussia Dortmund' },
-    league: 'Bundesliga',
-    date: '2025-10-25 18:30',
-    odds: { home: (Math.random() * 2 + 1.5).toFixed(2), draw: (Math.random() * 1.5 + 3).toFixed(2), away: (Math.random() * 2.5 + 2).toFixed(2) }
-  },
-  {
-    id: 4,
-    teams: { home: 'Juventus', away: 'Inter Milan' },
-    league: 'Serie A',
-    date: '2025-10-26 20:45',
-    odds: { home: (Math.random() * 2 + 1.5).toFixed(2), draw: (Math.random() * 1.5 + 3).toFixed(2), away: (Math.random() * 2.5 + 2).toFixed(2) }
-  }
-]);
+const props = defineProps<{
+  fixtures: Array<{
+    id: number;
+    teams: { home: string; away: string };
+    league: string;
+    date: string;
+    odds: { home: string; draw: string; away: string };
+  }>;
+}>();
 </script>
