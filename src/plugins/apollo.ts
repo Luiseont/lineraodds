@@ -7,7 +7,7 @@ import {
 } from "@apollo/client/core";
 
 const httpLink = createHttpLink({
-  uri: "http://localhost:8080/chains/8655e3f2036cee48fa12bdba7f9f2364553de70d7bcdc4eedd592cc0e3eba82e/applications/c4c4e25784d37e4a583bea83c3c2cb5b156a8783967094eeda8018342196ae85",
+  uri: "http://localhost:8080/chains/8655e3f2036cee48fa12bdba7f9f2364553de70d7bcdc4eedd592cc0e3eba82e/applications/0089b4ae47e4e776fc81d9f3c2e34628cf490f8de97e4c38eeb516a11fbcbc7d",
 });
 
 const cache = new InMemoryCache();
