@@ -17,6 +17,9 @@ coverage
 /cypress/videos/
 /cypress/screenshots/
 
+/odds_contract/target/
+/odds_contract/Cargo.lock
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
