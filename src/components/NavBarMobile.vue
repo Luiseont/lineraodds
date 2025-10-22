@@ -69,7 +69,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { useWallet, connect as walletConnect, disconnect as walletDisconnect, LineraDefault } from '../composables/useWallet'
+import { useWallet, connect as walletConnect, disconnect as walletDisconnect } from '../composables/useWallet'
 
 const open = ref(false)
 const walletOpen = ref(false)
@@ -78,7 +78,7 @@ const walletDesktopMenuRef = ref<HTMLElement | null>(null)
 const walletMobileMenuRef = ref<HTMLElement | null>(null)
 
 // wallet state via composable
-const { connected, connecting, address, client } = useWallet()
+const { connected, connecting, address, provider } = useWallet()
 const shortAddress = computed(() => address.value ? `${address.value.slice(0,6)}...${address.value.slice(-4)}` : '')
 
 // Connect button: connects only; does not open dropdown
@@ -109,7 +109,6 @@ function onClickOutside(e: MouseEvent){
 }
 
 onMounted(async () => {
-  await LineraDefault();
   document.addEventListener('click', onClickOutside)
 })
 onBeforeUnmount(() => document.removeEventListener('click', onClickOutside))

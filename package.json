@@ -15,6 +15,8 @@
   },
   "dependencies": {
     "@apollo/client": "^3.14.0",
+    "@dynamic-labs-sdk/client": "^0.0.1-alpha.25",
+    "@dynamic-labs-sdk/evm": "^0.0.1-alpha.25",
     "@linera/client": "^0.15.4",
     "@linera/signer": "^0.15.4",
     "@tailwindcss/vite": "^4.1.14",
@@ -22,6 +24,7 @@
     "graphql": "^16.11.0",
     "graphql-tag": "^2.12.6",
     "pinia": "^3.0.3",
+    "viem": "^2.38.3",
     "vue": "^3.5.22",
     "vue-router": "^4.5.1"
   },
