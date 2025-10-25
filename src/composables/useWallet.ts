@@ -1,6 +1,10 @@
 import { ref } from 'vue'
 import { LineraAdapter } from '@/plugins/linera-adapter'
-import { ensureDynamicClient, connectWalletProvider, getPrimaryWalletAccount } from '@/plugins/dynamic-sdk'
+import { getPrimaryWalletAccount } from '@/plugins/dynamic-sdk'
+import {
+    signMessage,
+    type WalletProviderMethodUnavailableError
+} from '@dynamic-labs-sdk/client';
 
 
 const connected = ref(false)
@@ -23,6 +27,8 @@ export async function connect(key?: string) {
   try {
     const walletAccount = getPrimaryWalletAccount()
     if (!walletAccount) throw new Error('No wallet account available after connection')
+    const { signature } = await signMessage({ walletAccount, message: 'wellcome to LineraOdds' });
+    console.log(signature)
     await LineraAdapter.getInstance().connect(walletAccount, faucetUrl)
 
     // Store provider objects for app-wide use
