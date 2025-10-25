@@ -1,42 +1,61 @@
-# lineraodds
+# LineraOdds
 
-This template should help get you started developing with Vue 3 in Vite.
+Real-time sports betting system, built on Linera
 
-## Recommended IDE Setup
+## Stack
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+- Vite
+- Vue3 composition API
+- Pinia
+- Linera SDK
 
-## Recommended Browser Setup
+## Features 
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd) 
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+- Automatic tokens transfers using fungible contract 
+- Deployments of LUSD stablecoin - bridge assets from other chains -
+- Real-time odds updates
+- Oracles for real world data
+- Automatic process in the bet life-cycle 
 
-## Type Support for `.vue` Imports in TS
+## Arquitecture
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
+- Use of the **factory contract** pattern to create independent temporary chain to manage events. Information is provided by an oracle that, based on parameters, will search for relevant upcoming events and calculate the odds of winning.
 
-## Customize configuration
+- **Event contract** (allowing for the implementation of prediction markets in the future) that will host the event information on **its own microchain/application** will manage the funds and the specific state, closing the contract/chain once the event ends. This action will allow the funds obtained in the event of a win to be sent.
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+  - This approach will allow the application of exclusive odds/bets for live events.
 
-## Project Setup
+- A **ticket contract** represents the "authorship" of a bet. This contract acts as a proxy to send cross-chain messages to the time chain hosting the event.
 
-```sh
-npm install
-```
+- **Oracles** that, in addition to creating events to allow betting, will maintain an updated status of each event, from start to finish.
 
-### Compile and Hot-Reload for Development
 
-```sh
-npm run dev
-```
+## The life cycle of an event - and its stakes -
 
-### Type-Check, Compile and Minify for Production
+1. The **oracle** finds a relevant event and calculates the odds for the possible outcomes.
 
-```sh
-npm run build
-```
+2. It sends the information to the **Factory Contract.** A temporary chain is created with an instance of the event contract, saving the application ID.
+
+3. The list of events <applicationsId> is displayed on the platform with the relevant information, date and time, status, and available odds.
+
+4. The user selects their favorite event or attractive odds and places a monetary bet (in LUSD).
+
+5. An instance of the **ticket contract** is generated on the user's microchain.
+
+6. This instance receives the bet information (odds, amount, application ID) and sends a **cross-chain message** to the event chain with this information.
+
+7. The relevant calls are made to update/transfer funds.
+
+8. The odds are updated.
+
+9. The user bets placed.
+
+10. The **oracle** notifies the user of the event's completion and the outcome, **closing the temporary chain.**
+
+11. Prizes are calculated and transferred via **cross-chain messages.**
+
+11. Update the bet status in the ticket contract in the user microchain.
+
+12. The event is considered **complete.**
+
+
