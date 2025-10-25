@@ -24,7 +24,7 @@ function getEnvId(): string {
 
 export async function ensureDynamicClient() {
   if (created) return
-  createDynamicClient({
+  const client = createDynamicClient({
     environmentId: getEnvId(),
     autoInitialize: true,
     metadata: {
@@ -33,7 +33,7 @@ export async function ensureDynamicClient() {
     },
   })
   // Enable EVM wallets (MetaMask, Coinbase, etc.) and Dynamic embedded EVM
-  addEvmExtension()
+  addEvmExtension(client)
   created = true
 }
 
@@ -44,7 +44,6 @@ export async function initDynamicClientManually() {
 
 export async function listWalletProviders() {
   await ensureDynamicClient()
-  console.log(getAvailableWalletProvidersData());
   return getAvailableWalletProvidersData()
 }
 
@@ -67,8 +66,9 @@ export function getPrimaryWalletAccount(): WalletAccount | null {
   return evm ?? accounts[0] ?? null
 }
 
-export function onDynamicInitStatusChange(listener: (status: 'uninitialized'|'in-progress'|'finished'|'failed') => void) {
-  onEvent({ event: 'initStatusChanged', listener: ({ initStatus }) => listener(initStatus) })
+export async function connectWalletProvider(key: any) {
+  await ensureDynamicClient()
+  return await connectWithWalletProvider({ walletProviderKey: key })
 }
 
 export type { WalletAccount }

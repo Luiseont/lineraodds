@@ -7,8 +7,8 @@ import { watch, computed, onMounted, ref } from 'vue'
 import FixturesList from '@/components/FixturesList.vue'
 import { useApp } from '@/composables/useApp'
 import { useWallet } from '@/composables/useWallet';
-
 const { provider, connected } = useWallet();
+
 /*
 import { useQuery } from "@vue/apollo-composable";
 import gql from "graphql-tag";
@@ -41,7 +41,6 @@ const fixtures = computed(() => {
     console.log("Result:", result.value);
     return result.value?.query ?? [];
 });*/
-
 async function loadFixtures() {
   await provider.value.setApplication("2b1a0df8868206a4b7d6c2fdda911e4355d6c0115b896d4947ef8e535ee3c6b8");
   console.log("Antes del query");
