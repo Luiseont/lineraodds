@@ -16,7 +16,7 @@ pub struct Match{
     pub result: MatchResult,
 }
 
-#[derive(Debug, Clone, async_graphql::SimpleObject)]
+#[derive(Debug, Clone, Serialize, Deserialize, async_graphql::SimpleObject)]
 pub struct MatchWithId {
     pub id: String, 
     pub status: MatchStatus,

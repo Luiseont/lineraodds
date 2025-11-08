@@ -34,6 +34,7 @@ export async function connect(key?: string) {
     // Store provider objects for app-wide use
     address.value = LineraAdapter.getInstance().getProvider().address
     chainId.value = LineraAdapter.getInstance().getProvider().chainId
+    console.log("Chain ID:", chainId.value)
     providerRef.value = LineraAdapter.getInstance() 
     connected.value = true
   } catch (e: any) {

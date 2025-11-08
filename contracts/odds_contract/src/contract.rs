@@ -75,14 +75,14 @@ impl Contract for OddsContractContract {
                     result,
                 };
 
-                 let result = self.state.matches.insert(&uuid, match_data);
+                 let _result = self.state.matches.insert(&uuid, match_data);
             },
 
             Operation::UpdateOdds { match_id, home_odds, away_odds } => {
                 if let Some(mut match_data) = self.state.matches.get(&match_id).await.expect("Failed to get match") {
                     match_data.odds.home = home_odds;
                     match_data.odds.away = away_odds;
-                     let result = self.state.matches.insert(&match_id, match_data);
+                     let _result = self.state.matches.insert(&match_id, match_data);
                 }
             },
 
@@ -91,7 +91,7 @@ impl Contract for OddsContractContract {
                     match_data.result.winner = winner;
                     match_data.result.score = score;
                     match_data.status = MatchStatus::Finished;
-                    let result = self.state.matches.insert(&match_id, match_data);
+                    let _result = self.state.matches.insert(&match_id, match_data);
                 }
             },
         }

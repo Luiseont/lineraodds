@@ -108,10 +108,10 @@ export class LineraAdapter {
     this.onConnectionChange?.();
   }
 
-  async queryApplication<T>(query: object): Promise<T> {
+  async queryApplication<T>(query: string): Promise<T> {
     if (!this.application) throw new Error("Application not set");
 
-    const result = await this.application.query(JSON.stringify(query));
+    const result = await this.application.query(query);
     const response = JSON.parse(result);
 
     console.log("✅ Linera application queried successfully!");
