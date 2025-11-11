@@ -42,10 +42,10 @@ const fixtures = computed(() => {
     return result.value?.query ?? [];
 });*/
 async function loadFixtures() {
-  await provider.value.setApplication("2b1a0df8868206a4b7d6c2fdda911e4355d6c0115b896d4947ef8e535ee3c6b8");
+  await provider.value.setApplication("e4df802d09e0477f5f28b80c456175511de700ebd303b6bfeca4322d5a674b8c");
 
-  //const graphql_query = '{ "query": "matches { id, league, status, teams{ home, away }, odds{ home, away }, startTime, result{ winner, score } } " }';
-  const graphql_query =                     '{ "query": "query { value }" }'
+  const graphql_query = '{ "query": "query { matches { id, league, status, teams{ home, away }, odds{ home, away }, startTime, result{ winner, score } } } "  }';
+  //const graphql_query =                     '{ "query": "query { value }" }'
   const response = await provider.value.queryApplication(graphql_query);
   console.log("Response:", response);
   console.log("Después del query");

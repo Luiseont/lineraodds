@@ -16,7 +16,7 @@ const error = ref<string | null>(null)
 // Keep SDK objects and keys only in-memory (ephemeral)
 const providerRef = ref<any | null>(null)
 
-const faucetUrl = (import.meta as any).env?.VITE_LINERA_FAUCET_URL ?? 'https://faucet.testnet-conway.linera.net'
+const faucetUrl = (import.meta as any).env?.VITE_LINERA_FAUCET_URL ?? 'http://localhost:1556'
 
 
 
@@ -27,8 +27,8 @@ export async function connect(key?: string) {
   try {
     const walletAccount = getPrimaryWalletAccount()
     if (!walletAccount) throw new Error('No wallet account available after connection')
-    const { signature } = await signMessage({ walletAccount, message: 'wellcome to LineraOdds' });
-    console.log(signature)
+    //const { signature } = await signMessage({ walletAccount, message: 'wellcome to LineraOdds' });
+   // console.log(signature)
     await LineraAdapter.getInstance().connect(walletAccount, faucetUrl)
 
     // Store provider objects for app-wide use
