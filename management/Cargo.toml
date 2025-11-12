@@ -1,5 +1,5 @@
 [package]
-name = "odds_contract"
+name = "management"
 version = "0.1.0"
 edition = "2021"
 
@@ -11,15 +11,15 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
 
 [dev-dependencies]
-linera-sdk = { version = "0.15.3", features = ["test", "wasmer"] }
+linera-sdk = { version = "0.15.5", features = ["test", "wasmer"] }
 tokio = { version = "1.40", features = ["rt", "sync"] }
 
 [[bin]]
-name = "odds_contract_contract"
+name = "management_contract"
 path = "src/contract.rs"
 
 [[bin]]
-name = "odds_contract_service"
+name = "management_service"
 path = "src/service.rs"
 
 [profile.release]
