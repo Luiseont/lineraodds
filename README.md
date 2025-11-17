@@ -19,43 +19,118 @@ Real-time sports betting system, built on Linera
 
 ## Arquitecture
 
-- Use of the **factory contract** pattern to create independent temporary chain to manage events. Information is provided by an oracle that, based on parameters, will search for relevant upcoming events and calculate the odds of winning.
+- Single Application contract for event management, using cross-chain menssages for bet placing
 
-- **Event contract** (allowing for the implementation of prediction markets in the future) that will host the event information on **its own microchain/application** will manage the funds and the specific state, closing the contract/chain once the event ends. This action will allow the funds obtained in the event of a win to be sent.
+## Queries
 
-  - This approach will allow the application of exclusive odds/bets for live events.
+# Mutation: createEvent
+mutation CreateEvent(
+  $id: String!,
+  $type_event: String!,
+  $league: String!,
+  $home: String!,
+  $away: String!,
+  $homeOdds: Int!,
+  $awayOdds: Int!,
+  $TieOdds: Int!,
+  $startTime: Int!
+) {
+  createEvent(
+    id: $id,
+    typeEvent: $type_event,
+    league: $league,
+    home: $home,
+    away: $away,
+    homeOdds: $homeOdds,
+    awayOdds: $awayOdds,
+    tieOdds: $TieOdds,
+    startTime: $startTime
+  )
+}
 
-- A **ticket contract** represents the "authorship" of a bet. This contract acts as a proxy to send cross-chain messages to the time chain hosting the event.
+```graphql
+# Mutation: placeBet
+# Note: kept variable names to match your schema.
+# If your schema expects `startTime` (not `starTime`), adjust the variable name below.
+mutation PlaceBet(
+  $home: String!,
+  $away: String!,
+  $league: String!,
+  $startTime: Int!, # originally provided as `$starTime`
+  $odd: Int!,
+  $selection: String!,
+  $bid: Int!,
+  $event_id: String!
+) {
+  placeBet(
+    home: $home,
+    away: $away,
+    league: $league,
+    startTime: $startTime,
+    odd: $odd,
+    selection: $selection,
+    bid: $bid,
+    eventId: $event_id
+  )
+}
+```
 
-- **Oracles** that, in addition to creating events to allow betting, will maintain an updated status of each event, from start to finish.
+```json
+// Example variables for placeBet
+{
+  "home": "Team A",
+  "away": "Team B",
+  "league": "Premier League",
+  "startTime": 1731868800,
+  "odd": 210,
+  "selection": "HOME",
+  "bid": 100,
+  "event_id": "E-123"
+}
+```
 
+```graphql
+# Query: events
+query Events {
+  events {
+    id
+    typeEvent
+    league
+    teams {
+      home
+      away
+    }
+    odds {
+      home
+      away
+      tie
+    }
+    status
+    startTime
+  }
+}
+```
 
-## The life cycle of an event - and its stakes -
+```graphql
+# Query: myOdds (current user's odds)
+query MyOdds {
+  myOdds {
+    odd
+    bid
+    selection
+  }
+}
+```
 
-1. The **oracle** finds a relevant event and calculates the odds for the possible outcomes.
-
-2. It sends the information to the **Factory Contract.** A temporary chain is created with an instance of the event contract, saving the application ID.
-
-3. The list of events <applicationsId> is displayed on the platform with the relevant information, date and time, status, and available odds.
-
-4. The user selects their favorite event or attractive odds and places a monetary bet (in LUSD).
-
-5. An instance of the **ticket contract** is generated on the user's microchain.
-
-6. This instance receives the bet information (odds, amount, application ID) and sends a **cross-chain message** to the event chain with this information.
-
-7. The relevant calls are made to update/transfer funds.
-
-8. The odds are updated.
-
-9. The user bets placed.
-
-10. The **oracle** notifies the user of the event's completion and the outcome, **closing the temporary chain.**
-
-11. Prizes are calculated and transferred via **cross-chain messages.**
-
-11. Update the bet status in the ticket contract in the user microchain.
-
-12. The event is considered **complete.**
-
-
+```graphql
+# Query: odds (all odds)
+query Odds {
+  odds {
+    userId
+    odd
+    bid
+    placedAt
+    selection
+  }
+}
+```
