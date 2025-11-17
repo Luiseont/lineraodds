@@ -22,7 +22,7 @@ Real-time sports betting system, built on Linera
 - Single Application contract for event management, using cross-chain menssages for bet placing
 
 ## Queries
-
+```graphql
 # Mutation: createEvent
 mutation CreateEvent(
   $id: String!,
@@ -47,6 +47,7 @@ mutation CreateEvent(
     startTime: $startTime
   )
 }
+```
 
 ```json
 // Example variables for create event
@@ -69,7 +70,7 @@ mutation PlaceBet(
   $home: String!,
   $away: String!,
   $league: String!,
-  $startTime: Int!, # originally provided as `$starTime`
+  $startTime: Int!,
   $odd: Int!,
   $selection: String!,
   $bid: Int!,
