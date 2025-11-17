@@ -48,10 +48,23 @@ mutation CreateEvent(
   )
 }
 
+```json
+// Example variables for create event
+{
+  "id": "E-123",
+  "type_event": "Football",
+  "league": "LaLiga",
+  "home": "Real Madrid",
+  "away": "Barcelona",
+  "homeOdds": 120,
+  "awayOdds": 210,
+  "TieOdds": 300,
+  "startTime": 1731868800
+}
+```
+
 ```graphql
 # Mutation: placeBet
-# Note: kept variable names to match your schema.
-# If your schema expects `startTime` (not `starTime`), adjust the variable name below.
 mutation PlaceBet(
   $home: String!,
   $away: String!,
@@ -78,13 +91,13 @@ mutation PlaceBet(
 ```json
 // Example variables for placeBet
 {
-  "home": "Team A",
-  "away": "Team B",
-  "league": "Premier League",
+  "home": "Real Madrid",
+  "away": "Barcelona",
+  "league": "LaLiga",
   "startTime": 1731868800,
   "odd": 210,
-  "selection": "HOME",
-  "bid": 100,
+  "selection": "Away",
+  "bid": 100, //amoun in $
   "event_id": "E-123"
 }
 ```
@@ -112,7 +125,7 @@ query Events {
 ```
 
 ```graphql
-# Query: myOdds (current user's odds)
+# Query: myOdds (current user's odds in local chain)
 query MyOdds {
   myOdds {
     odd
@@ -123,7 +136,7 @@ query MyOdds {
 ```
 
 ```graphql
-# Query: odds (all odds)
+# Query: odds (all odds for event from app chain)
 query Odds {
   odds {
     userId
