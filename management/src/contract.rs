@@ -45,14 +45,8 @@ impl Contract for ManagementContract {
 
     async fn execute_operation(&mut self, operation: Self::Operation) -> Self::Response {
         match operation {
-            Operation::UpdateEventStatus { event_id, status } => {
-                assert!(self.runtime.chain_id() != self.runtime.application_creator_chain_id());
-            },
-            Operation::UpdateEventOdds { event_id, home_odds, away_odds, tie_odds } => {
-                assert!(self.runtime.chain_id() != self.runtime.application_creator_chain_id());
-            },
+            // UserChain operations.
             Operation::PlaceBet { home, away, league, start_time, odd, selection, bid, event_id } => {
-                
                 let user_id = self.runtime.chain_id().to_string();
                 let chain_id = self.runtime.application_creator_chain_id();
                 let user_bet = UserOdds {
@@ -71,12 +65,26 @@ impl Contract for ManagementContract {
                     status: BetStatus::Placed,
                     placed_at: self.runtime.system_time(),
                 };
-                self.state.user_odds.insert(&user_id, user_bet);
+
+                let _ = self.state.user_odds.get().clone().push(user_bet);
 
                 self.runtime.prepare_message(
                     Message::NewBetPlaced { home, away, league, start_time, odd, selection, bid, status: "Placed".to_string(), event_id  }
                 ).with_authentication().send_to(chain_id);
 
+            },
+            Operation::ClaimReward{ event_id } => {
+                let chain_id = self.runtime.application_creator_chain_id();
+                self.runtime.prepare_message(
+                    Message::UserClaimReward { event_id: event_id.clone() }
+                ).with_authentication().send_to(chain_id);
+            },
+            //appChain Operations
+            Operation::UpdateEventStatus { event_id, status } => {
+                assert!(self.runtime.chain_id() != self.runtime.application_creator_chain_id());
+            },
+            Operation::UpdateEventOdds { event_id, home_odds, away_odds, tie_odds } => {
+                assert!(self.runtime.chain_id() != self.runtime.application_creator_chain_id());
             },
             Operation::CreateEvent { id, type_event, league, home, away, home_odds, away_odds, tie_odds, start_time } => {
 
@@ -100,7 +108,21 @@ impl Contract for ManagementContract {
                     result: MatchResult::default(),
                 };
 
-                self.state.events.insert(&id.clone(), event);
+                 let _ = self.state.events.insert(&id.clone(), event);
+            }
+
+            Operation::ResolveEvent { event_id, winner, home_score, away_score } => {
+                let mut event = self.state.events.get(&event_id).await.expect("Event not found").unwrap_or_default();
+                let victory = match winner.as_str() {
+                        "Home" => Selection::Home,
+                        "Away" => Selection::Away,
+                        "Tie" => Selection::Tie,
+                        _ => Selection::Home,
+                    };
+
+                event.result = MatchResult { winner: victory, home_score, away_score };
+                event.status = MatchStatus::Finished;
+                let _ = self.state.events.insert(&event_id, event);
             }
         }
     }
@@ -108,8 +130,16 @@ impl Contract for ManagementContract {
     async fn execute_message(&mut self, message: Self::Message) {
         match message {
             Message::NewBetPlaced { home, away, league, start_time, odd, selection, bid, status, event_id } => {
-                let event = self.state.events.get(&event_id).await.expect("Event not found");
                 let user_id = self.runtime.message_origin_chain_id();
+                let event = self.state.events.get(&event_id).await.expect("Event not found").unwrap_or_default();
+                if event.status != MatchStatus::Scheduled {
+                    self.runtime.prepare_message(
+                        Message::RevertUserBet { event_id: event_id.clone() }
+                    ).with_authentication().send_to(user_id.unwrap());
+                    return;
+                }
+
+                let mut bets = self.state.event_odds.get(&event_id).await.expect("Event not found").unwrap_or_default();
                 let bet = UserOdd {
                     user_id: user_id.unwrap().to_string(),
                     odd,
@@ -123,7 +153,62 @@ impl Contract for ManagementContract {
                     bid,
                 };
 
-                let _ = self.state.event_odds.insert(&event.unwrap().id.clone().to_string(), bet);
+                bets.push(bet);
+
+                let _ = self.state.event_odds.insert(&event_id, bets);
+            },
+
+            Message::RevertUserBet { event_id } => {
+                let mut user_odds_vec = self.state.user_odds.get().clone(); 
+                for user_odd in &mut user_odds_vec {
+                    if user_odd.event_id == event_id {
+                        user_odd.status = BetStatus::Cancelled;
+                    }
+                }
+
+                let _ = self.state.user_odds.set(user_odds_vec);
+            },
+
+            Message::UserClaimReward { event_id } => {
+                let user_id = self.runtime.message_origin_chain_id();
+                let event = self.state.events.get(&event_id).await.expect("Event not found").unwrap_or_default();
+                if event.status != MatchStatus::Finished {
+                    self.runtime.prepare_message(
+                        Message::ClaimResult { event_id: event_id.clone(), result: "Placed".to_string() }
+                    ).with_authentication().send_to(user_id.unwrap());
+                }
+
+                let bets = self.state.event_odds.get(&event_id).await.expect("Event not found").unwrap_or_default();
+                for bet in bets.clone() {
+                    if bet.user_id == user_id.unwrap().to_string() {
+                        if bet.selection == event.result.winner {
+                            let _ = self.runtime.prepare_message(
+                                Message::ClaimResult { event_id: event_id.clone(), result: "Won".to_string()  }
+                            ).with_authentication().send_to(user_id.unwrap());
+                            //TODO: prize calculations and call fungible aplication to send tokens
+                        } else {
+                            let _ = self.runtime.prepare_message(
+                                Message::ClaimResult { event_id: event_id.clone(), result: "Lost".to_string() }
+                            ).with_authentication().send_to(user_id.unwrap());
+                        }
+                    }
+                }
+            },
+
+            Message::ClaimResult { event_id, result } => {
+                let mut user_odds_vec = self.state.user_odds.get().clone();
+                let res = match result.as_str() {
+                        "Won" => BetStatus::Won,
+                        "Lost" => BetStatus::Lost,
+                        "Cancelled" => BetStatus::Cancelled,
+                        _ => BetStatus::Placed,
+                    };
+                for bet in &mut user_odds_vec {
+                    if bet.event_id == event_id {
+                        bet.status = res;
+                    }
+                }
+                let _ = self.state.user_odds.set(user_odds_vec);
             }
         }
     }

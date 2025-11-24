@@ -39,48 +39,26 @@ impl Service for ManagementService {
     }
 
     async fn handle_query(&self, query: Self::Query) -> Self::QueryResponse {
-        let user_bets_pairs: Vec<(String, UserOdds)> = self
-            .state
-            .user_odds 
-            .index_values()
-            .await
-            .expect("Failed to read user_odds");
 
-        let user_bets: Vec<UserOdds> = user_bets_pairs
-            .into_iter()
-            .map(|(_k, v)| v)
-            .collect();
-
-        // Collect all odds from the event_odds map
-       let odds_pairs: Vec<(String, UserOdd)> = self
-            .state
-            .event_odds
-            .index_values()
-            .await
-            .expect("Failed to read event_odds");
-
-        let odds_event: Vec<UserOdd> = odds_pairs
-            .into_iter()
-            .map(|(_k, v)| v)
-            .collect();
-
-        let event_pairs: Vec<(String, Event)> = self
-            .state
-            .events
-            .index_values()
-            .await
-            .expect("Failed to read events");
-
-        let all_events: Vec<Event> = event_pairs
-            .into_iter()
-            .map(|(_k, v)| v)
-            .collect();
+        let mut all_events = Vec::new();
+        match self.state.events.indices().await {
+            Ok(event_ids) => {
+                for event_id in event_ids {
+                    if let Ok(Some(event)) = self.state.events.get(&event_id).await {
+                        all_events.push(event);
+                    }
+                }
+            }
+            Err(e) => {
+                eprintln!("Failed to get event indices: {:?}", e);
+            }
+        }
 
         Schema::build(
             QueryRoot {
-                odds: odds_event,
                 events: all_events,
-                my_odds: user_bets,
+                runtime: self.runtime.clone(),
+                storage_context:  self.runtime.root_view_storage_context()
             },
             Operation::mutation_root(self.runtime.clone()),
             EmptySubscription,
@@ -92,21 +70,38 @@ impl Service for ManagementService {
 }
 
 struct QueryRoot {
-    odds: Vec<UserOdd>,
     events: Vec<Event>,
-    my_odds: Vec<UserOdds>,
+    runtime: Arc<ServiceRuntime<ManagementService>>,
+    storage_context: linera_sdk::views::ViewStorageContext,
 }
 
 #[Object]
 impl QueryRoot {
-    async fn odds(&self) -> &Vec<UserOdd> {
-        &self.odds
-    }
     async fn events(&self) -> &Vec<Event> {
         &self.events
     }
-    async fn my_odds(&self) -> &Vec<UserOdds> {
-        &self.my_odds
+
+    async fn event_odds(&self, event_id: String ) -> Vec<UserOdd> {
+        match ManagementState::load(self.storage_context.clone()).await{
+            Ok(state) => {
+                state.event_odds.get(&event_id).await.expect("Event not found").unwrap_or_default()
+            }
+            Err(e) => {
+                eprintln!("Failed to load state: {:?}", e);
+                Vec::new()
+            }
+        }
+    }
+
+    async fn my_odds(&self) -> Vec<UserOdds>{
+        match ManagementState::load(self.storage_context.clone()).await{
+            Ok(state) => {
+                state.user_odds.get().clone()
+            }
+            Err(e) => {
+                eprintln!("Failed to load state: {:?}", e);
+                Vec::new()
+            }
+        }
     }
 }
-

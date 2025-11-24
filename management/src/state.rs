@@ -7,8 +7,9 @@ use async_graphql::{SimpleObject, Enum};
 #[view(context = ViewStorageContext)]
 pub struct ManagementState {
     pub events: MapView<String, Event>,
-    pub event_odds: MapView<String, UserOdd>,
-    pub user_odds: MapView<String, UserOdds>,
+    pub event_odds: MapView<String, Vec<UserOdd>>,
+    pub user_odds: RegisterView<Vec<UserOdds>>,
+    pub oracle: RegisterView<ChainId>,
 }
 
 
@@ -59,6 +60,7 @@ pub enum BetStatus {
     #[default] Placed,
     Won,
     Lost,
+    Cancelled
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default, SimpleObject)]
@@ -77,7 +79,8 @@ pub struct Odds {
 #[derive(Clone, Debug, Serialize, Deserialize, Default, SimpleObject)]
 pub struct MatchResult {
     pub winner: Selection,
-    pub score: String,
+    pub home_score: String,
+    pub away_score: String,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, SimpleObject)]

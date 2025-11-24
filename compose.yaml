@@ -4,9 +4,10 @@ services:
     ports:
     - "5173:5173" # Web app
     - "8080:8080" # faucet
-    - "8081:8081" # service 
-    - "8082:8082" # another service
-    - "8083:8083" # another another service
+    - "8081:8081" # service main
+    - "8082:8082" # service 1
+    - "8083:8083" # service 2
+    - "8084:8084" # service 3
     - "9001:9001" # shard proxy
     - "13001:13001" # shard
     volumes:

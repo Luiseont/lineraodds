@@ -21,19 +21,21 @@ impl ServiceAbi for ManagementAbi {
 
 #[derive(Debug, Deserialize, Serialize, GraphQLMutationRoot)]
 pub enum Operation {
+    //appchain
     CreateEvent{ id: String, type_event: String, league: String, home:String, away:String, home_odds:u64, away_odds:u64, tie_odds:u64, start_time:u64},
     UpdateEventStatus{ event_id: String, status: String },
     UpdateEventOdds{ event_id: String, home_odds:u64, away_odds:u64, tie_odds:u64 },
+    ResolveEvent{ event_id: String, winner: String, home_score: String, away_score: String },
+    //userChain
     PlaceBet{ home: String, away: String, league: String, start_time: u64, odd: u64, selection: String, bid: u64, event_id: String},
+    ClaimReward { event_id: String }
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub enum Message {
-    /*
-   SetEventData { id: String, type_event: String, league: String, home:String, away:String, home_odds:u64, away_odds:u64, tie_odds:u64, start_time:u64 },
-   EventUpdateStatus { status: String },
-   UpdateOdds { home_odds:u64, away_odds:u64, tie_odds:u64 },
-   NewUserBet { selection: String, odds: u64, bid: u64},*/
    NewBetPlaced { home: String, away: String, league: String, start_time: u64, odd: u64, selection: String, bid: u64, status: String, event_id: String },
+   RevertUserBet { event_id: String },
+   UserClaimReward { event_id: String },
+   ClaimResult { event_id: String, result: String}
 }
 
