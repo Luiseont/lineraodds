@@ -9,7 +9,7 @@ pub struct ManagementState {
     pub events: MapView<String, Event>,
     pub event_odds: MapView<String, Vec<UserOdd>>,
     pub user_odds: RegisterView<Vec<UserOdds>>,
-    pub oracle: RegisterView<ChainId>,
+    pub oracle: RegisterView<Option<ChainId>>,
 }
 
 

@@ -35,7 +35,11 @@ fi
 
 # Build and publish your backend
 cd management
-
+linera wallet init --faucet "$LINERA_FAUCET_URL"
+export MAIN_CHAIN=($(linera wallet request-chain --faucet $LINERA_FAUCET_URL))
+export MAIN_OWNER="${MAIN_CHAIN[1]}"
+export MAIN_CHAIN_ID="${MAIN_CHAIN[0]}"
+#users wallets
 export LINERA_WALLET_1="$LINERA_TMP_DIR/wallet_1.json"
 export LINERA_KEYSTORE_1="$LINERA_TMP_DIR/keystore_1.json"
 export LINERA_STORAGE_1="rocksdb:$LINERA_TMP_DIR/client_1.db"
@@ -62,17 +66,27 @@ export OWNER_2="${INFO_2[1]}"
 export OWNER_3="${INFO_3[1]}"
 
 cargo build --release --target wasm32-unknown-unknown
-export APP_ID=$(linera --with-wallet 1 publish-and-create  target/wasm32-unknown-unknown/release/management_{contract,service}.wasm)
+export APP_ID=$(linera publish-and-create  target/wasm32-unknown-unknown/release/management_{contract,service}.wasm)
 echo "APP_ID: $APP_ID"
 
-linera service --port 8081 &
-PIB_MAIN=$!
-linera --with-wallet 1 service --port 8082 &
+echo "Iniciando servicios..."
+echo "Logs de servicios en: $LINERA_TMP_DIR/service_*.log"
+
+linera service --port 8081 > "$LINERA_TMP_DIR/service_main.log" 2>&1 &
+PID_MAIN=$!
+sleep 2
+
+linera --with-wallet 1 service --port 8082 > "$LINERA_TMP_DIR/service_w1.log" 2>&1 &
 PID_W1=$!
-linera --with-wallet 2 service --port 8083 &
+sleep 2
+
+linera --with-wallet 2 service --port 8083 > "$LINERA_TMP_DIR/service_w2.log" 2>&1 &
 PID_W2=$!
-linera --with-wallet 3 service --port 8084 &
+sleep 2
+
+linera --with-wallet 3 service --port 8084 > "$LINERA_TMP_DIR/service_w3.log" 2>&1 &
 PID_W3=$!
+sleep 2
 
 echo "Servicios levantados:"
 echo "  PID_MAIN=$PID_MAIN (puerto 8081)"
@@ -80,10 +94,12 @@ echo "  PID_W1=$PID_W1 (puerto 8082)"
 echo "  PID_W2=$PID_W2 (puerto 8083)"
 echo "  PID_W3=$PID_W3 (puerto 8084)" 
 
+echo "MAIN_CHAIN_ID: $MAIN_CHAIN_ID"
 echo "CHAIN_1: $CHAIN_1"
 echo "CHAIN_2: $CHAIN_2"
 echo "CHAIN_3: $CHAIN_3"
 echo "APP_ID: $APP_ID"
+
 
 cleanup() {
   kill "$PID_MAIN" "$PID_W1" "$PID_W2" "$PID_W3" 2>/dev/null || true
@@ -96,7 +112,15 @@ trap cleanup INT TERM EXIT
 
 while true; do
   if ! wait -n "$PID_MAIN" "$PID_W1" "$PID_W2" "$PID_W3"; then
-    echo "Un servicio terminó con error, saliendo..."
+    echo "Un servicio terminó con error, mostrando logs..."
+    echo "=== Log servicio principal ==="
+    tail -n 20 "$LINERA_TMP_DIR/service_main.log" 2>/dev/null || echo "No hay log"
+    echo "=== Log wallet 1 ==="
+    tail -n 20 "$LINERA_TMP_DIR/service_w1.log" 2>/dev/null || echo "No hay log"
+    echo "=== Log wallet 2 ==="
+    tail -n 20 "$LINERA_TMP_DIR/service_w2.log" 2>/dev/null || echo "No hay log"
+    echo "=== Log wallet 3 ==="
+    tail -n 20 "$LINERA_TMP_DIR/service_w3.log" 2>/dev/null || echo "No hay log"
     exit 1
   else
     echo "Un servicio terminó normalmente, saliendo..."

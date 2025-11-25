@@ -66,7 +66,9 @@ impl Contract for ManagementContract {
                     placed_at: self.runtime.system_time(),
                 };
 
-                let _ = self.state.user_odds.get().clone().push(user_bet);
+                let mut user_odds_vec = self.state.user_odds.get().clone();
+                user_odds_vec.push(user_bet);
+                let _ = self.state.user_odds.set(user_odds_vec);
 
                 self.runtime.prepare_message(
                     Message::NewBetPlaced { home, away, league, start_time, odd, selection, bid, status: "Placed".to_string(), event_id  }
@@ -120,7 +122,7 @@ impl Contract for ManagementContract {
                         _ => Selection::Home,
                     };
 
-                event.result = MatchResult { winner: victory, home_score, away_score };
+                event.result = MatchResult { winner: victory, home_score: home_score.clone(), away_score: away_score.clone() };
                 event.status = MatchStatus::Finished;
                 let _ = self.state.events.insert(&event_id, event);
             }
@@ -176,6 +178,7 @@ impl Contract for ManagementContract {
                     self.runtime.prepare_message(
                         Message::ClaimResult { event_id: event_id.clone(), result: "Placed".to_string() }
                     ).with_authentication().send_to(user_id.unwrap());
+                    return; 
                 }
 
                 let bets = self.state.event_odds.get(&event_id).await.expect("Event not found").unwrap_or_default();
