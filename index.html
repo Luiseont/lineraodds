@@ -1,108 +1,103 @@
 <!DOCTYPE html>
 <html lang="">
-  <head>
-    <meta charset="UTF-8">
-    <link rel="icon" href="/favicon.ico">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LineraOdds</title>
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" href="/favicon.ico">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LineraOdds</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  </head>
-  <body>
-    <div id="app"></div>
-    <script>
-        (() => {
-          const matchesAuthHost = (url) => {
-            try {
-              const u = new URL(url, document.baseURI);
-              return u.hostname === "relay.dynamicauth.com" || /\.dynamicauth\.com$/.test(u.hostname);
-            } catch {
-              return false;
-            }
-          };
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
 
-          const markCredentialless = (iframe) => {
-            try {
-              iframe.credentialless = true;
-            } catch { }
-          };
+<body>
+  <div id="app"></div>
+  <script>
+    (() => {
+      const matchesAuthHost = (url) => {
+        try {
+          const u = new URL(url, document.baseURI);
+          return u.hostname === "relay.dynamicauth.com" || /\.dynamicauth\.com$/.test(u.hostname);
+        } catch {
+          return false;
+        }
+      };
 
-          // Intercept direct assignments to iframe.src
-          try {
-            const desc = Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype, "src");
-            if (desc && desc.set) {
-              const originalSet = desc.set;
-              Object.defineProperty(HTMLIFrameElement.prototype, "src", {
-                configurable: true,
-                enumerable: desc.enumerable,
-                get: desc.get,
-                set(value) {
-                  if (matchesAuthHost(value)) markCredentialless(this);
-                  return originalSet.call(this, value);
-                },
-              });
-            }
-          } catch { }
+      const markCredentialless = (iframe) => {
+        try {
+          iframe.credentialless = true;
+        } catch { }
+      };
 
-          // Intercept setAttribute('src', ...)
-          try {
-            const originalSetAttribute = Element.prototype.setAttribute;
-            Element.prototype.setAttribute = function (name, value) {
-              if (
-                this instanceof HTMLIFrameElement &&
-                name &&
-                name.toLowerCase() === "src" &&
-                matchesAuthHost(value)
-              ) {
-                markCredentialless(this);
-              }
-              return originalSetAttribute.call(this, name, value);
-            };
-          } catch { }
+      // Intercept direct assignments to iframe.src
+      try {
+        const desc = Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype, "src");
+        if (desc && desc.set) {
+          const originalSet = desc.set;
+          Object.defineProperty(HTMLIFrameElement.prototype, "src", {
+            configurable: true,
+            enumerable: desc.enumerable,
+            get: desc.get,
+            set(value) {
+              if (matchesAuthHost(value)) markCredentialless(this);
+              return originalSet.call(this, value);
+            },
+          });
+        }
+      } catch { }
 
-          // Fallback: observe added iframes and src attribute changes
-          try {
-            const checkAndMark = (iframe) => {
-              const value = iframe.getAttribute("src") || iframe.src;
-              if (value && matchesAuthHost(value)) markCredentialless(iframe);
-            };
-            const observer = new MutationObserver((mutations) => {
-              for (const m of mutations) {
-                if (m.type === "childList") {
-                  for (const node of m.addedNodes) {
-                    if (node instanceof HTMLIFrameElement) {
-                      checkAndMark(node);
-                    } else if (node && node.querySelectorAll) {
-                      node.querySelectorAll("iframe").forEach(checkAndMark);
-                    }
-                  }
-                } else if (
-                  m.type === "attributes" &&
-                  m.target instanceof HTMLIFrameElement &&
-                  m.attributeName === "src"
-                ) {
-                  checkAndMark(m.target);
+      // Intercept setAttribute('src', ...)
+      try {
+        const originalSetAttribute = Element.prototype.setAttribute;
+        Element.prototype.setAttribute = function (name, value) {
+          if (
+            this instanceof HTMLIFrameElement &&
+            name &&
+            name.toLowerCase() === "src" &&
+            matchesAuthHost(value)
+          ) {
+            markCredentialless(this);
+          }
+          return originalSetAttribute.call(this, name, value);
+        };
+      } catch { }
+
+      // Fallback: observe added iframes and src attribute changes
+      try {
+        const checkAndMark = (iframe) => {
+          const value = iframe.getAttribute("src") || iframe.src;
+          if (value && matchesAuthHost(value)) markCredentialless(iframe);
+        };
+        const observer = new MutationObserver((mutations) => {
+          for (const m of mutations) {
+            if (m.type === "childList") {
+              for (const node of m.addedNodes) {
+                if (node instanceof HTMLIFrameElement) {
+                  checkAndMark(node);
+                } else if (node && node.querySelectorAll) {
+                  node.querySelectorAll("iframe").forEach(checkAndMark);
                 }
               }
-            });
-            observer.observe(document.documentElement, {
-              childList: true,
-              subtree: true,
-              attributes: true,
-              attributeFilter: ["src"],
-            });
-          } catch { }
-        })();
-        </script>
-    <script type="importmap">
-      {
-        "imports": {
-          "@linera/client": "./node_modules/@linera/client/dist/linera_web.js",
-          "@linera/signer": "./js/@linera/signer/index.js"
-        }
-      }
-    </script>
-    <script type="module" src="/src/main.ts"></script>
-  </body>
+            } else if (
+              m.type === "attributes" &&
+              m.target instanceof HTMLIFrameElement &&
+              m.attributeName === "src"
+            ) {
+              checkAndMark(m.target);
+            }
+          }
+        });
+        observer.observe(document.documentElement, {
+          childList: true,
+          subtree: true,
+          attributes: true,
+          attributeFilter: ["src"],
+        });
+      } catch { }
+    })();
+  </script>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+
 </html>

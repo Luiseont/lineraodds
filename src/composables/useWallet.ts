@@ -2,8 +2,8 @@ import { ref } from 'vue'
 import { LineraAdapter } from '@/plugins/linera-adapter'
 import { getPrimaryWalletAccount } from '@/plugins/dynamic-sdk'
 import {
-    signMessage,
-    type WalletProviderMethodUnavailableError
+  signMessage,
+  type WalletProviderMethodUnavailableError
 } from '@dynamic-labs-sdk/client';
 
 
@@ -13,10 +13,8 @@ const address = ref<string | null>(null)
 const chainId = ref<string | null>(null)
 const error = ref<string | null>(null)
 
-// Keep SDK objects and keys only in-memory (ephemeral)
 const providerRef = ref<any | null>(null)
-
-const faucetUrl = (import.meta as any).env?.VITE_LINERA_FAUCET_URL ?? 'http://localhost:1556'
+const faucetUrl = (import.meta as any).env?.VITE_LINERA_FAUCET_URL ?? 'https://faucet.testnet-conway.linera.net'
 
 
 
@@ -24,24 +22,36 @@ export async function connect(key?: string) {
   if (connected.value || connecting.value) return
   error.value = null
   connecting.value = true
+
+  console.log('🔄 Iniciando conexión a Linera...')
+  console.log('📍 Faucet URL:', faucetUrl)
+
   try {
     const walletAccount = getPrimaryWalletAccount()
     if (!walletAccount) throw new Error('No wallet account available after connection')
-    //const { signature } = await signMessage({ walletAccount, message: 'wellcome to LineraOdds' });
-   // console.log(signature)
-    await LineraAdapter.getInstance().connect(walletAccount, faucetUrl)
+    const { signature } = await signMessage({ walletAccount, message: 'wellcome to LineraOdds' });
+    console.log('👛 Wallet account obtenida:', (walletAccount as any).address || (walletAccount as any).accountAddress)
+    // Intentar conectar con timeout
+    const connectPromise = LineraAdapter.getInstance().connect(walletAccount, faucetUrl)
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Connection timeout after 60s')), 60000)
+    )
 
-    // Store provider objects for app-wide use
+    await Promise.race([connectPromise, timeoutPromise])
+
     address.value = LineraAdapter.getInstance().getProvider().address
     chainId.value = LineraAdapter.getInstance().getProvider().chainId
-    console.log("Chain ID:", chainId.value)
-    providerRef.value = LineraAdapter.getInstance() 
+    console.log("✅ Conectado! Chain ID:", chainId.value)
+    console.log("✅ Address:", address.value)
+
+    providerRef.value = LineraAdapter.getInstance()
     connected.value = true
   } catch (e: any) {
+    console.error('❌ Error detallado:', e)
+    console.error('❌ Stack:', e.stack)
     error.value = e?.message ?? String(e)
     connected.value = false
     chainId.value = null
-    console.log('Error connecting to Linera:', e)
   } finally {
     connecting.value = false
   }

@@ -7,7 +7,7 @@ import tailwindcss from '@tailwindcss/vite'
 
 // https://vite.dev/config/
 export default defineConfig({
-    build: {
+  build: {
     rollupOptions: {
       input: {
         index: 'index.html',
@@ -22,6 +22,12 @@ export default defineConfig({
       "Cross-Origin-Opener-Policy": "same-origin",
       "Cross-Origin-Resource-Policy": "cross-origin",
     },
+    cors: {
+      origin: '*',
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
+      credentials: false
+    },
   },
   plugins: [
     vue(),
@@ -33,7 +39,7 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
   },
-   optimizeDeps: {
+  optimizeDeps: {
     exclude: [
       '@linera/client',
     ],
