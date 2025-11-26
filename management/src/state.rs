@@ -1,5 +1,5 @@
-use linera_sdk::views::{linera_views, RegisterView, RootView, ViewStorageContext, MapView, QueueView };
-use linera_sdk::linera_base_types::{ChainId, AccountOwner, Timestamp};
+use linera_sdk::views::{linera_views, RegisterView, RootView, ViewStorageContext, MapView };
+use linera_sdk::linera_base_types::{ChainId, Timestamp, ApplicationId, Amount};
 use serde::{Deserialize, Serialize};
 use async_graphql::{SimpleObject, Enum};
 
@@ -8,8 +8,11 @@ use async_graphql::{SimpleObject, Enum};
 pub struct ManagementState {
     pub events: MapView<String, Event>,
     pub event_odds: MapView<String, Vec<UserOdd>>,
-    pub user_odds: RegisterView<Vec<UserOdds>>,
     pub oracle: RegisterView<Option<ChainId>>,
+    pub token_supp: RegisterView<Amount>,
+    //state for local instance
+    pub user_odds: RegisterView<Vec<UserOdds>>,
+    pub user_balance: RegisterView<Amount>,
 }
 
 
@@ -21,8 +24,9 @@ pub struct Event {
     pub league: String,
     pub teams: Teams,
     pub odds: Odds,
-    pub start_time: u64,
-    pub result: MatchResult
+    pub start_time: Timestamp,
+    pub result: MatchResult,
+    pub pool: Amount,
 }
 
 #[derive(Clone, Debug, Copy, Eq, PartialEq, Serialize, Deserialize, Enum, Default)]
@@ -89,18 +93,18 @@ pub struct UserOdd {
     pub odd: u64,
     pub selection: Selection,
     pub placed_at: Timestamp,
-    pub bid: u64,
+    pub bid: Amount,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, SimpleObject, Default)]
 pub struct UserOdds {
     pub teams: Teams,
     pub league: String,
-    pub start_time: u64,
+    pub start_time: Timestamp,
     pub odd: u64,
     pub selection: Selection,
     pub placed_at: Timestamp,
-    pub bid: u64,
+    pub bid: Amount,
     pub event_id: String,
     pub status: BetStatus
 }

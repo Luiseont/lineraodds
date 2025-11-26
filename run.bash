@@ -34,7 +34,7 @@ if [[ ! -d "$LINERA_TMP_DIR" ]]; then
 fi
 
 # Build and publish your backend
-cd management
+
 linera wallet init --faucet "$LINERA_FAUCET_URL"
 export MAIN_CHAIN=($(linera wallet request-chain --faucet $LINERA_FAUCET_URL))
 export MAIN_OWNER="${MAIN_CHAIN[1]}"
@@ -65,9 +65,13 @@ export OWNER_1="${INFO_1[1]}"
 export OWNER_2="${INFO_2[1]}"
 export OWNER_3="${INFO_3[1]}"
 
+
+# Deploy management contract  
+cd management
 cargo build --release --target wasm32-unknown-unknown
-export APP_ID=$(linera publish-and-create  target/wasm32-unknown-unknown/release/management_{contract,service}.wasm)
+export APP_ID=$(linera publish-and-create target/wasm32-unknown-unknown/release/management_{contract,service}.wasm)
 echo "APP_ID: $APP_ID"
+cd ..
 
 echo "Iniciando servicios..."
 echo "Logs de servicios en: $LINERA_TMP_DIR/service_*.log"
@@ -99,7 +103,6 @@ echo "CHAIN_1: $CHAIN_1"
 echo "CHAIN_2: $CHAIN_2"
 echo "CHAIN_3: $CHAIN_3"
 echo "APP_ID: $APP_ID"
-
 
 cleanup() {
   kill "$PID_MAIN" "$PID_W1" "$PID_W2" "$PID_W3" 2>/dev/null || true

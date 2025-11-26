@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use async_graphql::{EmptySubscription, Object, Schema};
 use linera_sdk::{
-    graphql::GraphQLMutationRoot, linera_base_types::{WithServiceAbi, ChainId}, views::{View}, Service,
+    graphql::GraphQLMutationRoot, linera_base_types::{WithServiceAbi, Amount}, views::{View}, Service,
     ServiceRuntime,
 };
 
@@ -104,4 +104,16 @@ impl QueryRoot {
             }
         }
     }
+
+    async fn balance(&self) -> Amount {
+                match ManagementState::load(self.storage_context.clone()).await{
+            Ok(state) => {
+                state.user_balance.get().clone()
+            }
+            Err(e) => {
+                eprintln!("Failed to load state: {:?}", e);
+                Amount::from_tokens(0)
+            }
+        }
+    }   
 }

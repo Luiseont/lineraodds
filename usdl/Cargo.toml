@@ -1,5 +1,5 @@
 [package]
-name = "management"
+name = "usdl"
 version = "0.1.0"
 edition = "2021"
 
@@ -9,18 +9,17 @@ linera-sdk = "0.15.6"
 futures = { version = "0.3 "}
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
-usdl = { path = "../usdl" }
 
 [dev-dependencies]
 linera-sdk = { version = "0.15.6", features = ["test", "wasmer"] }
 tokio = { version = "1.40", features = ["rt", "sync"] }
 
 [[bin]]
-name = "management_contract"
+name = "usdl_contract"
 path = "src/contract.rs"
 
 [[bin]]
-name = "management_service"
+name = "usdl_service"
 path = "src/service.rs"
 
 [profile.release]

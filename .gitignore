@@ -19,6 +19,8 @@ coverage
 
 /management/target/
 /management/Cargo.lock
+/usdl/target/
+/usdl/Cargo.lock
 
 # Editor directories and files
 .vscode/*
