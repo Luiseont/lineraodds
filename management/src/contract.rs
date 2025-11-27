@@ -1,19 +1,18 @@
 #![cfg_attr(target_arch = "wasm32", no_main)]
 
-mod state;
-
 use linera_sdk::{
     linera_base_types::{
-        Amount, WithContractAbi
+        Amount, WithContractAbi, StreamUpdate
     },
     views::{RootView, View},
     Contract, ContractRuntime,
 };
 
-use management::{Operation, Message};
-
-use self::state::{ManagementState, Event, MatchStatus, Teams, Odds, MatchResult, TypeEvent, UserOdd, UserOdds, Selection, BetStatus};
-
+use management::{
+    Operation, Message, Matches, Event,
+    state::{ManagementState, MatchStatus, Teams, Odds, MatchResult, TypeEvent, UserOdd, UserOdds, Selection, BetStatus}
+};
+const STREAM_NAME: &[u8] = b"events";
 pub struct ManagementContract {
     state: ManagementState,
     runtime: ContractRuntime<Self>,
@@ -29,7 +28,7 @@ impl Contract for ManagementContract {
     type Message = Message;
     type Parameters = ();
     type InstantiationArgument = ();
-    type EventValue = ();
+    type EventValue = Matches;
 
     async fn load(runtime: ContractRuntime<Self>) -> Self {
         let state = ManagementState::load(runtime.root_view_storage_context())
@@ -45,6 +44,16 @@ impl Contract for ManagementContract {
     async fn execute_operation(&mut self, operation: Self::Operation) -> Self::Response {
         match operation {
             // UserChain operations.
+            Operation::Subscribe { chain_id } => {
+                let app_id = self.runtime.application_id().forget_abi();
+                self.runtime
+                    .subscribe_to_events(chain_id, app_id, STREAM_NAME.into());
+            }
+            Operation::Unsubscribe { chain_id } => {
+                let app_id = self.runtime.application_id().forget_abi();
+                self.runtime
+                    .unsubscribe_from_events(chain_id, app_id, STREAM_NAME.into());
+            }
             Operation::PlaceBet { home, away, league, start_time, odd, selection, bid, event_id } => {
                 let user_chain_id = self.runtime.chain_id();
                 let management_chain_id = self.runtime.application_creator_chain_id();
@@ -128,7 +137,8 @@ impl Contract for ManagementContract {
                     pool: Amount::from_tokens(0),
                 };
 
-                 let _ = self.state.events.insert(&id.clone(), event);
+                 let _ = self.state.events.insert(&id.clone(), event.clone());
+                 self.runtime.emit(STREAM_NAME.into(), &Matches::HandleEvent { event_id: id.clone(), data: event });
             }
 
             Operation::ResolveEvent { event_id, winner, home_score, away_score } => {
@@ -142,7 +152,8 @@ impl Contract for ManagementContract {
 
                 event.result = MatchResult { winner: victory, home_score: home_score.clone(), away_score: away_score.clone() };
                 event.status = MatchStatus::Finished;
-                let _ = self.state.events.insert(&event_id, event);
+                let _ = self.state.events.insert(&event_id, event.clone());
+                self.runtime.emit(STREAM_NAME.into(), &Matches::HandleEvent { event_id: event_id.clone(), data: event });
             }
         }
     }
@@ -260,6 +271,26 @@ impl Contract for ManagementContract {
                 self.runtime.prepare_message(
                     Message::Receive { amount: amount.clone() }
                 ).with_authentication().send_to(user_chain_id);
+            }
+        }
+    }
+
+    async fn process_streams(&mut self, updates: Vec<StreamUpdate>) {
+        for update in updates {
+            assert_eq!(update.stream_id.stream_name, STREAM_NAME.into());
+            assert_eq!(
+                update.stream_id.application_id,
+                self.runtime.application_id().forget_abi().into()
+            );
+            for index in update.new_indices() {
+                let event = self
+                    .runtime
+                    .read_event(update.chain_id, STREAM_NAME.into(), index);
+                match event {
+                    Matches::HandleEvent { event_id, data  } => {
+                        let _ = self.state.events.insert(&event_id, data);  
+                    }
+                }
             }
         }
     }

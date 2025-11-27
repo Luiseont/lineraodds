@@ -9,13 +9,13 @@ export function useApp() {
     const { connected, provider } = useWallet()
     const eventsQuery = '{ "query": "query { events { id, typeEvent, league, teams{ home, away }, odds{ home, away, tie }, status, startTime, result{ winner, awayScore, homeScore } } } "  }';
     const UserBalanceQuery = '{"query":"query{balance}"}';
+    const SubscribeQuery = '{"query":"mutation{subscribe(chainId: \\"83a55222a590b704d0fc5eb248ee9937cade4630b8c44ef12c2c864febc5e0f6\\")}"}'; const walletBalance = ref(0)
+
 
     async function setBackend() {
         if (connected.value && provider.value) {
             try {
-                // setApplication no retorna nada, solo establece this.application internamente
-                await provider.value.setApplication('b564e8ceaef07fc919dc188259f6643a9f6414e74c63326238073d11b91adac0')
-                // Ahora obtenemos la aplicación del provider
+                await provider.value.setApplication('dd235647d426d6593b9e2dc04c3af49cf39d23efd6ba385107812e9c2640e9c6')
                 backend.value = provider.value.getApplication()
                 console.log('✅ Backend configurado correctamente')
             } catch (error) {
@@ -25,18 +25,35 @@ export function useApp() {
         }
     }
 
+    async function subscribeBackend() {
+        if (backend.value) {
+            const result = await backend.value.query(SubscribeQuery)
+            const response = JSON.parse(result);
+            console.log("✅ Response:", response);
+        } else {
+            console.log("❌ Backend no configurado")
+        }
+    }
+
     function resetBackend() {
         backend.value = null
     }
 
     const isBackendReady = computed(() => backend.value !== null)
 
-    // Watch con immediate: true para ejecutar al montar
+
     watch(connected, (newVal) => {
         if (newVal) {
             setBackend()
+            subscribeBackend()
         } else {
             resetBackend()
+        }
+    }, { immediate: true })
+
+    watch(isBackendReady, (newVal) => {
+        if (newVal) {
+            subscribeBackend()
         }
     }, { immediate: true })
 
@@ -45,7 +62,7 @@ export function useApp() {
             const result = await backend.value.query(eventsQuery)
             const response = JSON.parse(result);
             console.log("✅ Response:", response.data?.events);
-            return response
+            return response.data?.events
         }
         return []
     }
@@ -55,14 +72,14 @@ export function useApp() {
             const result = await backend.value.query(UserBalanceQuery)
             const response = JSON.parse(result);
             console.log("✅ Response:", response);
-            return response.data?.balance
+            walletBalance.value = response.data?.balance
         }
-        return 0
     }
 
     return {
         backend,
         isBackendReady,
+        walletBalance,
         events,
         userBalance
     }

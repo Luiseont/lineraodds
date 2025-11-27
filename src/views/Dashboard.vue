@@ -11,23 +11,20 @@ const fixtures = ref([]);
 
 async function loadFixtures() {
   try {
-    console.log('🔍 Cargando eventos...')
-  
+    console.log('Cargando eventos...')
+
     if (!isBackendReady.value) {
       console.warn('⚠️ Backend no está listo')
       return
     }
-
-    
-    const response = events()
-    fixtures.value = response.data?.events || [];
+    const response = await events()
+    fixtures.value = response || [];
   } catch (error) {
     console.error('❌ Error al cargar fixtures:', error)
     fixtures.value = []
   }
 }
-
-console.log("isBackendReady", isBackendReady.value);  
+  
 watch(isBackendReady, (newVal) => {
   if (newVal) {
     loadFixtures();

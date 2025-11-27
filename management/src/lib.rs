@@ -1,11 +1,14 @@
 
+pub mod state;
+
 use async_graphql::{Request, Response};
 use linera_sdk::{
     graphql::GraphQLMutationRoot,
-    linera_base_types::{ContractAbi, ServiceAbi, Amount, Timestamp},
+    linera_base_types::{ContractAbi, ServiceAbi, Amount, Timestamp, ChainId},
 };
 use serde::{Deserialize, Serialize};
 
+pub use self::state::{Event};
 
 pub struct ManagementAbi;
 
@@ -29,7 +32,9 @@ pub enum Operation {
     //userChain
     PlaceBet{ home: String, away: String, league: String, start_time: Timestamp, odd: u64, selection: String, bid: Amount, event_id: String},
     ClaimReward { event_id: String },
-    RequestMint { amount: Amount }
+    RequestMint { amount: Amount },
+    Subscribe { chain_id: ChainId },
+    Unsubscribe { chain_id: ChainId },
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -40,5 +45,10 @@ pub enum Message {
    ClaimResult { event_id: String, result: String},
    MintTokens { amount: Amount },
    Receive { amount: Amount },
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum Matches {
+    HandleEvent { event_id: String, data: Event },
 }
 
