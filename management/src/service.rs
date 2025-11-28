@@ -39,24 +39,8 @@ impl Service for ManagementService {
     }
 
     async fn handle_query(&self, query: Self::Query) -> Self::QueryResponse {
-
-        let mut all_events = Vec::new();
-        match self.state.events.indices().await {
-            Ok(event_ids) => {
-                for event_id in event_ids {
-                    if let Ok(Some(event)) = self.state.events.get(&event_id).await {
-                        all_events.push(event);
-                    }
-                }
-            }
-            Err(e) => {
-                eprintln!("Failed to get event indices: {:?}", e);
-            }
-        }
-
         Schema::build(
             QueryRoot {
-                events: all_events,
                 runtime: self.runtime.clone(),
                 storage_context:  self.runtime.root_view_storage_context()
             },
@@ -70,15 +54,35 @@ impl Service for ManagementService {
 }
 
 struct QueryRoot {
-    events: Vec<Event>,
     runtime: Arc<ServiceRuntime<ManagementService>>,
     storage_context: linera_sdk::views::ViewStorageContext,
 }
 
 #[Object]
 impl QueryRoot {
-    async fn events(&self) -> &Vec<Event> {
-        &self.events
+    async fn events(&self) -> Vec<Event> {
+        match ManagementState::load(self.storage_context.clone()).await{
+            Ok(state) => {
+                let mut all_events = Vec::new();
+                match state.events.indices().await {
+                    Ok(event_ids) => {
+                        for event_id in event_ids {
+                            if let Ok(Some(event)) = state.events.get(&event_id).await {
+                                all_events.push(event);
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("Failed to get event indices: {:?}", e);
+                    }
+                }
+                all_events
+            }
+            Err(e) => {
+                eprintln!("Failed to load state: {:?}", e);
+                Vec::new()
+            }
+        }
     }
 
     async fn event_odds(&self, event_id: String ) -> Vec<UserOdd> {
@@ -106,7 +110,7 @@ impl QueryRoot {
     }
 
     async fn balance(&self) -> Amount {
-                match ManagementState::load(self.storage_context.clone()).await{
+        match ManagementState::load(self.storage_context.clone()).await{
             Ok(state) => {
                 state.user_balance.get().clone()
             }

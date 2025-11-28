@@ -15,7 +15,7 @@
         </button>
         <div class="hidden sm:flex items-center gap-2">
           <router-link to="/" class="text-white/90 hover:text-white px-3">Sports</router-link>
-          <router-link to="/" class="block text-white/90 hover:text-white py-1.5">Mint</router-link>
+          <router-link to="/mint" class="block text-white/90 hover:text-white py-1.5">Mint</router-link>
           <!-- Balance Card -->
           <div class="ml-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-brand bg-white/10 border border-white/20 text-sm">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 text-yellow-400">
@@ -49,7 +49,7 @@
       </div>
       <div v-show="open" class="sm:hidden pb-3 space-y-1">
         <router-link to="/" class="block text-white/90 hover:text-white py-1.5">Sports</router-link>
-        <router-link to="/" class="block text-white/90 hover:text-white py-1.5">Mint</router-link>
+        <router-link to="/mint" class="block text-white/90 hover:text-white py-1.5">Mint</router-link>
         <!-- Balance Card Mobile -->
         <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-brand bg-white/10 border border-white/20 text-sm">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 text-yellow-400">
@@ -74,9 +74,9 @@
                   <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 011.08 1.04l-4.25 4.25a.75.75 0 01-1.06 0L5.25 8.27a.75.75 0 01-.02-1.06z" clip-rule="evenodd"/>
                 </svg>
               </button>
-              <div v-show="walletOpen" class="absolute right-0 mt-2 w-full bg-white text-secondary rounded-lg shadow-card overflow-hidden z-20">
-                <router-link @click="walletOpen=false" to="/my-bets" class="block px-4 py-2 hover:bg-gray-50">My Bets</router-link>
-                <button @click="doDisconnect" class="w-full text-left block px-4 py-2 hover:bg-gray-50">Disconnect</button>
+              <div v-show="walletOpen" class="absolute right-0 mt-2 min-w-max bg-white text-secondary rounded-lg shadow-card overflow-hidden z-20">
+                <router-link @click="walletOpen=false" to="/my-bets" class="block px-4 py-2 hover:bg-gray-50 whitespace-nowrap">My Bets</router-link>
+                <button @click="doDisconnect" class="w-full text-left block px-4 py-2 hover:bg-gray-50 whitespace-nowrap">Disconnect</button>
               </div>
             </div>
           </div>

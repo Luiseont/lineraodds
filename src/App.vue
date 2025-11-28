@@ -10,6 +10,7 @@ body {
   background: var(--color-background);
 }
 </style>
+
 <template>
   <router-view></router-view>
 </template>

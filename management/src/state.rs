@@ -13,6 +13,7 @@ pub struct ManagementState {
     //state for local instance
     pub user_odds: RegisterView<Vec<UserOdds>>,
     pub user_balance: RegisterView<Amount>,
+    pub nonce: RegisterView<u64>,
 }
 
 

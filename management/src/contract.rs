@@ -101,6 +101,11 @@ impl Contract for ManagementContract {
                 ).with_authentication().send_to(chain_id);
             },
 
+            Operation::ProcessIncomingMessages => {
+                let nonce = *self.state.nonce.get();
+                let _ = self.state.nonce.set(nonce + 1);                
+            },
+
             Operation::RequestMint{ amount } => {
                 let chain_id = self.runtime.application_creator_chain_id();
                 self.runtime.prepare_message(

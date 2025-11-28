@@ -35,6 +35,7 @@ pub enum Operation {
     RequestMint { amount: Amount },
     Subscribe { chain_id: ChainId },
     Unsubscribe { chain_id: ChainId },
+    ProcessIncomingMessages,
 }
 
 #[derive(Debug, Deserialize, Serialize)]

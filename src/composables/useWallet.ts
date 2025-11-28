@@ -29,8 +29,6 @@ export async function connect(key?: string) {
   try {
     const walletAccount = getPrimaryWalletAccount()
     if (!walletAccount) throw new Error('No wallet account available after connection')
-    const { signature } = await signMessage({ walletAccount, message: 'wellcome to LineraOdds' });
-    console.log('👛 Wallet account obtenida:', (walletAccount as any).address || (walletAccount as any).accountAddress)
     // Intentar conectar con timeout
     const connectPromise = LineraAdapter.getInstance().connect(walletAccount, faucetUrl)
     const timeoutPromise = new Promise((_, reject) =>
@@ -47,8 +45,6 @@ export async function connect(key?: string) {
     providerRef.value = LineraAdapter.getInstance()
     connected.value = true
   } catch (e: any) {
-    console.error('❌ Error detallado:', e)
-    console.error('❌ Stack:', e.stack)
     error.value = e?.message ?? String(e)
     connected.value = false
     chainId.value = null
