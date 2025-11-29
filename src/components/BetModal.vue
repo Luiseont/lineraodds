@@ -232,9 +232,7 @@ function close() {
 function handleSetBet() {
   if (!isValid.value || !amount.value) return
   
-  if (confirm(`Are you sure you want to place a bet of ${amount.value} USDL on ${props.selection.type}?`)) {
-    emit('confirm-bet', amount.value)
-  }
+  emit('confirm-bet', amount.value)
 }
 </script>
 

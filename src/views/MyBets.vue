@@ -124,8 +124,6 @@ function isClaimable(bet: any) {
 }
 
 async function handleClaim(bet: any) {
-  if (!confirm('Are you sure you want to claim the reward for this bet?')) return
-  
   try {
     await claimReward(bet.eventId)
     alert('Reward claimed successfully!')
@@ -138,7 +136,7 @@ async function handleClaim(bet: any) {
 const totalStake = computed(() => {
   return userBets.value.reduce((sum: number, b: any) => {
     if (b.status === 'PLACED') {
-      return sum + calculatePotential(b.bid, b.odd)
+      return sum + Number(b.bid)
     }
     return sum
   }, 0)

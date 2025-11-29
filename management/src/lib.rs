@@ -4,7 +4,7 @@ pub mod state;
 use async_graphql::{Request, Response};
 use linera_sdk::{
     graphql::GraphQLMutationRoot,
-    linera_base_types::{ContractAbi, ServiceAbi, Amount, Timestamp, ChainId},
+    linera_base_types::{ContractAbi, ServiceAbi, Amount, Timestamp, ChainId, DataBlobHash},
 };
 use serde::{Deserialize, Serialize};
 
@@ -25,6 +25,7 @@ impl ServiceAbi for ManagementAbi {
 #[derive(Debug, Deserialize, Serialize, GraphQLMutationRoot)]
 pub enum Operation {
     //appchain
+    UpdateBlobHash{ blob_hash: DataBlobHash },
     CreateEvent{ id: String, type_event: String, league: String, home:String, away:String, home_odds:u64, away_odds:u64, tie_odds:u64, start_time:Timestamp},
     UpdateEventStatus{ event_id: String, status: String },
     UpdateEventOdds{ event_id: String, home_odds:u64, away_odds:u64, tie_odds:u64 },
@@ -46,10 +47,14 @@ pub enum Message {
    ClaimResult { event_id: String, result: String},
    MintTokens { amount: Amount },
    Receive { amount: Amount },
+   ProcessIncomingMessages, 
+   RequestEventBlob,
+   SyncEventsBlob{ blob_hash: DataBlobHash },
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Matches {
     HandleEvent { event_id: String, data: Event },
+    HandleBlob { blob_hash: DataBlobHash },
 }
 

@@ -9,23 +9,26 @@ export const appStore = defineStore('app', () => {
     const walletBalance = ref(0)
     const events = ref<Array<any>>([])
     const userBets = ref<Array<any>>([])
+    const nextBlockHeight = ref(0)
 
     // Variables para manejo de notificaciones
     let notificationUnsubscribe: (() => void) | null = null
-    let updateTimeout: number | null = null
+    let subscriptionTimeout: number | null = null
 
     // Queries GraphQL
     const eventsQuery = '{ "query": "query { events { id, typeEvent, league, teams{ home, away }, odds{ home, away, tie }, status, startTime, result{ winner, awayScore, homeScore } } } "  }'
+    const eventsDataBlobQuery = '{ "query": "query { eventsBlob }" }'
     const UserBalanceQuery = '{"query":"query{balance}"}'
     const UserBetsQuery = '{ "query": "query { myOdds { eventId, odd, league, teams{ home, away }, status, startTime, selection, bid, placedAt } } "  }'
-    const SubscribeQuery = '{"query":"mutation{subscribe(chainId: \\"83a55222a590b704d0fc5eb248ee9937cade4630b8c44ef12c2c864febc5e0f6\\")}"}'
+    const SubscribeQuery = '{"query":"mutation{subscribe(chainId: \\"$CHAIN_ID\\")}"}'
     const MintTokensQuery = '{"query":"mutation{requestMint(amount: \\"$AMOUNT\\")}"}'
     const processIncomingMessagesQuery = '{"query":"mutation{processIncomingMessages}"}'
     const PlaceBetQuery = '{"query":"mutation{placeBet(home: \\"$HOME\\", away: \\"$AWAY\\", league: \\"$LEAGUE\\", startTime: $START_TIME, odd: $ODD, selection: \\"$SELECTION\\", bid: \\"$BID\\", eventId: \\"$EVENT_ID\\")}"}'
     const ClaimRewardQuery = '{"query":"mutation{claimReward(eventId: \\"$EVENT_ID\\")}"}'
+    const getNextBlockHeightQuery = '{"query":"query{getBlockHeight}"}'
 
     // Composables
-    const { connected, provider } = useWallet()
+    const { connected, provider, address } = useWallet()
 
     // Computed
     const isBackendReady = computed(() => backendReady.value)
@@ -36,7 +39,7 @@ export const appStore = defineStore('app', () => {
             try {
                 backendReady.value = false
 
-                await provider.value.setApplication('13f97983933aea75637f8ccf30e0efe447205799425ef025dcb8210cbb0ae694')
+                await provider.value.setApplication(import.meta.env.VITE_APP_ID ?? 'dbd4146e95087b8250a9d1fce2c10c05454ccb846573d75e404a7ba610719c98')
                 backend.value = provider.value.getApplication()
                 backendReady.value = true
             } catch (error) {
@@ -59,29 +62,15 @@ export const appStore = defineStore('app', () => {
         console.log('Configurando listener de notificaciones...')
 
         // Registrar nuevo listener
-        notificationUnsubscribe = provider.value.provider.client.onNotification((notification: any) => {
-            console.log('Notificación:', notification)
+        notificationUnsubscribe = provider.value.provider.client.onNotification(async (notification: any) => {
+            console.log('Notificación recibida:', notification)
 
-            // Debounce: esperar 500ms antes de actualizar
-            // Si llegan múltiples notificaciones, solo actualizar una vez
-            if (updateTimeout) {
-                clearTimeout(updateTimeout)
+            if (notification.reason.BlockExecuted || notification.reason.NewBlock) {
+                scheduleSubscription()
             }
 
-            if (notification.reason.NewBlock) {
-                updateTimeout = setTimeout(async () => {
-                    console.log('Actualizando datos por notificación...')
-                    try {
-                        await Promise.all([
-                            getEvents(),
-                            getUserBalance(),
-                            getUserBets()
-                        ])
-                        console.log('atos actualizados correctamente')
-                    } catch (error) {
-                        console.error('Error al actualizar datos:', error)
-                    }
-                }, 500) // 500ms de debounce
+            if (notification.reason.NewIncomingBundle) {
+                processMessages()
             }
         })
 
@@ -94,10 +83,36 @@ export const appStore = defineStore('app', () => {
             notificationUnsubscribe()
             notificationUnsubscribe = null
         }
-        if (updateTimeout) {
-            clearTimeout(updateTimeout)
-            updateTimeout = null
+        if (subscriptionTimeout) {
+            clearTimeout(subscriptionTimeout)
+            subscriptionTimeout = null
         }
+    }
+
+    function scheduleSubscription() {
+        // Cancelar timeout anterior si existe
+        if (subscriptionTimeout) {
+            clearTimeout(subscriptionTimeout)
+            subscriptionTimeout = null
+        }
+
+        // Programar actualización de datos y suscripción después de 5 segundos sin nuevos mensajes
+        subscriptionTimeout = setTimeout(async () => {
+            console.log('No se recibieron más mensajes, actualizando datos y suscribiendo...')
+            try {
+                // Actualizar datos primero
+                await Promise.all([
+                    getUserBalance(),
+                    getEvents(),
+                    getUserBets(),
+                ])
+                // Luego suscribir
+                await subscribeBackend()
+            } catch (error) {
+                console.error('Error al actualizar datos o suscribir:', error)
+            }
+            subscriptionTimeout = null
+        }, 2000) // 2 segundos de espera
     }
 
     function resetBackend() {
@@ -111,12 +126,21 @@ export const appStore = defineStore('app', () => {
 
     async function getEvents() {
         try {
-            const result = await backend.value.query(eventsQuery)
+            const result = await backend.value.query(eventsDataBlobQuery)
             const response = JSON.parse(result)
-            console.log("Eventos:", response.data?.events)
-            events.value = response.data?.events || []
+            console.log("Events Response:", response)
+
+            const blobData = response.data?.eventsBlob
+            if (blobData) {
+                const parsed = JSON.parse(blobData)
+                events.value = Array.isArray(parsed) ? parsed : []
+                console.log("Eventos:", events.value)
+            } else {
+                events.value = []
+            }
         } catch (error) {
             console.error('Error al obtener eventos:', error)
+            events.value = []
         }
     }
 
@@ -144,11 +168,22 @@ export const appStore = defineStore('app', () => {
     }
 
     async function subscribeBackend() {
+        // Usar la dirección como clave en localStorage
+        const subscriptionKey = `isSubscribed_${address.value}`
+        let isSubscribed = localStorage.getItem(subscriptionKey)
+
+        if (isSubscribed) {
+            console.log(`Wallet ${address.value} ya está suscrita`)
+            return
+        }
+
         try {
-            console.log("📡 Suscribiendo al backend...")
-            const result = await backend.value.query(SubscribeQuery)
+            console.log(`Suscribiendo wallet ${address.value} al backend...`)
+            let query = SubscribeQuery.replace('$CHAIN_ID', import.meta.env.VITE_MAIN_CHAIN_ID ?? '1b21fe8df6c980ead17148966d747f6303cd84e00e50988634fc23b47c1f3cbd')
+            const result = await backend.value.query(query)
             const response = JSON.parse(result)
             console.log("Suscripción exitosa:", response)
+            localStorage.setItem(subscriptionKey, 'true')
         } catch (error) {
             console.error('Error en suscripción:', error)
         }
@@ -161,9 +196,6 @@ export const appStore = defineStore('app', () => {
             const result = await backend.value.query(query)
             const response = JSON.parse(result)
             console.log("Minting exitoso:", response)
-
-            //receiving messages
-            await processMessages();
         } catch (error) {
             console.error('Error en minting:', error)
             throw error
@@ -175,9 +207,22 @@ export const appStore = defineStore('app', () => {
             console.log("procesando mensajes..");
             const result = await backend.value.query(processIncomingMessagesQuery)
             const response = JSON.parse(result)
-            console.log("Minting new block:", response)
+            console.log("Procesamiento de mensajes exitoso:", response)
         } catch (error) {
-            console.error('Error en minting:', error)
+            console.error('Error procesando mensajes:', error)
+            throw error
+        }
+    }
+
+    async function getNextBlockHeight() {
+        try {
+            console.log("Obteniendo siguiente altura de bloque...")
+            const result = await backend.value.query(getNextBlockHeightQuery)
+            const response = JSON.parse(result)
+            console.log("Siguiente altura de bloque obtenida:", response.data?.getBlockHeight)
+            nextBlockHeight.value = response.data?.getBlockHeight
+        } catch (error) {
+            console.error('Error obteniendo siguiente altura de bloque:', error)
             throw error
         }
     }
@@ -206,12 +251,6 @@ export const appStore = defineStore('app', () => {
             const response = JSON.parse(result)
             console.log("Bet placed successfully:", response)
 
-            // Process messages to update state
-            await processMessages()
-            // Update balance immediately
-            await getUserBalance()
-            await getUserBets()
-
         } catch (error) {
             console.error('Error placing bet:', error)
             throw error
@@ -227,7 +266,6 @@ export const appStore = defineStore('app', () => {
             const response = JSON.parse(result)
             console.log("Reward claimed successfully:", response)
 
-            await processMessages()
         } catch (error) {
             console.error('Error claiming reward:', error)
             throw error
@@ -247,13 +285,15 @@ export const appStore = defineStore('app', () => {
         if (newVal) {
 
             await Promise.all([
-                subscribeBackend(),
                 getUserBalance(),
                 getEvents(),
-                getUserBets()
+                getUserBets(),
             ])
 
             setupNotificationListener()
+
+            // Programar suscripción inicial después de 2 segundos
+            scheduleSubscription()
         }
     }, { immediate: true })
 

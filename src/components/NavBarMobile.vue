@@ -93,7 +93,7 @@ import { useWallet, connect as walletConnect, disconnect as walletDisconnect } f
 import WalletSelectorModal from './WalletSelectorModal.vue'
 import { useApp } from '../composables/useApp'
 
-const { userBalance, isBackendReady, walletBalance } = useApp();
+const { walletBalance } = useApp();
 
 const open = ref(false)
 const walletOpen = ref(false)
@@ -113,13 +113,6 @@ async function onConnectClick(){
   }
 }
 
-watch(isBackendReady, async (newVal) => {
-  if (newVal) {
-    await userBalance()
-  }else{
-    walletBalance.value = 0
-  }
-}, { immediate: true })
 // Chevron button: toggles dropdown (only if connected)
 function toggleWalletDropdown(){
   if (!connected.value) return

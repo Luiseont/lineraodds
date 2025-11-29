@@ -14,6 +14,7 @@ const chainId = ref<string | null>(null)
 const error = ref<string | null>(null)
 
 const providerRef = ref<any | null>(null)
+console.log("FAUCET_URL:" + (import.meta as any).env?.VITE_LINERA_FAUCET_URL)
 const faucetUrl = (import.meta as any).env?.VITE_LINERA_FAUCET_URL ?? 'https://faucet.testnet-conway.linera.net'
 
 

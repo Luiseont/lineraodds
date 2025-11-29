@@ -1,5 +1,5 @@
 use linera_sdk::views::{linera_views, RegisterView, RootView, ViewStorageContext, MapView };
-use linera_sdk::linera_base_types::{ChainId, Timestamp, ApplicationId, Amount};
+use linera_sdk::linera_base_types::{ChainId, Timestamp, ApplicationId, Amount, DataBlobHash};
 use serde::{Deserialize, Serialize};
 use async_graphql::{SimpleObject, Enum};
 
@@ -10,6 +10,7 @@ pub struct ManagementState {
     pub event_odds: MapView<String, Vec<UserOdd>>,
     pub oracle: RegisterView<Option<ChainId>>,
     pub token_supp: RegisterView<Amount>,
+    pub events_blob: RegisterView<Option<DataBlobHash>>,
     //state for local instance
     pub user_odds: RegisterView<Vec<UserOdds>>,
     pub user_balance: RegisterView<Amount>,

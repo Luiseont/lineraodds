@@ -48,12 +48,18 @@ impl Contract for ManagementContract {
                 let app_id = self.runtime.application_id().forget_abi();
                 self.runtime
                     .subscribe_to_events(chain_id, app_id, STREAM_NAME.into());
-            }
+
+                let app_chain = self.runtime.application_creator_chain_id();
+
+                self.runtime.prepare_message(
+                    Message::RequestEventBlob
+                ).with_authentication().send_to(app_chain);
+            },
             Operation::Unsubscribe { chain_id } => {
                 let app_id = self.runtime.application_id().forget_abi();
                 self.runtime
                     .unsubscribe_from_events(chain_id, app_id, STREAM_NAME.into());
-            }
+            },
             Operation::PlaceBet { home, away, league, start_time, odd, selection, bid, event_id } => {
                 let user_chain_id = self.runtime.chain_id();
                 let management_chain_id = self.runtime.application_creator_chain_id();
@@ -144,8 +150,7 @@ impl Contract for ManagementContract {
 
                  let _ = self.state.events.insert(&id.clone(), event.clone());
                  self.runtime.emit(STREAM_NAME.into(), &Matches::HandleEvent { event_id: id.clone(), data: event });
-            }
-
+            },
             Operation::ResolveEvent { event_id, winner, home_score, away_score } => {
                 let mut event = self.state.events.get(&event_id).await.expect("Event not found").unwrap();
                 let victory = match winner.as_str() {
@@ -159,7 +164,13 @@ impl Contract for ManagementContract {
                 event.status = MatchStatus::Finished;
                 let _ = self.state.events.insert(&event_id, event.clone());
                 self.runtime.emit(STREAM_NAME.into(), &Matches::HandleEvent { event_id: event_id.clone(), data: event });
-            }
+            },
+            Operation::UpdateBlobHash{ blob_hash } => {
+                self.runtime.assert_data_blob_exists(blob_hash);
+                self.state.events_blob.set(Some(blob_hash));
+
+                self.runtime.emit(STREAM_NAME.into(), &Matches::HandleBlob { blob_hash });
+            },
         }
     }
 
@@ -212,7 +223,33 @@ impl Contract for ManagementContract {
 
             Message::UserClaimReward { event_id } => {
                 let user_id = self.runtime.message_origin_chain_id().unwrap();
-                let event = self.state.events.get(&event_id).await.expect("Event not found").unwrap_or_default();
+                
+                // Buscar el evento en el data blob
+                let event = match self.state.events_blob.get().clone() {
+                    Some(blob_hash) => {
+                        // Leer el contenido del blob
+                        let blob_content = self.runtime.read_data_blob(blob_hash);
+                        
+                        // Convertir a String
+                        let json_string = String::from_utf8(blob_content)
+                            .expect("Blob content is not valid UTF-8");
+                        
+                        // Deserializar a Vec<Event>
+                        let events: Vec<Event> = serde_json::from_str(&json_string)
+                            .expect("Failed to deserialize events from blob");
+                        
+                        // Buscar el evento por ID
+                        events.into_iter()
+                            .find(|e| e.id == event_id)
+                            .expect("Event not found in blob")
+                    },
+                    None => {
+                        // Fallback: buscar en el MapView si no hay blob
+                        self.state.events.get(&event_id).await
+                            .expect("Event not found")
+                            .unwrap_or_default()
+                    }
+                };
                 
                 if event.status != MatchStatus::Finished {
                     self.runtime.prepare_message(
@@ -276,7 +313,18 @@ impl Contract for ManagementContract {
                 self.runtime.prepare_message(
                     Message::Receive { amount: amount.clone() }
                 ).with_authentication().send_to(user_chain_id);
-            }
+            },
+            Message::ProcessIncomingMessages => {},
+            Message::RequestEventBlob => {
+                let user_chain_id = self.runtime.message_origin_chain_id().unwrap();
+
+                self.runtime.prepare_message(
+                    Message::SyncEventsBlob { blob_hash: self.state.events_blob.get().unwrap() }
+                ).with_authentication().send_to(user_chain_id);
+            },
+            Message::SyncEventsBlob { blob_hash } => {
+                self.state.events_blob.set(Some(blob_hash));
+            },  
         }
     }
 
@@ -293,7 +341,15 @@ impl Contract for ManagementContract {
                     .read_event(update.chain_id, STREAM_NAME.into(), index);
                 match event {
                     Matches::HandleEvent { event_id, data  } => {
-                        let _ = self.state.events.insert(&event_id, data);  
+                        let chain_id = self.runtime.chain_id();
+                        let _ = self.state.events.insert(&event_id, data);
+                        self.runtime.prepare_message(
+                            Message::ProcessIncomingMessages
+                        ).with_authentication().send_to(chain_id);  
+                    }
+                    Matches::HandleBlob { blob_hash } => {
+                        self.runtime.assert_data_blob_exists(blob_hash);
+                        self.state.events_blob.set(Some(blob_hash));
                     }
                 }
             }

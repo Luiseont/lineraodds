@@ -17,6 +17,8 @@ export default defineConfig({
     },
   },
   server: {
+    host: '0.0.0.0', // Escuchar en todas las interfaces para Docker
+    port: 5173,
     headers: {
       "Cross-Origin-Embedder-Policy": "credentialless",
       "Cross-Origin-Opener-Policy": "same-origin",

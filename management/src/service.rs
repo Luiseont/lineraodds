@@ -4,12 +4,11 @@ mod state;
 
 use std::sync::Arc;
 
-use async_graphql::{EmptySubscription, Object, Schema};
+use async_graphql::{EmptySubscription, Object, Schema, Response};
 use linera_sdk::{
-    graphql::GraphQLMutationRoot, linera_base_types::{WithServiceAbi, Amount}, views::{View}, Service,
-    ServiceRuntime,
+    graphql::GraphQLMutationRoot, linera_base_types::{WithServiceAbi, Amount, DataBlobHash}, views::{View}, Service,
+    ServiceRuntime
 };
-
 use management::Operation;
 
 use self::state::{ManagementState, Event, UserOdd, UserOdds};
@@ -120,4 +119,31 @@ impl QueryRoot {
             }
         }
     }   
+
+    async fn events_blob(&self) -> String {
+        match ManagementState::load(self.storage_context.clone()).await{
+            Ok(state) => {
+                let hash = state.events_blob.get().clone();
+                match hash {
+                    Some(h) => {
+                        // Leemos el contenido del blob usando el runtime
+                        let blob_content = self.runtime.read_data_blob(h);
+                        
+                        // blob_content es Vec<u8>, lo convertimos a String/JSON
+                        String::from_utf8(blob_content)
+                            .unwrap_or_else(|_| "{}".into())
+                    },
+                    None => "{}".to_string(),
+                }
+            }
+            Err(e) => {
+                eprintln!("Failed to load state: {:?}", e);
+                "{}".to_string()
+            }
+        }
+    }
+
+    async fn get_block_height(&self) -> u64 {
+        self.runtime.next_block_height().into()
+    }
 }
