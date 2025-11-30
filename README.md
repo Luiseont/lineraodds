@@ -21,6 +21,7 @@ Real-time sports betting system, built on Linera.
 - **Robust Event Handling**: Secure and reliable event processing with manual JSON mapping.
 - **User-Friendly UI**: Responsive design with loading states and clear feedback.
 - **Cross-chain Interactions**: Seamless betting across different chains.
+- **Stream Subscriptions**: Real-time updates of event data blobs across user chains via Linera streams.
 
 ## Architecture
 
