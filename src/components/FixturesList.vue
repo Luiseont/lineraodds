@@ -54,6 +54,7 @@
     </ul>
 
     <BetModal
+      ref="betModalRef"
       :is-open="isModalOpen"
       :event="selectedEvent"
       :selection="selectedSelection"
@@ -90,6 +91,7 @@ const { walletBalance, placeBet } = useApp();
 const isModalOpen = ref(false);
 const selectedEvent = ref<any>(null);
 const selectedSelection = ref<{ type: string; odd: number | string }>({ type: '', odd: 0 });
+const betModalRef = ref<InstanceType<typeof BetModal> | null>(null);
 
 const openBetModal = (event: any, type: string, odd: number | string) => {
   selectedEvent.value = event;
@@ -111,6 +113,10 @@ const handlePlaceBet = async (amount: number) => {
   } catch (error) {
     console.error('Failed to place bet:', error);
     alert('Failed to place bet. Please try again.');
+    // Reset loading state in modal
+    if (betModalRef.value) {
+      (betModalRef.value as any).loading = false;
+    }
   }
 };
 

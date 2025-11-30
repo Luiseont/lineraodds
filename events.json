@@ -1,7 +1,7 @@
 [
     {
         "id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
-        "typeEvent": "FOOTBALL",
+        "typeEvent": "Football",
         "league": "LaLiga",
         "teams": {
             "home": "GETAFE",
@@ -12,7 +12,7 @@
             "away": 125,
             "tie": 115
         },
-        "status": "SCHEDULED",
+        "status": "Scheduled",
         "startTime": 1764408000,
         "result": {
             "winner": "Home",
@@ -22,7 +22,7 @@
     },
     {
         "id": "b2c3d4e5-f6a1-0987-6543-fedcba098765",
-        "typeEvent": "FOOTBALL",
+        "typeEvent": "Football",
         "league": "Serie A",
         "teams": {
             "home": "COMO",
@@ -33,7 +33,7 @@
             "away": 145,
             "tie": 120
         },
-        "status": "SCHEDULED",
+        "status": "Scheduled",
         "startTime": 1764407100,
         "result": {
             "winner": "Home",
@@ -43,7 +43,7 @@
     },
     {
         "id": "c3d4e5f6-a1b2-3456-7890-13579bdf0246",
-        "typeEvent": "FOOTBALL",
+        "typeEvent": "Football",
         "league": "Bundesliga",
         "teams": {
             "home": "BORUSSIA M'GLADBACH",
@@ -54,7 +54,7 @@
             "away": 125,
             "tie": 110
         },
-        "status": "SCHEDULED",
+        "status": "Scheduled",
         "startTime": 1764406200,
         "result": {
             "winner": "Home",
@@ -64,7 +64,7 @@
     },
     {
         "id": "d4e5f6a1-b2c3-4567-8901-2468ace03579",
-        "typeEvent": "FOOTBALL",
+        "typeEvent": "Football",
         "league": "Liga Smartbank",
         "teams": {
             "home": "CEUTA",
@@ -75,7 +75,7 @@
             "away": 120,
             "tie": 115
         },
-        "status": "SCHEDULED",
+        "status": "Scheduled",
         "startTime": 1764501600,
         "result": {
             "winner": "Home",

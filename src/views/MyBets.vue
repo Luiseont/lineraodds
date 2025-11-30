@@ -62,9 +62,14 @@
             <button 
               v-if="isClaimable(b)"
               @click="handleClaim(b)"
-              class="mt-2 px-3 py-1.5 bg-green-500 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-green-600 transition-colors shadow-sm w-full sm:w-auto"
+              :disabled="loadingClaims[b.eventId]"
+              class="mt-2 px-3 py-1.5 bg-green-500 text-white text-xs sm:text-sm font-medium rounded-lg hover:bg-green-600 transition-colors shadow-sm w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              Claim Reward
+              <svg v-if="loadingClaims[b.eventId]" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              {{ loadingClaims[b.eventId] ? 'Claiming...' : 'Claim Reward' }}
             </button>
           </div>
           <div class="flex items-center justify-between sm:justify-end gap-4 pt-2 border-t sm:border-t-0">
@@ -90,6 +95,7 @@ import { computed, ref } from 'vue'
 import { useApp } from '@/composables/useApp'
 
 const { userBets, events, claimReward } = useApp()
+const loadingClaims = ref<Record<string, boolean>>({})
 
 function formatCurrency(n: number | string) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(Number(n))
@@ -124,12 +130,16 @@ function isClaimable(bet: any) {
 }
 
 async function handleClaim(bet: any) {
+  if (loadingClaims.value[bet.eventId]) return
+
+  loadingClaims.value[bet.eventId] = true
   try {
     await claimReward(bet.eventId)
-    alert('Reward claimed successfully!')
   } catch (error) {
     console.error('Failed to claim reward:', error)
     alert('Failed to claim reward. Please try again.')
+  } finally {
+    loadingClaims.value[bet.eventId] = false
   }
 }
 

@@ -12,6 +12,10 @@ use management::{
     Operation, Message, Matches, Event,
     state::{ManagementState, MatchStatus, Teams, Odds, MatchResult, TypeEvent, UserOdd, UserOdds, Selection, BetStatus}
 };
+
+mod contract_helper;
+use contract_helper::map_json_to_event;
+
 const STREAM_NAME: &[u8] = b"events";
 pub struct ManagementContract {
     state: ManagementState,
@@ -144,8 +148,7 @@ impl Contract for ManagementContract {
                     teams: Teams { home: home.clone(), away: away.clone() },
                     odds: Odds { home: home_odds, away: away_odds, tie: tie_odds },
                     start_time,
-                    result: MatchResult::default(),
-                    pool: Amount::from_tokens(0),
+                    result: MatchResult::default()
                 };
 
                  let _ = self.state.events.insert(&id.clone(), event.clone());
@@ -178,7 +181,29 @@ impl Contract for ManagementContract {
         match message {
             Message::NewBetPlaced { home, away, league, start_time, odd, selection, bid, status, event_id } => {
                 let user_id = self.runtime.message_origin_chain_id().unwrap();
-                let mut event = self.state.events.get(&event_id).await.expect("Event not found").unwrap();
+                
+                // Buscar el evento en el data blob
+                let event = match self.state.events_blob.get().clone() {
+                    Some(blob_hash) => {
+                        let blob_content = self.runtime.read_data_blob(blob_hash);
+    
+                        // Deserializa a JSON genérico
+                        let json_array: Vec<serde_json::Value> = serde_json::from_slice(&blob_content)
+                            .expect("Error leyendo JSON genérico"); 
+
+                        // Buscar y mapear el evento específico
+                        json_array.into_iter()
+                            .find(|e| e["id"].as_str().unwrap_or("") == event_id)
+                            .and_then(|json_event| map_json_to_event(&json_event))
+                            .expect("Event not found or invalid in blob")
+                    },
+                    None => {
+                        self.runtime.prepare_message(
+                            Message::RevertUserBet { event_id: event_id.clone() }
+                        ).with_authentication().send_to(user_id);
+                        return;
+                    }
+                };
                 
                 if event.status != MatchStatus::Scheduled {
                     self.runtime.prepare_message(
@@ -188,8 +213,8 @@ impl Contract for ManagementContract {
                 }
 
                 // Update event pool
-                event.pool = event.pool.saturating_add(bid);
-                self.state.events.insert(&event_id, event);
+                //event.pool = event.pool.saturating_add(bid);
+                //self.state.events.insert(&event_id, event);
 
                 // Record bet
                 let mut bets = self.state.event_odds.get(&event_id).await.expect("Event not found").unwrap_or_default();
@@ -227,27 +252,23 @@ impl Contract for ManagementContract {
                 // Buscar el evento en el data blob
                 let event = match self.state.events_blob.get().clone() {
                     Some(blob_hash) => {
-                        // Leer el contenido del blob
                         let blob_content = self.runtime.read_data_blob(blob_hash);
-                        
-                        // Convertir a String
-                        let json_string = String::from_utf8(blob_content)
-                            .expect("Blob content is not valid UTF-8");
-                        
-                        // Deserializar a Vec<Event>
-                        let events: Vec<Event> = serde_json::from_str(&json_string)
-                            .expect("Failed to deserialize events from blob");
-                        
-                        // Buscar el evento por ID
-                        events.into_iter()
-                            .find(|e| e.id == event_id)
-                            .expect("Event not found in blob")
+    
+                        // Deserializa a JSON genérico
+                        let json_array: Vec<serde_json::Value> = serde_json::from_slice(&blob_content)
+                            .expect("Error leyendo JSON genérico"); 
+
+                        // Buscar y mapear el evento específico
+                        json_array.into_iter()
+                            .find(|e| e["id"].as_str().unwrap_or("") == event_id)
+                            .and_then(|json_event| map_json_to_event(&json_event))
+                            .expect("Event not found or invalid in blob")
                     },
                     None => {
-                        // Fallback: buscar en el MapView si no hay blob
-                        self.state.events.get(&event_id).await
-                            .expect("Event not found")
-                            .unwrap_or_default()
+                        self.runtime.prepare_message(
+                            Message::ClaimResult { event_id: event_id.clone(), result: "Placed".to_string() }
+                        ).with_authentication().send_to(user_id);
+                        return;
                     }
                 };
                 
@@ -314,7 +335,9 @@ impl Contract for ManagementContract {
                     Message::Receive { amount: amount.clone() }
                 ).with_authentication().send_to(user_chain_id);
             },
-            Message::ProcessIncomingMessages => {},
+            Message::ProcessIncomingMessages => {
+                let _ = self.state.events_blob.set(Some(self.state.events_blob.get().unwrap()));
+            },
             Message::RequestEventBlob => {
                 let user_chain_id = self.runtime.message_origin_chain_id().unwrap();
 
@@ -348,8 +371,12 @@ impl Contract for ManagementContract {
                         ).with_authentication().send_to(chain_id);  
                     }
                     Matches::HandleBlob { blob_hash } => {
+                        let chain_id = self.runtime.chain_id();
                         self.runtime.assert_data_blob_exists(blob_hash);
                         self.state.events_blob.set(Some(blob_hash));
+                        self.runtime.prepare_message(
+                            Message::ProcessIncomingMessages
+                        ).with_authentication().send_to(chain_id);  
                     }
                 }
             }

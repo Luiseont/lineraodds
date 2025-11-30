@@ -11,7 +11,7 @@ use linera_sdk::{
 };
 use management::Operation;
 
-use self::state::{ManagementState, Event, UserOdd, UserOdds};
+use self::state::{ManagementState, Event, UserOdd, UserOdds, MatchStatus, TypeEvent, Teams, Odds, Selection, MatchResult};
 
 pub struct ManagementService {
     state: ManagementState,
@@ -126,10 +126,7 @@ impl QueryRoot {
                 let hash = state.events_blob.get().clone();
                 match hash {
                     Some(h) => {
-                        // Leemos el contenido del blob usando el runtime
                         let blob_content = self.runtime.read_data_blob(h);
-                        
-                        // blob_content es Vec<u8>, lo convertimos a String/JSON
                         String::from_utf8(blob_content)
                             .unwrap_or_else(|_| "{}".into())
                     },
@@ -143,7 +140,106 @@ impl QueryRoot {
         }
     }
 
+    async fn blob_events(&self) -> Vec<Event> {
+        match ManagementState::load(self.storage_context.clone()).await{
+            Ok(state) => {
+                let hash = state.events_blob.get().clone();
+                match hash {
+                    Some(h) => {
+                        let blob_content = self.runtime.read_data_blob(h);
+                        
+                        // Deserializar a JSON genérico primero
+                        let json_array: Vec<serde_json::Value> = match serde_json::from_slice(&blob_content) {
+                            Ok(arr) => arr,
+                            Err(e) => {
+                                eprintln!("Error parsing JSON array: {}", e);
+                                return Vec::new();
+                            }
+                        };
+
+                        // Mapear manualmente cada evento
+                        json_array.into_iter()
+                            .filter_map(|json_event| {
+                                map_json_to_event(&json_event)
+                            })
+                            .collect()
+                    },
+                    None => Vec::new(),
+                }
+            }
+            Err(e) => {
+                eprintln!("Failed to load state: {:?}", e);
+                Vec::new()
+            }
+        }
+    }
+
     async fn get_block_height(&self) -> u64 {
         self.runtime.next_block_height().into()
     }
+}
+
+fn map_json_to_event(json: &serde_json::Value) -> Option<Event> {
+    use linera_sdk::linera_base_types::Timestamp;
+    
+    let id = json["id"].as_str()?.to_string();
+    let league = json["league"].as_str()?.to_string();
+    
+    // Mapear status
+    let status = match json["status"].as_str()? {
+        "Scheduled" => MatchStatus::Scheduled,
+        "Live" => MatchStatus::Live,
+        "Finished" => MatchStatus::Finished,
+        "Postponed" => MatchStatus::Postponed,
+        _ => MatchStatus::Scheduled,
+    };
+    
+    // Mapear typeEvent
+    let type_event = match json["typeEvent"].as_str()? {
+        "Football" => TypeEvent::Football,
+        "Esports" => TypeEvent::Esports,
+        "Baseball" => TypeEvent::Baseball,
+        _ => TypeEvent::Football,
+    };
+    
+    // Mapear teams
+    let teams = Teams {
+        home: json["teams"]["home"].as_str()?.to_string(),
+        away: json["teams"]["away"].as_str()?.to_string(),
+    };
+    
+    // Mapear odds
+    let odds = Odds {
+        home: json["odds"]["home"].as_u64()?,
+        away: json["odds"]["away"].as_u64()?,
+        tie: json["odds"]["tie"].as_u64()?,
+    };
+    
+    // Mapear startTime
+    let start_time = Timestamp::from(json["startTime"].as_u64()?);
+    
+    // Mapear result
+    let winner = match json["result"]["winner"].as_str()? {
+        "Home" => Selection::Home,
+        "Away" => Selection::Away,
+        "Tie" => Selection::Tie,
+        _ => Selection::Home,
+    };
+    
+    let result = MatchResult {
+        winner,
+        home_score: json["result"]["homeScore"].as_str().unwrap_or("").to_string(),
+        away_score: json["result"]["awayScore"].as_str().unwrap_or("").to_string(),
+    };
+    
+    Some(Event {
+        id,
+        status,
+        type_event,
+        league,
+        teams,
+        odds,
+        start_time,
+        result,
+    })
 }

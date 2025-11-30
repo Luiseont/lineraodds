@@ -16,7 +16,7 @@ export const appStore = defineStore('app', () => {
     let subscriptionTimeout: number | null = null
 
     // Queries GraphQL
-    const eventsQuery = '{ "query": "query { events { id, typeEvent, league, teams{ home, away }, odds{ home, away, tie }, status, startTime, result{ winner, awayScore, homeScore } } } "  }'
+    const eventsQuery = '{ "query": "query { blobEvents { id, typeEvent, league, teams{ home, away }, odds{ home, away, tie }, status, startTime, result{ winner, awayScore, homeScore } } } "  }'
     const eventsDataBlobQuery = '{ "query": "query { eventsBlob }" }'
     const UserBalanceQuery = '{"query":"query{balance}"}'
     const UserBetsQuery = '{ "query": "query { myOdds { eventId, odd, league, teams{ home, away }, status, startTime, selection, bid, placedAt } } "  }'
@@ -38,8 +38,8 @@ export const appStore = defineStore('app', () => {
         if (connected.value && provider.value) {
             try {
                 backendReady.value = false
-
-                await provider.value.setApplication(import.meta.env.VITE_APP_ID ?? 'dbd4146e95087b8250a9d1fce2c10c05454ccb846573d75e404a7ba610719c98')
+                console.log("Setting backend... " + import.meta.env.VITE_APP_ID)
+                await provider.value.setApplication(import.meta.env.VITE_APP_ID ?? '184d0769b7365d3d6eb918be93efe042681120ff3e5357af1c19213eb2324f70')
                 backend.value = provider.value.getApplication()
                 backendReady.value = true
             } catch (error) {
@@ -126,18 +126,10 @@ export const appStore = defineStore('app', () => {
 
     async function getEvents() {
         try {
-            const result = await backend.value.query(eventsDataBlobQuery)
+            const result = await backend.value.query(eventsQuery)
             const response = JSON.parse(result)
             console.log("Events Response:", response)
-
-            const blobData = response.data?.eventsBlob
-            if (blobData) {
-                const parsed = JSON.parse(blobData)
-                events.value = Array.isArray(parsed) ? parsed : []
-                console.log("Eventos:", events.value)
-            } else {
-                events.value = []
-            }
+            events.value = response.data?.blobEvents || []
         } catch (error) {
             console.error('Error al obtener eventos:', error)
             events.value = []

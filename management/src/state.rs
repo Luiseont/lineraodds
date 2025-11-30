@@ -19,6 +19,7 @@ pub struct ManagementState {
 
 
 #[derive(Clone, Debug, Serialize, Deserialize, SimpleObject, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct Event {
     pub id: String,
     pub status: MatchStatus,
@@ -28,7 +29,6 @@ pub struct Event {
     pub odds: Odds,
     pub start_time: Timestamp,
     pub result: MatchResult,
-    pub pool: Amount,
 }
 
 #[derive(Clone, Debug, Copy, Eq, PartialEq, Serialize, Deserialize, Enum, Default)]
