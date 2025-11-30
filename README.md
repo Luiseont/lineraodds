@@ -29,8 +29,6 @@ Real-time sports betting system, built on Linera.
 - **Data Blobs**: Stores static or semi-static event data to reduce state size.
 - **Cross-chain Messages**: Handles bet placement and reward distribution.
 
-- **Cross-chain Messages**: Handles bet placement and reward distribution.
-
 ## Frontend Overview
 
 The frontend is built with **Vue 3** and **TypeScript**, using **Pinia** for state management and **TailwindCSS** for styling. It interacts directly with the Linera blockchain via the GraphQL API.
