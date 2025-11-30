@@ -28,6 +28,18 @@ Real-time sports betting system, built on Linera.
 - **Data Blobs**: Stores static or semi-static event data to reduce state size.
 - **Cross-chain Messages**: Handles bet placement and reward distribution.
 
+## Note to Jurors
+**Testing:**
+-   If you encounter synchronization issues, a simple page refresh usually resolves them by re-fetching the latest state from the chain.
+- Docker template create two data blobs with events with diferents statuses (pending, live, finished, etc.) for testing purposes -can you see it in the console- and you can see the data in events.json and events-updated.json.
+for simulated use, first you use mutation `updateBlobHash` with the first hash (events blob label), perform actions and them use the second hash (events next blob label) with the same mutation.
+
+Furthermore, they can modify the data, add new events, and publish the blob, then use the same mutation to perform the data update.
+
+- Due to ongoing errors in data updates (it appears no notifications are received when a stream is processed) and the need to generate a new block to process the inbox, you may need to perform an action (generally, mint USDL) for the new data to be processed.
+
+This does not occur if you use the wallets generated in the template via GraphQL.
+
 ## Frontend Overview
 
 The frontend is built with **Vue 3** and **TypeScript**, using **Pinia** for state management and **TailwindCSS** for styling. It interacts directly with the Linera blockchain via the GraphQL API.
@@ -53,11 +65,39 @@ Retrieves the raw JSON string of events from the data blob.
 ```
 
 #### `events`
-Retrieves events stored in the contract's MapView.
+Retrieves events stored in the contract's MapView. (legacy)
 
 ```graphql
 {
   query: events {
+    id
+    typeEvent
+    league
+    teams {
+      home
+      away
+    }
+    odds {
+      home
+      away
+      tie
+    }
+    status
+    startTime
+    result {
+      winner
+      awayScore
+      homeScore
+    }
+  }
+}
+```
+#### `blobEvents`
+Retrieves events in blob data (Live)
+
+```graphql
+{
+  query: blobEvents {
     id
     typeEvent
     league
