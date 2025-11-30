@@ -2,6 +2,9 @@
 
 Real-time sports betting system, built on Linera.
 
+> [!WARNING]
+> **Development Notice**: Since LineraOdds is still under development and event handling needs improvement, chain interactions and data updates may fail (query) - check browser console. Therefore, at some point it may be necessary to refresh the web page and reconnect. We are working on solutions.
+
 ## Stack
 
 - Vite
@@ -37,9 +40,6 @@ Key functionalities include:
 -   **Betting Interface**: Allows users to place bets on specific outcomes (Home, Away, Tie).
 -   **My Bets**: Tracks user's active and past bets, calculating potential winnings.
 -   **Token Balance**: Displays the user's current token balance, updated in real-time.
-
-> [!WARNING]
-> **Development Notice**: Since LineraOdds is still under development and event handling needs improvement, chain interactions and data updates may fail (query) - check browser console. Therefore, at some point it may be necessary to refresh the web page and reconnect. We are working on solutions.
 
 ## GraphQL API
 
