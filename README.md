@@ -275,8 +275,3 @@ This project includes Docker support based on the Linera Buildathon template, al
     ```bash
     docker compose down
     ```
-
-
-    docker compose down
-    ```
-
