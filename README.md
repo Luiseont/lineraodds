@@ -38,6 +38,9 @@ Key functionalities include:
 -   **My Bets**: Tracks user's active and past bets, calculating potential winnings.
 -   **Token Balance**: Displays the user's current token balance, updated in real-time.
 
+> [!WARNING]
+> **Development Notice**: Since LineraOdds is still under development and event handling needs improvement, chain interactions and data updates may fail (query) - check browser console. Therefore, at some point it may be necessary to refresh the web page and reconnect. We are working on solutions.
+
 ## GraphQL API
 
 ### Mutations
@@ -277,5 +280,3 @@ This project includes Docker support based on the Linera Buildathon template, al
     docker compose down
     ```
 
-> [!WARNING]
-> **Development Notice**: Since LineraOdds is still under development and event handling needs improvement, chain interactions and data updates may fail (query) - check browser console. Therefore, at some point it may be necessary to refresh the web page and reconnect. We are working on solutions.
