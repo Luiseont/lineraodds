@@ -14,8 +14,7 @@ Real-time sports betting system, built on Linera.
 - TailwindCSS
 
 ## Features
-
-- **Internal Token Management**: Built-in fungible token system for betting, including minting and transfers.
+- **Internal Token Management**: Built-in fungible token system for betting, including minting and transfers. Minting is only possible on the appchain.
 - **Real-time Odds Updates**: Dynamic odds adjustment based on betting activity.
 - **Data Blob Storage**: Efficient storage of large event data using Linera's data blobs.
 - **Robust Event Handling**: Secure and reliable event processing with manual JSON mapping.
@@ -42,72 +41,23 @@ Key functionalities include:
 
 ## GraphQL API
 
-### Mutations
-
-#### `createEvent`
-Creates a new sports event.
-
-```graphql
-mutation CreateEvent(
-  $id: String!,
-  $type_event: String!,
-  $league: String!,
-  $home: String!,
-  $away: String!,
-  $homeOdds: Int!,
-  $awayOdds: Int!,
-  $TieOdds: Int!,
-  $startTime: Int!
-) {
-  createEvent(
-    id: $id,
-    typeEvent: $type_event,
-    league: $league,
-    home: $home,
-    away: $away,
-    homeOdds: $homeOdds,
-    awayOdds: $awayOdds,
-    tieOdds: $TieOdds,
-    startTime: $startTime
-  )
-}
-```
-
-#### `placeBet`
-Places a bet on a specific event.
-
-```graphql
-mutation PlaceBet(
-  $home: String!,
-  $away: String!,
-  $league: String!,
-  $startTime: Int!,
-  $odd: Int!,
-  $selection: String!,
-  $bid: Int!,
-  $event_id: String!
-) {
-  placeBet(
-    home: $home,
-    away: $away,
-    league: $league,
-    startTime: $startTime,
-    odd: $odd,
-    selection: $selection,
-    bid: $bid,
-    eventId: $event_id
-  )
-}
-```
-
 ### Queries
 
-#### `blobEvents`
-Retrieves all events stored in the data blob. This is the primary method for fetching events.
+#### `eventsBlob`
+Retrieves the raw JSON string of events from the data blob.
 
 ```graphql
-query BlobEvents {
-  blobEvents {
+{
+  query: eventsBlob
+}
+```
+
+#### `events`
+Retrieves events stored in the contract's MapView.
+
+```graphql
+{
+  query: events {
     id
     typeEvent
     league
@@ -124,36 +74,9 @@ query BlobEvents {
     startTime
     result {
       winner
-      homeScore
       awayScore
+      homeScore
     }
-  }
-}
-```
-
-#### `eventsBlob`
-Retrieves the raw JSON string of events from the data blob. Useful for client-side parsing if needed.
-
-```graphql
-query EventsBlob {
-  eventsBlob
-}
-```
-
-#### `events`
-Retrieves events stored in the contract's MapView (legacy/fallback storage).
-
-```graphql
-query Events {
-  events {
-    id
-    typeEvent
-    league
-    teams {
-      home
-      away
-    }
-    status
   }
 }
 ```
@@ -162,20 +85,20 @@ query Events {
 Retrieves all bets placed by the current user.
 
 ```graphql
-query MyOdds {
-  myOdds {
-    eventId
-    odd
-    bid
-    selection
-    league
+{
+  query: myOdds {
     teams {
       home
       away
     }
-    status
-    startTime
+    odd
+    bid
+    selection
     placedAt
+    status
+    eventId
+    league
+    startTime
   }
 }
 ```
@@ -184,23 +107,70 @@ query MyOdds {
 Retrieves all bets placed on a specific event.
 
 ```graphql
-query EventOdds($eventId: String!) {
-  eventOdds(eventId: $eventId) {
+{
+  query: eventOdds(eventId: "1234-5678-9101") {
     userId
     odd
     bid
-    selection
     placedAt
+    selection
   }
 }
 ```
 
-#### `balance`
-Retrieves the current user's token balance.
+### Mutations
+
+#### `createEvent`
+Creates a new sports event.
 
 ```graphql
-query Balance {
-  balance
+mutation($event_id: String!, $type_event: String!, $league: String!, $home: String!, $away: String!, $homeOdds: Int!, $awayOdds: Int!, $TieOdds: Int!, $startTime: Timestamp!) {
+  createEvent(id: $event_id, typeEvent: $type_event, league: $league, home: $home, away: $away, homeOdds: $homeOdds, awayOdds: $awayOdds, tieOdds: $TieOdds, startTime: $startTime)
+}
+```
+
+#### `placeBet`
+Places a bet on a specific event.
+
+```graphql
+mutation($home: String!, $away: String!, $league: String!, $starTime: Timestamp!, $odd: Int!, $selection: String!, $bid: Amount!, $event_id: String!) {
+  placeBet(home: $home, away: $away, league: $league, startTime: $starTime, odd: $odd, selection: $selection, bid: $bid, eventId: $event_id)
+}
+```
+
+#### `resolveEvent`
+Resolves an event with the final score and winner.
+
+```graphql
+mutation($id: String!, $winner: String!, $homeScore: String!, $awayScore: String!) {
+  resolveEvent(eventId: $id, winner: $winner, homeScore: $homeScore, awayScore: $awayScore)
+}
+```
+
+#### `claimReward`
+Claims the reward for a winning bet.
+
+```graphql
+mutation($eventId: String!) {
+  claimReward(eventId: $eventId)
+}
+```
+
+#### `requestMint`
+Requests minting of new tokens.
+
+```graphql
+mutation($amount: Amount!) {
+  requestMint(amount: $amount)
+}
+```
+
+#### `updateBlobHash`
+Updates the hash of the event data blob.
+
+```graphql
+mutation($blob: DataBlobHash!) {
+  updateBlobHash(blobHash: $blob)
 }
 ```
 
