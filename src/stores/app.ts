@@ -65,7 +65,28 @@ export const appStore = defineStore('app', () => {
         notificationUnsubscribe = provider.value.provider.client.onNotification(async (notification: any) => {
             console.log('Notificación recibida:', notification)
 
-            if (notification.reason.BlockExecuted || notification.reason.NewBlock) {
+            const hash = notification.reason.BlockExecuted?.hash || notification.reason.NewBlock?.hash
+
+            if (hash) {
+                const processedHashes = JSON.parse(localStorage.getItem('processedBlockHashes') || '[]')
+                const lastHash = localStorage.getItem('lastProcessedBlockHash')
+
+                const isNew = !processedHashes.includes(hash)
+                const isLastProcessed = hash === lastHash
+
+                if (isNew || isLastProcessed) {
+                    if (isNew) {
+                        processedHashes.push(hash)
+                        //if (processedHashes.length > 50) processedHashes.shift()
+                        localStorage.setItem('processedBlockHashes', JSON.stringify(processedHashes))
+                        localStorage.setItem('lastProcessedBlockHash', hash)
+                    }
+                    scheduleSubscription()
+                } else {
+                    console.log('Ignorando bloque ya procesado:', hash)
+                }
+            } else if (notification.reason.BlockExecuted || notification.reason.NewBlock) {
+                // Fallback for when hash is not present but event type matches
                 scheduleSubscription()
             }
 
