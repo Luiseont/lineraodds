@@ -22,6 +22,9 @@ coverage
 /usdl/target/
 /usdl/Cargo.lock
 
+oracle-infra/.pnpm-store
+oracle-infra/node_modules
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

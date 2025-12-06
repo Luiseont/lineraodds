@@ -111,11 +111,6 @@ impl Contract for ManagementContract {
                 ).with_authentication().send_to(chain_id);
             },
 
-            Operation::ProcessIncomingMessages => {
-                let nonce = *self.state.nonce.get();
-                let _ = self.state.nonce.set(nonce + 1);                
-            },
-
             Operation::RequestMint{ amount } => {
                 let chain_id = self.runtime.application_creator_chain_id();
                 self.runtime.prepare_message(
@@ -123,56 +118,12 @@ impl Contract for ManagementContract {
                 ).with_authentication().send_to(chain_id);  
             },
             //appChain Operations
-            Operation::UpdateEventStatus { event_id, status } => {
-                assert!(self.runtime.chain_id() != self.runtime.application_creator_chain_id());
-            },
-            Operation::UpdateEventOdds { event_id, home_odds, away_odds, tie_odds } => {
-                assert!(self.runtime.chain_id() != self.runtime.application_creator_chain_id());
-            },
-            Operation::CreateEvent { id, type_event, league, home, away, home_odds, away_odds, tie_odds, start_time } => {
-
-                assert_eq!(self.runtime.chain_id(), self.runtime.application_creator_chain_id());
-                
-                let type_eventE = match type_event.as_str() {
-                    "Football" => TypeEvent::Football,
-                    "Esports" => TypeEvent::Esports,
-                    "Baseball" => TypeEvent::Baseball,
-                    _ => TypeEvent::Football,
-                };
-
-                let event = Event {
-                    id : id.clone(),
-                    status: MatchStatus::Scheduled,
-                    type_event: type_eventE,
-                    league: league.clone(),
-                    teams: Teams { home: home.clone(), away: away.clone() },
-                    odds: Odds { home: home_odds, away: away_odds, tie: tie_odds },
-                    start_time,
-                    result: MatchResult::default()
-                };
-
-                 let _ = self.state.events.insert(&id.clone(), event.clone());
-                 self.runtime.emit(STREAM_NAME.into(), &Matches::HandleEvent { event_id: id.clone(), data: event });
-            },
-            Operation::ResolveEvent { event_id, winner, home_score, away_score } => {
-                let mut event = self.state.events.get(&event_id).await.expect("Event not found").unwrap();
-                let victory = match winner.as_str() {
-                        "Home" => Selection::Home,
-                        "Away" => Selection::Away,
-                        "Tie" => Selection::Tie,
-                        _ => Selection::Home,
-                    };
-
-                event.result = MatchResult { winner: victory, home_score: home_score.clone(), away_score: away_score.clone() };
-                event.status = MatchStatus::Finished;
-                let _ = self.state.events.insert(&event_id, event.clone());
-                self.runtime.emit(STREAM_NAME.into(), &Matches::HandleEvent { event_id: event_id.clone(), data: event });
-            },
             Operation::UpdateBlobHash{ blob_hash } => {
                 self.runtime.assert_data_blob_exists(blob_hash);
-                self.state.events_blob.set(Some(blob_hash));
-
-                self.runtime.emit(STREAM_NAME.into(), &Matches::HandleBlob { blob_hash });
+                
+                self.runtime.prepare_message(
+                    Message::ProcessFromOracle { blob_hash: blob_hash.clone() }
+                ).with_authentication().send_to(self.runtime.application_creator_chain_id());
             },
         }
     }
@@ -335,9 +286,6 @@ impl Contract for ManagementContract {
                     Message::Receive { amount: amount.clone() }
                 ).with_authentication().send_to(user_chain_id);
             },
-            Message::ProcessIncomingMessages => {
-                let _ = self.state.events_blob.set(Some(self.state.events_blob.get().unwrap()));
-            },
             Message::RequestEventBlob => {
                 let user_chain_id = self.runtime.message_origin_chain_id().unwrap();
 
@@ -347,7 +295,12 @@ impl Contract for ManagementContract {
             },
             Message::SyncEventsBlob { blob_hash } => {
                 self.state.events_blob.set(Some(blob_hash));
-            },  
+            },
+            Message::ProcessFromOracle{ blob_hash } => {
+                self.runtime.assert_data_blob_exists(blob_hash);
+                self.state.events_blob.set(Some(blob_hash));
+                self.runtime.emit(STREAM_NAME.into(), &Matches::HandleBlob { blob_hash });
+            }  
         }
     }
 
@@ -363,20 +316,9 @@ impl Contract for ManagementContract {
                     .runtime
                     .read_event(update.chain_id, STREAM_NAME.into(), index);
                 match event {
-                    Matches::HandleEvent { event_id, data  } => {
-                        let chain_id = self.runtime.chain_id();
-                        let _ = self.state.events.insert(&event_id, data);
-                        self.runtime.prepare_message(
-                            Message::ProcessIncomingMessages
-                        ).with_authentication().send_to(chain_id);  
-                    }
                     Matches::HandleBlob { blob_hash } => {
-                        let chain_id = self.runtime.chain_id();
                         self.runtime.assert_data_blob_exists(blob_hash);
-                        self.state.events_blob.set(Some(blob_hash));
-                        self.runtime.prepare_message(
-                            Message::ProcessIncomingMessages
-                        ).with_authentication().send_to(chain_id);  
+                        self.state.events_blob.set(Some(blob_hash)); 
                     }
                 }
             }

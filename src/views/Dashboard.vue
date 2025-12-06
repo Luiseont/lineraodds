@@ -73,8 +73,10 @@
 import { ref, computed } from 'vue'
 import FixturesList from '@/components/FixturesList.vue'
 import { useApp } from '@/composables/useApp'
+//import { useEvents } from '@/composables/useEvents'
 
-const { events } = useApp()
+const { events } = useApp() 
+//const { eventsStore } = useEvents()
 
 const statusFilters = ['SCHEDULED', 'LIVE', 'FINISHED', 'POSTPONED']
 const selectedStatus = ref('SCHEDULED')
@@ -99,7 +101,7 @@ const filteredEvents = computed(() => {
     return matchesStatus && matchesType
   })
 })
-
+//console.log(eventsStore.value)
 const emptyStateMessage = computed(() => {
   if (selectedStatus.value === 'SCHEDULED') {
     return 'Waiting for new opportunities...'

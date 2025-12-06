@@ -26,17 +26,12 @@ impl ServiceAbi for ManagementAbi {
 pub enum Operation {
     //appchain
     UpdateBlobHash{ blob_hash: DataBlobHash },
-    CreateEvent{ id: String, type_event: String, league: String, home:String, away:String, home_odds:u64, away_odds:u64, tie_odds:u64, start_time:Timestamp},
-    UpdateEventStatus{ event_id: String, status: String },
-    UpdateEventOdds{ event_id: String, home_odds:u64, away_odds:u64, tie_odds:u64 },
-    ResolveEvent{ event_id: String, winner: String, home_score: String, away_score: String },
     //userChain
     PlaceBet{ home: String, away: String, league: String, start_time: Timestamp, odd: u64, selection: String, bid: Amount, event_id: String},
     ClaimReward { event_id: String },
     RequestMint { amount: Amount },
     Subscribe { chain_id: ChainId },
-    Unsubscribe { chain_id: ChainId },
-    ProcessIncomingMessages,
+    Unsubscribe { chain_id: ChainId }
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -47,14 +42,13 @@ pub enum Message {
    ClaimResult { event_id: String, result: String},
    MintTokens { amount: Amount },
    Receive { amount: Amount },
-   ProcessIncomingMessages, 
    RequestEventBlob,
    SyncEventsBlob{ blob_hash: DataBlobHash },
+   ProcessFromOracle { blob_hash: DataBlobHash },
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Matches {
-    HandleEvent { event_id: String, data: Event },
     HandleBlob { blob_hash: DataBlobHash },
 }
 

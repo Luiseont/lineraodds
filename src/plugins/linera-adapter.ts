@@ -1,4 +1,5 @@
-import initLinera, {
+import {
+  initialize as initLinera,
   Faucet,
   Client,
   Wallet,
@@ -22,7 +23,7 @@ export class LineraAdapter {
   private connectPromise: Promise<LineraProvider> | null = null;
   private onConnectionChange?: () => void;
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): LineraAdapter {
     if (!LineraAdapter.instance) LineraAdapter.instance = new LineraAdapter();
@@ -65,7 +66,7 @@ export class LineraAdapter {
         const chainId = await faucet.claimChain(wallet, address);
 
         const signer = createSigner(dynamicWalletOrAccount);
-        const client = await new Client(wallet, signer, true);
+        const client = await new Client(wallet, signer, false);
         console.log("✅ Linera wallet created successfully!");
 
         this.provider = {
@@ -85,8 +86,7 @@ export class LineraAdapter {
     } catch (error) {
       console.error("Failed to connect to Linera:", error);
       throw new Error(
-        `Failed to connect to Linera network: ${
-          error instanceof Error ? error.message : "Unknown error"
+        `Failed to connect to Linera network: ${error instanceof Error ? error.message : "Unknown error"
         }`
       );
     } finally {
@@ -98,9 +98,7 @@ export class LineraAdapter {
     if (!this.provider) throw new Error("Not connected to Linera");
     if (!appId) throw new Error("Application ID is required");
 
-    const application = await this.provider.client
-      .frontend()
-      .application(appId);
+    const application = await this.provider.client.application(appId);
 
     if (!application) throw new Error("Failed to get application");
     console.log("✅ Linera application set successfully!");

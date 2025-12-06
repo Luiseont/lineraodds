@@ -37,9 +37,9 @@ export class DynamicSigner implements Signer {
       // the standard signing flow and use `personal_sign` directly on the wallet client.
       // DO NOT USE: this.dynamicWallet.signMessage(msgHex) - it would cause double-hashing
 
-  // Try to obtain a wallet client with a generic request method
-  const walletClient = await (this.dynamicWallet as any).getWalletClient?.();
-  if (!walletClient?.request) throw new Error('Wallet client not available');
+      // Try to obtain a wallet client with a generic request method
+      const walletClient = await (this.dynamicWallet as any).getWalletClient?.();
+      if (!walletClient?.request) throw new Error('Wallet client not available');
       const signature = await walletClient.request({
         method: "personal_sign",
         params: [msgHex, address],
@@ -79,18 +79,32 @@ export class DynamicSdkSigner implements Signer {
   }
 
   async sign(owner: string, value: Uint8Array): Promise<string> {
-    const { signMessage } = await import('@dynamic-labs-sdk/client');
-    if (owner.toLowerCase() !== getAccountAddress(this.walletAccount).toLowerCase()) {
+    // Check if owner matches connected account
+    const currentAddress = getAccountAddress(this.walletAccount).toLowerCase();
+    if (owner.toLowerCase() !== currentAddress) {
       throw new Error("Owner does not match connected wallet account");
     }
+
     // Pass raw bytes as 0x-hex. Most EVM wallets accept hex for personal_sign.
     const msgHex = `0x${uint8ArrayToHex(value)}` as `0x${string}`;
-    try {
-      const { signature } = await signMessage({ walletAccount: this.walletAccount as any, message: msgHex });
-      if (!signature) throw new Error('No signature returned');
-      return signature;
-    } catch (e: any) {
-      throw new Error(`Dynamic SDK sign failed: ${e?.message || e}`);
+
+    if (typeof window !== 'undefined' && (window as any).ethereum) {
+      try {
+        const requestPromise = (window as any).ethereum.request({
+          method: 'personal_sign',
+          params: [msgHex, owner],
+        });
+
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("window.ethereum.request timed out after 15s")), 15000)
+        );
+        const signature = await Promise.race([requestPromise, timeoutPromise]) as string;
+        return signature;
+      } catch (error) {
+        throw error;
+      }
+    } else {
+      throw new Error("MetaMask (window.ethereum) not found");
     }
   }
 }

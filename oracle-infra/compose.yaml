@@ -1,0 +1,20 @@
+services:
+  oracle:
+    build: .
+    ports:
+      - "9999:9999" # oracle
+      - "8080:8080" # service main
+      - "9001:9001" # shard proxy
+      - "13001:13001" # shard
+    volumes:
+      - .:/oracle
+      - linera-wallet:/root/.config/linera
+    environment:
+      - LINERA_FAUCET=https://faucet.testnet-conway.linera.net
+      - APPID=184d0769b7365d3d6eb918be93efe042681120ff3e5357af1c19213eb2324f70
+      - CHAIN_ID=${CHAIN_ID}
+      - SERVICE_URL=http://localhost:8080
+    restart: unless-stopped
+
+volumes:
+  linera-wallet:

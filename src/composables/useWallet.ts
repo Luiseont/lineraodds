@@ -68,6 +68,7 @@ export function disconnect() {
 
 export function useWallet() {
   return {
+    faucetUrl,
     connected,
     connecting,
     address,

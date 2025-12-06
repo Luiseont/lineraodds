@@ -9,7 +9,8 @@ export const appStore = defineStore('app', () => {
     const walletBalance = ref(0)
     const events = ref<Array<any>>([])
     const userBets = ref<Array<any>>([])
-    const nextBlockHeight = ref(0)
+    const isSubscribing = ref(false)
+    const isTransactionPending = ref(false)
 
     // Variables para manejo de notificaciones
     let notificationUnsubscribe: (() => void) | null = null
@@ -17,7 +18,6 @@ export const appStore = defineStore('app', () => {
 
     // Queries GraphQL
     const eventsQuery = '{ "query": "query { blobEvents { id, typeEvent, league, teams{ home, away }, odds{ home, away, tie }, status, startTime, result{ winner, awayScore, homeScore } } } "  }'
-    const eventsDataBlobQuery = '{ "query": "query { eventsBlob }" }'
     const UserBalanceQuery = '{"query":"query{balance}"}'
     const UserBetsQuery = '{ "query": "query { myOdds { eventId, odd, league, teams{ home, away }, status, startTime, selection, bid, placedAt } } "  }'
     const SubscribeQuery = '{"query":"mutation{subscribe(chainId: \\"$CHAIN_ID\\")}"}'
@@ -25,7 +25,6 @@ export const appStore = defineStore('app', () => {
     const processIncomingMessagesQuery = '{"query":"mutation{processIncomingMessages}"}'
     const PlaceBetQuery = '{"query":"mutation{placeBet(home: \\"$HOME\\", away: \\"$AWAY\\", league: \\"$LEAGUE\\", startTime: $START_TIME, odd: $ODD, selection: \\"$SELECTION\\", bid: \\"$BID\\", eventId: \\"$EVENT_ID\\")}"}'
     const ClaimRewardQuery = '{"query":"mutation{claimReward(eventId: \\"$EVENT_ID\\")}"}'
-    const getNextBlockHeightQuery = '{"query":"query{getBlockHeight}"}'
 
     // Composables
     const { connected, provider, address } = useWallet()
@@ -39,7 +38,7 @@ export const appStore = defineStore('app', () => {
             try {
                 backendReady.value = false
                 console.log("Setting backend... " + import.meta.env.VITE_APP_ID)
-                await provider.value.setApplication(import.meta.env.VITE_APP_ID ?? '184d0769b7365d3d6eb918be93efe042681120ff3e5357af1c19213eb2324f70')
+                await provider.value.setApplication(import.meta.env.VITE_APP_ID ?? '04ea8a0cd8fe7c648596f404e53e2d90ab7f30df82186b798ecc85e63ebfd353')
                 backend.value = provider.value.getApplication()
                 backendReady.value = true
             } catch (error) {
@@ -91,7 +90,7 @@ export const appStore = defineStore('app', () => {
             }
 
             if (notification.reason.NewIncomingBundle) {
-                processMessages()
+                //processMessages()
             }
         })
 
@@ -119,6 +118,11 @@ export const appStore = defineStore('app', () => {
 
         // Programar actualización de datos y suscripción después de 5 segundos sin nuevos mensajes
         subscriptionTimeout = setTimeout(async () => {
+            if (isTransactionPending.value) {
+                console.log("Transacción pendiente, posponiendo actualización de datos...");
+                return;
+            }
+
             console.log('No se recibieron más mensajes, actualizando datos y suscribiendo...')
             try {
                 // Actualizar datos primero
@@ -181,6 +185,11 @@ export const appStore = defineStore('app', () => {
     }
 
     async function subscribeBackend() {
+        if (isSubscribing.value) {
+            console.log("Ya hay una suscripción en proceso, ignorando llamada.")
+            return
+        }
+
         // Usar la dirección como clave en localStorage
         const subscriptionKey = `isSubscribed_${address.value}`
         let isSubscribed = localStorage.getItem(subscriptionKey)
@@ -189,6 +198,8 @@ export const appStore = defineStore('app', () => {
             console.log(`Wallet ${address.value} ya está suscrita`)
             return
         }
+
+        isSubscribing.value = true
 
         try {
             console.log(`Suscribiendo wallet ${address.value} al backend...`)
@@ -199,10 +210,13 @@ export const appStore = defineStore('app', () => {
             localStorage.setItem(subscriptionKey, 'true')
         } catch (error) {
             console.error('Error en suscripción:', error)
+        } finally {
+            isSubscribing.value = false
         }
     }
 
     async function mintTokens(amount: string) {
+        isTransactionPending.value = true
         try {
             console.log("Minting tokens...", amount)
             const query = MintTokensQuery.replace('$AMOUNT', amount)
@@ -212,10 +226,13 @@ export const appStore = defineStore('app', () => {
         } catch (error) {
             console.error('Error en minting:', error)
             throw error
+        } finally {
+            isTransactionPending.value = false
         }
     }
 
     async function processMessages() {
+        isTransactionPending.value = true
         try {
             console.log("procesando mensajes..");
             const result = await backend.value.query(processIncomingMessagesQuery)
@@ -224,23 +241,13 @@ export const appStore = defineStore('app', () => {
         } catch (error) {
             console.error('Error procesando mensajes:', error)
             throw error
-        }
-    }
-
-    async function getNextBlockHeight() {
-        try {
-            console.log("Obteniendo siguiente altura de bloque...")
-            const result = await backend.value.query(getNextBlockHeightQuery)
-            const response = JSON.parse(result)
-            console.log("Siguiente altura de bloque obtenida:", response.data?.getBlockHeight)
-            nextBlockHeight.value = response.data?.getBlockHeight
-        } catch (error) {
-            console.error('Error obteniendo siguiente altura de bloque:', error)
-            throw error
+        } finally {
+            isTransactionPending.value = false
         }
     }
 
     async function placeBet(eventId: string, selection: string, amount: string, event: any) {
+        isTransactionPending.value = true
         try {
             console.log(`Placing bet on ${eventId} for ${selection} with amount ${amount}`)
 
@@ -267,10 +274,13 @@ export const appStore = defineStore('app', () => {
         } catch (error) {
             console.error('Error placing bet:', error)
             throw error
+        } finally {
+            isTransactionPending.value = false
         }
     }
 
     async function claimReward(eventId: string) {
+        isTransactionPending.value = true
         try {
             console.log(`Claiming reward for event ${eventId}`)
             const query = ClaimRewardQuery.replace('$EVENT_ID', eventId)
@@ -282,6 +292,8 @@ export const appStore = defineStore('app', () => {
         } catch (error) {
             console.error('Error claiming reward:', error)
             throw error
+        } finally {
+            isTransactionPending.value = false
         }
     }
 
