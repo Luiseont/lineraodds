@@ -31,6 +31,27 @@ jobs:
             --exclude '*.log' \
             ./ ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:/home/main/
 
+      - name: Verify files copied
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            echo "Verifying files in /home/main/"
+            ls -la /home/main/
+            echo ""
+            echo "Checking compose-prod.yaml:"
+            if [ -f /home/main/compose-prod.yaml ]; then
+              echo "✓ compose-prod.yaml exists"
+              wc -l /home/main/compose-prod.yaml
+              head -n 10 /home/main/compose-prod.yaml
+            else
+              echo "✗ compose-prod.yaml NOT FOUND"
+              exit 1
+            fi
+
       - name: Deploy and configure
         uses: appleboy/ssh-action@v1.0.0
         env:
