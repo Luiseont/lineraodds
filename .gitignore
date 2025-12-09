@@ -22,8 +22,8 @@ contracts/management/Cargo.lock
 contracts/usdl/target/
 contracts/usdl/Cargo.lock
 
-oracle-infra/.pnpm-store
-oracle-infra/node_modules
+oracle/.pnpm-store/*
+oracle/node_modules
 
 # Editor directories and files
 .vscode/*
