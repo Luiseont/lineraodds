@@ -22,7 +22,7 @@ contracts/management/Cargo.lock
 contracts/usdl/target/
 contracts/usdl/Cargo.lock
 
-oracle/.pnpm-store/*
+oracle/.pnpm-store
 oracle/node_modules
 
 # Editor directories and files
