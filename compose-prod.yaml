@@ -1,0 +1,56 @@
+services:
+  service:
+    build: 
+      context: ./service
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:8081:8081"
+    volumes:
+      - .:/build
+      - shared-env:/shared
+    entrypoint: ["bash", "/build/service/run.bash"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  front:
+    build:
+      context: ./front
+      dockerfile: Dockerfile
+    volumes:
+      - frontend-dist:/front/dist
+      - shared-env:/shared
+    entrypoint: ["bash", "/front/build-prod.bash"]
+    depends_on:
+      service:
+        condition: service_healthy
+
+  oracle:
+    build:
+      context: ./oracle
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:9999:9999"
+      - "127.0.0.1:8090:8090"
+    volumes:
+      - linera-wallet:/root/.config/linera
+      - shared-env:/shared
+    environment:
+      - LINERA_FAUCET=https://faucet.testnet-conway.linera.net
+      - SERVICE_URL=http://localhost:8090
+      - API=https://v3.football.api-sports.io
+      - API_KEY=${API_KEY}
+    restart: unless-stopped
+    entrypoint: ["bash", "/oracle/start.bash"]
+    depends_on:
+      service:
+        condition: service_healthy
+
+volumes:
+  linera-wallet:
+  shared-env:
+  frontend-dist:
