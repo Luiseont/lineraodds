@@ -1,4 +1,4 @@
-name: Deploy to VPS
+name: Deploy to VPS (Hybrid)
 
 on:
   push:
@@ -125,4 +125,8 @@ jobs:
           echo "✅ Deployment successful!"
           echo "🌐 Frontend: https://lineraodds.bet"
           echo "🔌 API: https://api.lineraodds.bet"
+<<<<<<< HEAD
           echo "📊 Oracle: https://oracle.lineraodds.bet/status"
+=======
+          echo "📊 Oracle: https://oracle.lineraodds.bet/status"
+>>>>>>> ccb50aa (copy to vps in deploy)
