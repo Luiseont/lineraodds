@@ -1,0 +1,50 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            cd /home/main
+            
+            # Crear archivo .env con API_KEY
+            echo "API_KEY=${{ secrets.API_KEY }}" > .env
+            
+            # Pull y deploy
+            git pull origin main
+            docker compose -f compose-prod.yaml down
+            docker compose -f compose-prod.yaml build
+            docker compose -f compose-prod.yaml up -d
+            
+            # Esperar a que el servicio front termine de construir
+            sleep 10
+            
+            # Copiar frontend a Nginx
+            FRONT_CONTAINER=$(docker compose -f compose-prod.yaml ps -q front)
+            if [ ! -z "$FRONT_CONTAINER" ]; then
+              docker cp $FRONT_CONTAINER:/front/dist/. /var/www/html/
+              sudo chown -R www-data:www-data /var/www/html
+            fi
+            
+            # Recargar Nginx
+            sudo systemctl reload nginx
+            
+            # Mostrar estado
+            docker compose -f compose-prod.yaml ps
