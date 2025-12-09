@@ -105,7 +105,10 @@ fi
 # Desplegar solo si es necesario
 if [ "$NEED_DEPLOY" = "true" ]; then
     echo "Compilando contrato..."
-    cargo build --release --target wasm32-unknown-unknown
+    echo "Esto puede tomar varios minutos en el primer deploy..."
+    
+    # Compilar con optimizaciones incrementales para producción
+    CARGO_INCREMENTAL=1 cargo build --release --target wasm32-unknown-unknown
     
     echo "Publicando contrato en Linera..."
     export VITE_APP_ID=$(linera publish-and-create target/wasm32-unknown-unknown/release/management_{contract,service}.wasm)
