@@ -82,7 +82,7 @@ export const eventsStore = defineStore('events', () => {
                 return;
             }
 
-            events.value = data.data?.blobEvents || [];
+            events.value = data.data?.events;
             console.log('Events loaded:', events.value.length);
         } catch (error) {
             console.error('Error fetching events:', error);

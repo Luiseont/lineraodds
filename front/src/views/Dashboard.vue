@@ -91,13 +91,16 @@ const eventTypes = computed(() => {
   return Array.from(types).sort()
 })
 
-// Filter events by both status and type
+// Filter events by both status and type, then shuffle randomly
 const filteredEvents = computed(() => {
-  return events.value.filter((event: any) => {
+  const filtered = events.value.filter((event: any) => {
     const matchesStatus = event.status.toUpperCase() === selectedStatus.value
     const matchesType = selectedEventType.value === null || event.typeEvent === selectedEventType.value
     return matchesStatus && matchesType
   })
+  
+  // Shuffle array randomly
+  return filtered.sort(() => Math.random() - 0.5)
 })
 
 const emptyStateMessage = computed(() => {

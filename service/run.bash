@@ -4,11 +4,10 @@ set -eu
 
 # Si necesitas resetear la wallet, elimina manualmente: rm -rf /root/.config/linera
 
-eval "$(linera net helper)"
-linera_spawn linera net up --with-faucet --faucet-port 8080 &
-sleep 5
 
-export VITE_LINERA_FAUCET_URL=http://localhost:8080
+# Configuración para usar Linera Testnet
+export VITE_LINERA_FAUCET_URL=https://faucet.testnet-conway.linera.net
+
 export LINERA_TMP_DIR=$(mktemp -d)
 echo "Usando LINERA_TMP_DIR=$LINERA_TMP_DIR"
 if [[ ! -d "$LINERA_TMP_DIR" ]]; then
@@ -26,16 +25,16 @@ echo "Verificando configuración de Linera en: $LINERA_CONFIG_DIR"
 
 # Verificar si el directorio existe y contiene archivos
 if [[ -d "$LINERA_CONFIG_DIR" ]] && [[ -n "$(ls -A "$LINERA_CONFIG_DIR" 2>/dev/null)" ]]; then
-  echo "✓ Wallet de Linera ya existe, reutilizando configuración existente"
+  echo "Wallet de Linera ya existe, reutilizando configuración existente"
   
   # Verificar que el archivo wallet.json existe
   if [[ -f "$WALLET_FILE" ]]; then
-    echo "✓ Archivo wallet.json encontrado"
+    echo "Archivo wallet.json encontrado"
   else
-    echo "⚠ Advertencia: directorio existe pero falta wallet.json"
+    echo "Advertencia: directorio existe pero falta wallet.json"
   fi
 else
-  echo "⚙ Directorio vacío o inexistente, inicializando nueva wallet de Linera..."
+  echo "Directorio vacío o inexistente, inicializando nueva wallet de Linera..."
   
   # Crear directorio si no existe
   mkdir -p "$LINERA_CONFIG_DIR"
@@ -45,9 +44,9 @@ else
   linera wallet request-chain --faucet "$VITE_LINERA_FAUCET_URL"
   
   if [[ $? -eq 0 ]]; then
-    echo "✓ Wallet de Linera inicializada exitosamente"
+    echo "Wallet de Linera inicializada exitosamente"
   else
-    echo "✗ Error al inicializar wallet de Linera"
+    echo "Error al inicializar wallet de Linera"
     exit 1
   fi
 fi
@@ -69,11 +68,56 @@ linera wallet show 2>/dev/null || echo "No se pudo mostrar información de la wa
 echo "Chain ID principal: $VITE_MAIN_CHAIN_ID"
 echo "Owner principal: $VITE_MAIN_OWNER"
 
-# Deploy management contract  
+# Deploy management contract
 cd contracts/management
-cargo build --release --target wasm32-unknown-unknown
-export VITE_APP_ID=$(linera publish-and-create target/wasm32-unknown-unknown/release/management_{contract,service}.wasm)
-echo "APP_ID: $VITE_APP_ID"
+
+# Archivo para guardar el APP_ID persistente
+APP_ID_FILE="/root/.config/linera/app_id.txt"
+HASH_FILE="/root/.config/linera/contract_hash.txt"
+
+# Calcular hash del código del contrato
+CURRENT_HASH=$(find src -type f -name "*.rs" -exec sha256sum {} \; | sort | sha256sum | awk '{print $1}')
+
+# Verificar si necesitamos redesplegar
+NEED_DEPLOY=false
+
+if [ "${FORCE_REDEPLOY:-false}" = "true" ]; then
+    echo "FORCE_REDEPLOY activado, republicando contrato..."
+    NEED_DEPLOY=true
+elif [ ! -f "$APP_ID_FILE" ]; then
+    echo "No se encontró APP_ID previo, desplegando contrato..."
+    NEED_DEPLOY=true
+elif [ ! -f "$HASH_FILE" ]; then
+    echo "No se encontró hash previo, desplegando contrato..."
+    NEED_DEPLOY=true
+else
+    PREVIOUS_HASH=$(cat "$HASH_FILE")
+    if [ "$CURRENT_HASH" != "$PREVIOUS_HASH" ]; then
+        echo "Código del contrato cambió, republicando..."
+        NEED_DEPLOY=true
+    else
+        echo "Código del contrato sin cambios, reutilizando APP_ID existente"
+        export VITE_APP_ID=$(cat "$APP_ID_FILE")
+        echo "APP_ID (reutilizado): $VITE_APP_ID"
+    fi
+fi
+
+# Desplegar solo si es necesario
+if [ "$NEED_DEPLOY" = "true" ]; then
+    echo "Compilando contrato..."
+    cargo build --release --target wasm32-unknown-unknown
+    
+    echo "Publicando contrato en Linera..."
+    export VITE_APP_ID=$(linera publish-and-create target/wasm32-unknown-unknown/release/management_{contract,service}.wasm)
+    
+    # Guardar APP_ID y hash para futuros reinicios
+    echo "$VITE_APP_ID" > "$APP_ID_FILE"
+    echo "$CURRENT_HASH" > "$HASH_FILE"
+    
+    echo "APP_ID (nuevo): $VITE_APP_ID"
+else
+    echo "Saltando compilación y despliegue"
+fi
 
 echo "Iniciando servicios..."
 echo "Logs de servicios en: $LINERA_TMP_DIR/service_*.log"
@@ -97,8 +141,10 @@ cat > /shared/env.sh << EOF
 export VITE_APP_ID="$VITE_APP_ID"
 export VITE_MAIN_CHAIN_ID="$VITE_MAIN_CHAIN_ID"
 export VITE_APP_SERVICE="http://localhost:8081"
+export APPID="$VITE_APP_ID"
+export CHAIN_ID="$VITE_MAIN_CHAIN_ID"
 EOF
-echo "✓ Variables exportadas a /shared/env.sh"
+echo "Variables exportadas a /shared/env.sh"
 
 cleanup() {
   echo "Deteniendo servicios..."

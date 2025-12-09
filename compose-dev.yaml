@@ -2,13 +2,12 @@ services:
   service:
     build: ./service
     ports:
-    - "8080:8080" # faucet
     - "8081:8081" # service main
-    - "9001:9001" # shard proxy
-    - "13001:13001" # shard
     volumes:
     - .:/build
     - shared-env:/shared
+    #environment:
+      #- FORCE_REDEPLOY=true  # Forzar redespliegue del contrato
     entrypoint: ["bash", "/build/service/run.bash"]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081"]
@@ -39,9 +38,7 @@ services:
       - linera-wallet:/root/.config/linera
       - shared-env:/shared
     environment:
-      - LINERA_FAUCET=http://service:8080
-      - APPID=${VITE_APP_ID}
-      - CHAIN_ID=${CHAIN_ID}
+      - LINERA_FAUCET=https://faucet.testnet-conway.linera.net
       - SERVICE_URL=http://localhost:8090
       - API=https://v3.football.api-sports.io
       #- API_KEY=${API_KEY}

@@ -12,22 +12,21 @@ TIMEOUT=60
 ELAPSED=0
 while [ ! -f /shared/env.sh ]; do
   if [ $ELAPSED -ge $TIMEOUT ]; then
-    echo "✗ Error: Timeout esperando variables del servicio"
+    echo "Error: Timeout esperando variables del servicio"
     exit 1
   fi
-  echo "  Esperando /shared/env.sh... ($ELAPSED/$TIMEOUT segundos)"
+  echo "Esperando /shared/env.sh... ($ELAPSED/$TIMEOUT segundos)"
   sleep 2
   ELAPSED=$((ELAPSED + 2))
 done
 
-echo "✓ Cargando variables compartidas..."
+echo "Cargando variables compartidas..."
 source /shared/env.sh
 
 echo "Variables cargadas del servicio:"
 echo "  APP_ID: $VITE_APP_ID"
 
 export LINERA_FAUCET=${LINERA_FAUCET:-https://faucet.testnet-conway.linera.net}
-
 
 # Verificar y generar wallet de Linera si es necesario
 LINERA_CONFIG_DIR="$HOME/.config/linera"
@@ -37,30 +36,28 @@ echo "Verificando configuración de Linera en: $LINERA_CONFIG_DIR"
 
 # Verificar si el directorio existe y contiene archivos
 if [[ -d "$LINERA_CONFIG_DIR" ]] && [[ -n "$(ls -A "$LINERA_CONFIG_DIR" 2>/dev/null)" ]]; then
-  echo "✓ Wallet de Linera ya existe, reutilizando configuración existente"
+  echo "Wallet de Linera ya existe, reutilizando configuración existente"
   
   # Verificar que el archivo wallet.json existe
   if [[ -f "$WALLET_FILE" ]]; then
-    echo "✓ Archivo wallet.json encontrado"
-    # No sincronizar - el oracle tiene su propia red local
+    echo "Archivo wallet.json encontrado"
   else
-    echo "⚠ Advertencia: directorio existe pero falta wallet.json"
+    echo "Advertencia: directorio existe pero falta wallet.json"
   fi
 else
-  echo "⚙ Directorio vacío o inexistente, inicializando nueva wallet de Linera..."
+  echo "Directorio vacío o inexistente, inicializando nueva wallet de Linera..."
   
   # Crear directorio si no existe
   mkdir -p "$LINERA_CONFIG_DIR"
   
-  # Inicializar wallet con el faucet del servicio
+  # Inicializar wallet con el faucet de testnet
   linera wallet init --faucet "$LINERA_FAUCET"
-  linera wallet request-chain --faucet "$LINERA_FAUCET" 
-  # No sincronizar - el oracle tiene su propia red local
+  linera wallet request-chain --faucet "$LINERA_FAUCET"
   
   if [[ $? -eq 0 ]]; then
-    echo "✓ Wallet de Linera inicializada exitosamente"
+    echo "Wallet de Linera inicializada exitosamente"
   else
-    echo "✗ Error al inicializar wallet de Linera"
+    echo "Error al inicializar wallet de Linera"
     exit 1
   fi
 fi
@@ -110,7 +107,8 @@ PID_MAIN=$!
 sleep 2
 
 # run server
-pnpm install
+export CI=true
+pnpm install --no-frozen-lockfile
 pnpm exec nodemon --exec ts-node src/index.ts 2>&1 &
 ORACLE_PID=$!
 

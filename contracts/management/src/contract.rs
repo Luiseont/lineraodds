@@ -132,7 +132,7 @@ impl Contract for ManagementContract {
                     result: MatchResult::default(),
                 };
 
-                 let _ = self.state.events.insert(&id.clone(), event.clone());
+                let _ = self.state.events.insert(&id.clone(), event.clone());
 
                  self.runtime.prepare_message(
                     Message::NewEventCreated { event_id: id.clone(), event: event.clone() }
@@ -217,7 +217,17 @@ impl Contract for ManagementContract {
         match message {
             Message::NewBetPlaced { home, away, league, start_time, odd, selection, bid, status, event_id } => {
                 let user_id = self.runtime.message_origin_chain_id().unwrap();
-                let event   = self.state.events.get(&event_id).await.expect("Event not found").unwrap();
+                
+                // Check if event exists, if not revert the bet
+                let event = match self.state.events.get(&event_id).await {
+                    Ok(Some(e)) => e,
+                    _ => {
+                        self.runtime.prepare_message(
+                            Message::RevertUserBet { event_id: event_id.clone() }
+                        ).with_authentication().send_to(user_id);
+                        return;
+                    }
+                };
                 
                 if event.status != MatchStatus::Scheduled {
                     self.runtime.prepare_message(
@@ -263,7 +273,17 @@ impl Contract for ManagementContract {
 
             Message::UserClaimReward { event_id } => {
                 let user_id = self.runtime.message_origin_chain_id().unwrap();
-                let event   = self.state.events.get(&event_id).await.expect("Event not found").unwrap();
+                
+                // Check if event exists
+                let event = match self.state.events.get(&event_id).await {
+                    Ok(Some(e)) => e,
+                    _ => {
+                        self.runtime.prepare_message(
+                            Message::ClaimResult { event_id: event_id.clone(), result: "Cancelled".to_string() }
+                        ).with_authentication().send_to(user_id);
+                        return;
+                    }
+                };
                 
                 if event.status != MatchStatus::Finished {
                     self.runtime.prepare_message(
@@ -350,7 +370,9 @@ impl Contract for ManagementContract {
                     .read_event(update.chain_id, STREAM_NAME.into(), index);
                 match event {
                     Bet::NewEventBet { event_id, user_odd } => {
-                        let mut odds = self.state.event_odds.get(&event_id).await.expect("Event not found").unwrap(); 
+                        let mut odds = self.state.event_odds.get(&event_id).await
+                            .unwrap_or(None)
+                            .unwrap_or_default();
                         odds.push(user_odd);
                         let _ = self.state.event_odds.insert(&event_id, odds);
                     }

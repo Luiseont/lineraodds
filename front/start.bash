@@ -30,14 +30,14 @@ echo "  MAIN_CHAIN_ID: $VITE_MAIN_CHAIN_ID"
 # Exportar variables como variables de entorno para que Vite las use
 export VITE_APP_ID
 export VITE_MAIN_CHAIN_ID
-export VITE_FAUCET_URL="http://localhost:8080"
+export VITE_FAUCET_URL="https://faucet.testnet-conway.linera.net"
 export VITE_APP_SERVICE="http://localhost:8081"
 # Crear archivo .env para Vite (por si acaso)
 echo "Creando archivo .env para Vite..."
 cat > /front/.env << EOF
 VITE_APP_ID=$VITE_APP_ID
 VITE_MAIN_CHAIN_ID=$VITE_MAIN_CHAIN_ID
-VITE_FAUCET_URL=http://localhost:8080
+VITE_FAUCET_URL=https://faucet.testnet-conway.linera.net
 VITE_APP_SERVICE="http://localhost:8081"
 EOF
 echo "✓ Archivo .env creado"

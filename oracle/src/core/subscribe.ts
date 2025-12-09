@@ -1,20 +1,16 @@
 import { config } from '../config';
 import https from 'https';
 
-/**
- * Updates the application blob hash via GraphQL mutation
- * @param blobHash - The hash of the blob to update
- * @returns The response from the GraphQL mutation
- */
-export async function updateAppBlob(blobHash: string) {
+export async function subscribe() {
     const url = `${config.serviceUrl}/chains/${config.chainId}/applications/${config.appId}`;
+    const main_chain = config.main_chain;
 
-    const mutation = `mutation($blob: DataBlobHash!) {
-        updateBlobHash(blobHash: $blob)
-    }`;
+    const mutation = `mutation($chainId: ChainId!) {
+            subscribe(chainId: $chainId)
+        }`;
 
     const variables = {
-        blob: blobHash
+        chainId: main_chain
     };
 
     try {
@@ -46,7 +42,7 @@ export async function updateAppBlob(blobHash: string) {
 
         const result = await response.json();
 
-        console.log('App blob updated successfully:', result);
+        console.log('Subscribed sccessfully:', result);
 
     } catch (error) {
         console.error('Error updating app blob:', error);
