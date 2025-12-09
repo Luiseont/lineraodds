@@ -1,0 +1,56 @@
+services:
+  service:
+    build: ./service
+    ports:
+    - "8080:8080" # faucet
+    - "8081:8081" # service main
+    - "9001:9001" # shard proxy
+    - "13001:13001" # shard
+    volumes:
+    - .:/build
+    - shared-env:/shared
+    entrypoint: ["bash", "/build/service/run.bash"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+  front:
+    build: ./front
+    ports:
+    - "5173:5173"
+    volumes:
+    - ./front:/front
+    - shared-env:/shared
+    entrypoint: ["bash", "/front/start.bash"]
+    depends_on:
+      service:
+        condition: service_healthy
+  oracle:
+    build: ./oracle
+    ports:
+      - "9999:9999"
+      - "8090:8090"
+      - "9002:9001"   
+      - "13002:13001"
+    volumes:
+      - ./oracle:/oracle
+      - linera-wallet:/root/.config/linera
+      - shared-env:/shared
+    environment:
+      - LINERA_FAUCET=http://service:8080
+      - APPID=${VITE_APP_ID}
+      - CHAIN_ID=${CHAIN_ID}
+      - SERVICE_URL=http://localhost:8090
+      - API=https://v3.football.api-sports.io
+      #- API_KEY=${API_KEY}
+      - API_KEY=0ea8f6e37f0d7f34b36f300b31afd19c
+    restart: unless-stopped
+    entrypoint: ["bash", "/oracle/start.bash"]
+    depends_on:
+      service:
+        condition: service_healthy
+volumes:
+  linera-wallet:
+  shared-env:

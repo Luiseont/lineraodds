@@ -17,10 +17,10 @@ coverage
 /cypress/videos/
 /cypress/screenshots/
 
-/management/target/
-/management/Cargo.lock
-/usdl/target/
-/usdl/Cargo.lock
+contracts/management/target/
+contracts/management/Cargo.lock
+contracts/usdl/target/
+contracts/usdl/Cargo.lock
 
 oracle-infra/.pnpm-store
 oracle-infra/node_modules
