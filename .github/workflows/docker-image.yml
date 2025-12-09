@@ -14,37 +14,94 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy to VPS via SSH
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Sync files to VPS
+        run: |
+          rsync -avz --delete \
+            --exclude '.git' \
+            --exclude 'node_modules' \
+            --exclude '.env' \
+            --exclude 'dist' \
+            --exclude '*.log' \
+            ./ ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:/home/main/
+
+      - name: Deploy and configure
         uses: appleboy/ssh-action@v1.0.0
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
+          envs: API_KEY
           script: |
-            cd /home/main
+            set -e
+            cd /home/main/
             
             # Crear archivo .env con API_KEY
-            echo "API_KEY=${{ secrets.API_KEY }}" > .env
+            cat > .env << EOF
+            API_KEY=${API_KEY}
+            EOF
             
-            # Pull y deploy
-            git pull origin main
-            docker compose -f compose-prod.yaml down
-            docker compose -f compose-prod.yaml build
+            echo "✓ Files synced and environment configured"
+            
+            # Detener servicios actuales
+            docker compose -f compose-prod.yaml down || true
+            
+            # Build y deploy
+            docker compose -f compose-prod.yaml build --no-cache
             docker compose -f compose-prod.yaml up -d
             
-            # Esperar a que el servicio front termine de construir
-            sleep 10
+            # Esperar a que los servicios inicien
+            echo "Waiting for services to start..."
+            sleep 15
+            
+            # Verificar servicios
+            if ! docker compose -f compose-prod.yaml ps | grep -q "Up"; then
+              echo "Error: Services failed to start"
+              docker compose -f compose-prod.yaml logs
+              exit 1
+            fi
+            
+            echo "✓ Services are running"
             
             # Copiar frontend a Nginx
             FRONT_CONTAINER=$(docker compose -f compose-prod.yaml ps -q front)
             if [ ! -z "$FRONT_CONTAINER" ]; then
+              echo "Copying frontend files..."
               docker cp $FRONT_CONTAINER:/front/dist/. /var/www/html/
               sudo chown -R www-data:www-data /var/www/html
+              echo "✓ Frontend deployed to /var/www/html"
             fi
             
             # Recargar Nginx
             sudo systemctl reload nginx
+            echo "✓ Nginx reloaded"
             
-            # Mostrar estado
+            # Verificar endpoints
+            echo "Verifying endpoints..."
+            sleep 5
+            
+            curl -f http://127.0.0.1:8081 > /dev/null 2>&1 && echo "✓ Service API OK" || echo "⚠ Service API not responding"
+            curl -f http://127.0.0.1:9999/health > /dev/null 2>&1 && echo "✓ Oracle API OK" || echo "⚠ Oracle API not responding"
+            
+            echo ""
+            echo "=== Deployment Summary ==="
             docker compose -f compose-prod.yaml ps
+            echo "=========================="
+            echo "✅ Deployment completed!"
+
+      - name: Deployment successful
+        if: success()
+        run: |
+          echo "✅ Deployment successful!"
+          echo "🌐 Frontend: https://lineraodds.bet"
+          echo "🔌 API: https://api.lineraodds.bet"
+          echo "📊 Oracle: https://oracle.lineraodds.bet/status"
