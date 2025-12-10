@@ -88,9 +88,9 @@ jobs:
           context: ./oracle
           file: ./oracle/Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-oracle:latest
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-oracle:buildcache
-          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-oracle:buildcache,mode=max
+          tags: ${{ env.REGISTRY }}/luiseont/lineraodds-oracle:latest
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/luiseont/lineraodds-oracle:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/luiseont/lineraodds-oracle:buildcache,mode=max
 
   build-front:
     needs: detect-changes
@@ -118,9 +118,9 @@ jobs:
           context: ./front
           file: ./front/Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-front:latest
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-front:buildcache
-          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-front:buildcache,mode=max
+          tags: ${{ env.REGISTRY }}/luiseont/lineraodds-front:latest
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/luiseont/lineraodds-front:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/luiseont/lineraodds-front:buildcache,mode=max
 
   deploy:
     needs: [detect-changes, build-service, build-oracle, build-front]
