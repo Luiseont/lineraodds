@@ -3,27 +3,31 @@ import { updateEventStatus } from '../core/operations/updateEventStatus';
 import { updateEventOdds } from '../core/operations/updateEventOdds';
 import { resolveEvent } from '../core/operations/resolveEvent';
 import { DemoEvent } from './types';
+import { getEvents } from '../core/operations/getEvents';
 
 export class DemoEventSimulator {
     private events: Map<string, DemoEvent> = new Map();
     private checkInterval: NodeJS.Timeout | null = null;
     private isRunning: boolean = false;
 
-    start(): void {
+    async start(): Promise<void> {
         if (this.isRunning) {
-            console.log('🎮 Demo event simulator already running');
+            console.log(' Demo event simulator already running');
             return;
         }
 
         this.isRunning = true;
-        console.log('🎮 Starting demo event simulator...');
+        console.log(' Starting demo event simulator...');
+
+        // Load existing events from the contract
+        await this.loadExistingEvents();
 
         // Check every 30 seconds for events that need to transition
         this.checkInterval = setInterval(() => {
             this.processEvents();
         }, 30000); // 30 seconds
 
-        console.log('🎮 Demo event simulator started');
+        console.log(' Demo event simulator started');
     }
 
     stop(): void {
@@ -32,7 +36,7 @@ export class DemoEventSimulator {
             this.checkInterval = null;
         }
         this.isRunning = false;
-        console.log('🎮 Demo event simulator stopped');
+        console.log(' Demo event simulator stopped');
     }
 
     addEvent(eventId: string, fixtureId: string): void {
@@ -44,7 +48,46 @@ export class DemoEventSimulator {
         };
 
         this.events.set(eventId, event);
-        console.log(`🎮 Added event ${eventId} to demo simulator`);
+        console.log(` Added event ${eventId} to demo simulator`);
+    }
+
+    private async loadExistingEvents(): Promise<void> {
+        try {
+            console.log('Loading existing events...');
+            const existingEvents = await getEvents();
+
+            if (!existingEvents || existingEvents.length === 0) {
+                console.log('No existing events found');
+                return;
+            }
+
+            const now = Date.now();
+            let loadedCount = 0;
+
+            for (const event of existingEvents) {
+                // Only load Scheduled or Live events
+                if (event.status === MatchStatus.Scheduled || event.status === MatchStatus.Live) {
+                    const demoEvent: DemoEvent = {
+                        eventId: event.id,
+                        fixtureId: event.id, // Use event.id as fixtureId for demo
+                        status: event.status,
+                        createdAt: now - (Math.random() * 60000), // Random time in last minute
+                    };
+
+                    // If already live, set liveAt timestamp
+                    if (event.status === MatchStatus.Live) {
+                        demoEvent.liveAt = now - (Math.random() * 60000);
+                    }
+
+                    this.events.set(event.id, demoEvent);
+                    loadedCount++;
+                }
+            }
+
+            console.log(`Loaded ${loadedCount} existing events into simulator`);
+        } catch (error) {
+            console.error('Error loading existing events:', error);
+        }
     }
 
     private async processEvents(): Promise<void> {
@@ -58,7 +101,7 @@ export class DemoEventSimulator {
                     await this.checkLiveToFinished(event, now);
                 }
             } catch (error) {
-                console.error(`🎮 Error processing demo event ${eventId}:`, error);
+                console.error(`Error processing demo event ${eventId}:`, error);
             }
         }
     }

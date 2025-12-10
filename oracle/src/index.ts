@@ -36,8 +36,8 @@ server.listen(9998, async () => {
         if (config.demoMode) {
             // Demo mode: usar simulador
             demoSimulator = new DemoEventSimulator();
-            demoSimulator.start();
-            console.log('🎮 Demo event simulator initialized');
+            await demoSimulator.start();
+            console.log('Demo event simulator initialized');
 
             // Inicializar servidor de status con simulador
             const { initStatusServer } = await import('./api/statusServer');
