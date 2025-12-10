@@ -8,7 +8,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME_PREFIX: ${{ github.repository_owner }}/lineraodds
+  IMAGE_NAME_PREFIX: luiseont/lineraodds
 
 jobs:
   build-and-push:
