@@ -15,6 +15,7 @@ server.listen(9998, async () => {
         console.log(`Chain ID: ${config.chainId}`);
         console.log(`Application ID: ${config.appId}`);
         console.log(`Linera Faucet: ${config.lineraFaucet}`);
+        console.log(`Service URL: ${config.serviceUrl}`);
 
 
         // Inicializar scheduler para actualizaciones semanales
