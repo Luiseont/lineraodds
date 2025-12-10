@@ -32,7 +32,7 @@ jobs:
             ./ ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:/home/main/
 
       - name: Verify files copied
-        uses: appleboy/ssh-action@v1.0.0
+        uses: appleboy/ssh-action@v1.2.0
         with:
           command_timeout: 60m 
           host: ${{ secrets.VPS_HOST }}
