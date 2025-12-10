@@ -20,6 +20,7 @@ services:
     image: ghcr.io/luiseont/lineraodds-front:latest
     container_name: front
     volumes:
+      - ./front:/front
       - frontend-dist:/front/dist
       - shared-env:/shared
     entrypoint: ["bash", "/front/build-prod.bash"]
@@ -34,6 +35,7 @@ services:
       - "127.0.0.1:9999:9999"
       - "127.0.0.1:8090:8090"
     volumes:
+      - ./oracle:/oracle
       - linera-wallet:/root/.config/linera
       - shared-env:/shared
     environment:
