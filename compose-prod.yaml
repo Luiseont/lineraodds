@@ -6,6 +6,7 @@ services:
       - "127.0.0.1:8081:8081"
     volumes:
       - .:/build
+      - service-wallet:/root/.config/linera
       - shared-env:/shared
     entrypoint: ["bash", "/build/service/run.bash"]
     restart: unless-stopped
@@ -50,6 +51,7 @@ services:
         condition: service_healthy
 
 volumes:
+  service-wallet:
   linera-wallet:
   shared-env:
   frontend-dist:
