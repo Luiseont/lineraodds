@@ -3,6 +3,10 @@ set -e
 
 echo "🚀 Iniciando Oracle en modo PRODUCCIÓN..."
 
+# Cargar nvm para tener pnpm y node disponibles
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
 # Cargar variables del servicio
 if [ -f /shared/env.sh ]; then
     echo "Cargando variables del servicio..."
