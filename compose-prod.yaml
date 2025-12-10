@@ -45,7 +45,7 @@ services:
       - API=https://v3.football.api-sports.io
       - API_KEY=${API_KEY}
     restart: unless-stopped
-    entrypoint: ["bash", "/oracle/start.bash"]
+    entrypoint: ["bash", "/oracle/start-prod.bash"]
     depends_on:
       service:
         condition: service_healthy
