@@ -36,3 +36,12 @@ export interface FixtureStatusResponse {
         };
     }>;
 }
+
+export interface DemoEvent {
+    eventId: string;
+    fixtureId: string;
+    status: MatchStatus;
+    createdAt: number;
+    liveAt?: number;
+    finishedAt?: number;
+}

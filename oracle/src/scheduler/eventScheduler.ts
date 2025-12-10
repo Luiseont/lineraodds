@@ -1,24 +1,34 @@
 import cron from 'node-cron';
 import { getNextEvents } from '../core/getNextEvents';
+import { config } from '../config';
 
 /**
- * Programa la ejecución de getNextEvents cada lunes a las 00:00
+ * Programa la ejecución de getNextEvents
+ * - Producción: Cada lunes a las 00:00
+ * - Demo: Cada 15 minutos
  */
 export function scheduleWeeklyEventUpdate() {
+    // Production: Every Monday at 00:00
+    // Demo: Every 15 minutes
+    const cronPattern = config.demoMode ? '*/15 * * * *' : '0 0 * * 1';
+    const modeDescription = config.demoMode
+        ? 'Demo: every 15 minutes'
+        : 'Production: weekly (Monday 00:00)';
 
-    const task = cron.schedule('0 0 * * 1', async () => {
-        console.log('Running scheduled weekly event update (Monday 00:00)...');
+    const task = cron.schedule(cronPattern, async () => {
+        const mode = config.demoMode ? 'DEMO' : 'SCHEDULED';
+        console.log(`${mode} Running event update...`);
         try {
             await getNextEvents();
-            console.log('Weekly event update completed successfully');
+            console.log(`${mode} Event update completed successfully`);
         } catch (error) {
-            console.error('Error in scheduled event update:', error);
+            console.error(`${mode} Error in event update:`, error);
         }
     }, {
         timezone: "America/New_York"
     });
 
-    console.log('Weekly event scheduler initialized');
+    console.log(`Event scheduler initialized (${modeDescription})`);
 
     return task;
 }

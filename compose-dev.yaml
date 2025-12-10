@@ -41,8 +41,8 @@ services:
       - LINERA_FAUCET=https://faucet.testnet-conway.linera.net
       - SERVICE_URL=http://localhost:8090
       - API=https://v3.football.api-sports.io
-      #- API_KEY=${API_KEY}
-      - API_KEY=0ea8f6e37f0d7f34b36f300b31afd19c
+      - API_KEY=${API_KEY}
+      - DEMO_MODE=true
     restart: unless-stopped
     entrypoint: ["bash", "/oracle/start.bash"]
     depends_on:

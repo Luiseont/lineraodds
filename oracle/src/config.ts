@@ -1,4 +1,5 @@
 
+
 export const config = {
     appId: process.env.APPID || '',
     chainId: process.env.CHAIN_ID || '',
@@ -8,8 +9,10 @@ export const config = {
     api: process.env.API || 'https://v3.football.api-sports.io',
     apiKey: process.env.API_KEY || '',
     main_chain: process.env.VITE_MAIN_CHAIN_ID || '',
+    demoMode: process.env.DEMO_MODE === 'true',
 
 } as const;
+
 
 export function validateConfig(): void {
     const requiredVars = {

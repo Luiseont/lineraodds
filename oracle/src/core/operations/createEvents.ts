@@ -57,7 +57,17 @@ export async function createEvent(event: Event) {
             throw new Error(`GraphQL errors: ${JSON.stringify(result.errors)}`);
         }
 
-        console.log(`✓ Event created successfully: ${event.id}`);
+        console.log(`Event created successfully: ${event.id}`);
+
+        // If demo mode, add event to simulator
+        if (config.demoMode) {
+            const { demoSimulator } = await import('../../index');
+            if (demoSimulator) {
+                // Use event.id as both eventId and fixtureId for demo purposes
+                demoSimulator.addEvent(event.id, event.id);
+                console.log(`Event ${event.id} added to demo simulator`);
+            }
+        }
         return result;
 
     } catch (error) {

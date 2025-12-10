@@ -44,6 +44,7 @@ services:
       - SERVICE_URL=http://localhost:8090
       - API=https://v3.football.api-sports.io
       - API_KEY=${API_KEY}
+      # DEMO_MODE not set - defaults to false in production
     restart: unless-stopped
     entrypoint: ["bash", "/oracle/start-prod.bash"]
     depends_on:
