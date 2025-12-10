@@ -41,7 +41,7 @@ services:
       - shared-env:/shared
     environment:
       - LINERA_FAUCET=https://faucet.testnet-conway.linera.net
-      - SERVICE_URL=http://service:8090
+      - SERVICE_URL=http://localhost:8090
       - API=https://v3.football.api-sports.io
       - API_KEY=${API_KEY}
     restart: unless-stopped
