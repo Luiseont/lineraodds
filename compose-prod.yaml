@@ -1,6 +1,6 @@
 services:
   service:
-    image: ghcr.io/luiseont/lineraodds-api:latest
+    image: ghcr.io/luiseont/lineraodds-service:latest
     container_name: service
     ports:
       - "127.0.0.1:8081:8081"
