@@ -65,17 +65,21 @@ export class DemoEventSimulator {
             let loadedCount = 0;
 
             for (const event of existingEvents) {
+                // Normalize status from uppercase to PascalCase (e.g., "SCHEDULED" -> "Scheduled")
+                const normalizedStatus = event.status.charAt(0).toUpperCase() +
+                    event.status.slice(1).toLowerCase();
+
                 // Only load Scheduled or Live events
-                if (event.status === MatchStatus.Scheduled || event.status === MatchStatus.Live) {
+                if (normalizedStatus === MatchStatus.Scheduled || normalizedStatus === MatchStatus.Live) {
                     const demoEvent: DemoEvent = {
                         eventId: event.id,
                         fixtureId: event.id, // Use event.id as fixtureId for demo
-                        status: event.status,
+                        status: normalizedStatus as MatchStatus,
                         createdAt: now - (Math.random() * 60000), // Random time in last minute
                     };
 
                     // If already live, set liveAt timestamp
-                    if (event.status === MatchStatus.Live) {
+                    if (normalizedStatus === MatchStatus.Live) {
                         demoEvent.liveAt = now - (Math.random() * 60000);
                     }
 
