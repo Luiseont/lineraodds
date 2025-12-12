@@ -171,10 +171,16 @@ jobs:
             echo "Pulling latest images..."
             docker compose -f compose-prod.yaml pull
             
-            # Clean frontend build artifacts
+            # Clean frontend build artifacts and nginx files
             echo "Cleaning frontend build artifacts..."
             rm -rf /home/main/front/dist
             rm -rf /home/main/front/node_modules/.vite
+            
+            echo "Cleaning nginx web directory..."
+            sudo rm -rf /var/www/html/*
+            
+            echo "Clearing nginx cache..."
+            sudo rm -rf /var/cache/nginx/* 2>/dev/null || true
             
             # Deploy
             echo "Deploying services..."
@@ -205,14 +211,27 @@ jobs:
               
               # Verify files were copied
               echo "Verifying frontend deployment..."
-              ls -lah /var/www/html/index.html && echo "✓ Frontend deployed successfully" || echo "⚠ Warning: index.html not found"
+              echo "Files in /var/www/html:"
+              ls -lah /var/www/html/
+              
+              if [ -f "/var/www/html/index.html" ]; then
+                echo "✓ Frontend deployed successfully"
+                echo "index.html size: $(stat -f%z /var/www/html/index.html 2>/dev/null || stat -c%s /var/www/html/index.html)"
+                echo "index.html modified: $(stat -c %y /var/www/html/index.html)"
+              else
+                echo "⚠ ERROR: index.html not found!"
+                exit 1
+              fi
             else
               echo "⚠ Warning: Frontend container not found"
             fi
             
-            # Reload nginx
-            sudo systemctl reload nginx || true
-            echo "✓ Nginx reloaded"
+            # Restart nginx to clear all caches
+            echo "Restarting nginx..."
+            sudo systemctl restart nginx || true
+            sleep 2
+            sudo systemctl status nginx --no-pager || true
+            echo "✓ Nginx restarted"
             
             # Verify services
             echo ""
