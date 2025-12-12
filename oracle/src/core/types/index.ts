@@ -34,12 +34,6 @@ export interface Teams {
     away: string;
 }
 
-// Match Rust struct: TeamIds
-export interface TeamIds {
-    home: number;  // u32 in Rust
-    away: number;  // u32 in Rust
-}
-
 // Match Rust struct: Odds
 export interface Odds {
     home: number;  // u64 in Rust
@@ -60,9 +54,7 @@ export interface Event {
     status: MatchStatus;
     type_event: TypeEvent;
     league: string;
-    league_id?: number;  // u32 in Rust, optional
     teams: Teams;
-    team_ids?: TeamIds;  // optional
     odds: Odds;
     start_time: string;  // Timestamp as string (micros since epoch)
     result: MatchResult;
