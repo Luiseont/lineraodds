@@ -43,6 +43,12 @@ VITE_APP_SERVICE=https://api.lineraodds.bet
 EOF
 echo "✓ Archivo .env creado"
 
+# Limpiar build anterior y cache
+echo "Limpiando build anterior y cache..."
+rm -rf /front/dist
+rm -rf /front/node_modules/.vite
+echo "✓ Cache limpiado"
+
 # Instalar dependencias
 echo "Instalando dependencias de npm..."
 npm install
@@ -65,3 +71,7 @@ else
 fi
 
 echo "✓ Proceso de build completado"
+
+# Mantener el contenedor corriendo para que el deploy pueda copiar los archivos
+echo "Manteniendo contenedor activo para copia de archivos..."
+sleep 300
