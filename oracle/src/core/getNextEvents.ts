@@ -115,7 +115,7 @@ export async function getNextEvents() {
         console.log('Fetching odds for selected fixtures...');
         const events: Event[] = await Promise.all(
             selectedFixtures.map(fixture =>
-                transformFixtureToEvent(fixture, fixture.leagueName, fixture.leagueId)
+                transformFixtureToEvent(fixture, fixture.leagueName)
             )
         );
 

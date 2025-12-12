@@ -18,14 +18,13 @@ pub struct ManagementState {
 
 
 #[derive(Clone, Debug, Serialize, Deserialize, SimpleObject, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct Event {
     pub id: String,
     pub status: MatchStatus,
     pub type_event: TypeEvent,
     pub league: String,
-    pub league_id: Option<u32>,
     pub teams: Teams,
-    pub team_ids: Option<TeamIds>,
     pub odds: Odds,
     pub start_time: Timestamp,
     pub result: MatchResult,
@@ -65,12 +64,6 @@ pub enum BetStatus {
 pub struct Teams {
     pub home: String,
     pub away: String,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize, Default, SimpleObject, Copy)]
-pub struct TeamIds {
-    pub home: u32,
-    pub away: u32,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default,SimpleObject)]
