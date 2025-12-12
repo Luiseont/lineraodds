@@ -192,21 +192,52 @@ jobs:
             # Start services with force recreate
             docker compose -f compose-prod.yaml up -d --force-recreate
             
+            # Wait for services to initialize
+            echo "Waiting for services to initialize..."
+            sleep 10
+            
+            # Check frontend container status
+            echo "Checking frontend container..."
+            docker compose -f compose-prod.yaml ps front
+            
             # Wait for frontend build to complete
             echo "Waiting for frontend build to complete..."
-            sleep 30
-            
-            # Verify frontend build completed
+            RETRIES=0
+            MAX_RETRIES=12
             FRONT_CONTAINER=$(docker compose -f compose-prod.yaml ps -q front)
+            
+            while [ $RETRIES -lt $MAX_RETRIES ]; do
+              if [ -z "$FRONT_CONTAINER" ]; then
+                echo "⚠ Frontend container not found, retrying..."
+                sleep 5
+                FRONT_CONTAINER=$(docker compose -f compose-prod.yaml ps -q front)
+                RETRIES=$((RETRIES + 1))
+                continue
+              fi
+              
+              # Check if dist directory exists
+              if docker exec $FRONT_CONTAINER test -d /front/dist 2>/dev/null; then
+                echo "✓ Build directory found!"
+                docker exec $FRONT_CONTAINER ls -lah /front/dist
+                break
+              fi
+              
+              echo "Waiting for build... (attempt $((RETRIES + 1))/$MAX_RETRIES)"
+              sleep 10
+              RETRIES=$((RETRIES + 1))
+            done
+            
+            # Final check and copy
             if [ ! -z "$FRONT_CONTAINER" ]; then
-              echo "Verifying frontend build..."
-              docker exec $FRONT_CONTAINER ls -la /front/dist || echo "⚠ Warning: dist directory not found yet"
-              
-              # Wait a bit more if needed
-              sleep 30
-              
               echo "Copying frontend files..."
-              docker cp $FRONT_CONTAINER:/front/dist/. /var/www/html/ || echo "⚠ Warning: Could not copy frontend"
+              if docker cp $FRONT_CONTAINER:/front/dist/. /var/www/html/; then
+                echo "✓ Files copied successfully"
+              else
+                echo "✗ ERROR: Failed to copy files"
+                docker logs front --tail 100
+                exit 1
+              fi
+              
               sudo chown -R www-data:www-data /var/www/html || true
               
               # Verify files were copied
@@ -216,14 +247,19 @@ jobs:
               
               if [ -f "/var/www/html/index.html" ]; then
                 echo "✓ Frontend deployed successfully"
-                echo "index.html size: $(stat -f%z /var/www/html/index.html 2>/dev/null || stat -c%s /var/www/html/index.html)"
+                echo "index.html size: $(stat -c%s /var/www/html/index.html)"
                 echo "index.html modified: $(stat -c %y /var/www/html/index.html)"
               else
-                echo "⚠ ERROR: index.html not found!"
+                echo "✗ ERROR: index.html not found after copy!"
+                echo "Container logs:"
+                docker logs front --tail 50
                 exit 1
               fi
             else
-              echo "⚠ Warning: Frontend container not found"
+              echo "✗ ERROR: Frontend container not found after retries"
+              docker compose -f compose-prod.yaml ps
+              docker compose -f compose-prod.yaml logs front
+              exit 1
             fi
             
             # Restart nginx to clear all caches
