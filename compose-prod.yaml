@@ -27,7 +27,7 @@ services:
     entrypoint: ["bash", "/front/build-prod.bash"]
     depends_on:
       service:
-        condition: service_healthy
+        condition: service_started  # Solo esperar que inicie, no que esté healthy
 
   oracle:
     image: ghcr.io/luiseont/lineraodds-oracle:latest
