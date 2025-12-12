@@ -94,7 +94,7 @@ jobs:
 
   build-front:
     needs: detect-changes
-    if: needs.detect-changes.outputs.front == 'true'
+    if: always()  # Siempre reconstruir la imagen del frontend
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -119,8 +119,7 @@ jobs:
           file: ./front/Dockerfile
           push: true
           tags: ${{ env.REGISTRY }}/luiseont/lineraodds-front:latest
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/luiseont/lineraodds-front:buildcache
-          cache-to: type=registry,ref=${{ env.REGISTRY }}/luiseont/lineraodds-front:buildcache,mode=max
+          no-cache: true  # Forzar build sin cache
 
   deploy:
     needs: [detect-changes, build-service, build-oracle, build-front]
