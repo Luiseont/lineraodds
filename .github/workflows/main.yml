@@ -172,22 +172,43 @@ jobs:
             echo "Pulling latest images..."
             docker compose -f compose-prod.yaml pull
             
+            # Clean frontend build artifacts
+            echo "Cleaning frontend build artifacts..."
+            rm -rf /home/main/front/dist
+            rm -rf /home/main/front/node_modules/.vite
+            
             # Deploy
             echo "Deploying services..."
             docker compose -f compose-prod.yaml down || true
-            docker compose -f compose-prod.yaml up -d
             
-            # Wait for services to start
-            echo "Waiting for services to start..."
-            sleep 20
+            # Remove frontend volume to force fresh build
+            docker volume rm main_frontend-dist 2>/dev/null || true
             
-            # Copy frontend to nginx
+            # Start services with force recreate
+            docker compose -f compose-prod.yaml up -d --force-recreate
+            
+            # Wait for frontend build to complete
+            echo "Waiting for frontend build to complete..."
+            sleep 30
+            
+            # Verify frontend build completed
             FRONT_CONTAINER=$(docker compose -f compose-prod.yaml ps -q front)
             if [ ! -z "$FRONT_CONTAINER" ]; then
+              echo "Verifying frontend build..."
+              docker exec $FRONT_CONTAINER ls -la /front/dist || echo "⚠ Warning: dist directory not found yet"
+              
+              # Wait a bit more if needed
+              sleep 30
+              
               echo "Copying frontend files..."
               docker cp $FRONT_CONTAINER:/front/dist/. /var/www/html/ || echo "⚠ Warning: Could not copy frontend"
               sudo chown -R www-data:www-data /var/www/html || true
-              echo "✓ Frontend deployed"
+              
+              # Verify files were copied
+              echo "Verifying frontend deployment..."
+              ls -lah /var/www/html/index.html && echo "✓ Frontend deployed successfully" || echo "⚠ Warning: index.html not found"
+            else
+              echo "⚠ Warning: Frontend container not found"
             fi
             
             # Reload nginx
