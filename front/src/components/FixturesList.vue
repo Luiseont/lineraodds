@@ -1,18 +1,34 @@
 <template>
   <div class="card p-4 sm:p-6">
     <ul>
-      <li v-for="fixture in props.fixtures" :key="fixture.id" class="border-b last:border-b-0 py-3 sm:py-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+      <li v-for="fixture in props.fixtures" :key="fixture.id" class="border-b last:border-b-0 py-2 sm:py-3 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div class="flex-1">
           <p class="font-semibold flex items-center gap-2 flex-wrap">
-            <span 
-              class="px-2 py-0.5 text-xs font-bold rounded-md uppercase tracking-wide"
-              :class="getStatusClass(fixture.status)"
-            >
-              {{ fixture.status }}
-            </span>
-            <span class="text-sm sm:text-base">{{ fixture.teams.home }} vs {{ fixture.teams.away }}</span>
+            <!-- Home Team Logo -->
+            <img 
+              :src="getTeamLogoUrl(fixture.teams.home)"
+              :alt="fixture.teams.home"
+              class="w-5 h-5 sm:w-6 sm:h-6 object-contain"
+            />
+            <span class="text-sm sm:text-base">{{ fixture.teams.home }}</span>
+            
+            <span class="text-gray-400">vs</span>
+            
+            <!-- Away Team Logo -->
+            <img 
+              :src="getTeamLogoUrl(fixture.teams.away)"
+              :alt="fixture.teams.away"
+              class="w-5 h-5 sm:w-6 sm:h-6 object-contain"
+            />
+            <span class="text-sm sm:text-base">{{ fixture.teams.away }}</span>
           </p>
-          <p class="text-xs sm:text-sm text-gray-500 mt-1">
+          <p class="text-xs sm:text-sm text-gray-500 mt-1 flex items-center gap-2">
+            <!-- League Logo -->
+            <img 
+              :src="getLeagueLogoUrlByName(fixture.league)"
+              :alt="fixture.league"
+              class="w-4 h-4 object-contain"
+            />
             {{ fixture.league }} - {{ formatDate(fixture.startTime) }}
           </p>
         </div>
@@ -66,9 +82,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, defineProps } from 'vue';
+import { ref } from 'vue';
 import { useApp } from '@/composables/useApp';
 import BetModal from './BetModal.vue';
+import { getTeamLogoUrl } from '@/utils/teamLogos';
+import { getLeagueLogoUrlByName } from '@/utils/leagueLogos';
 
 const props = withDefaults(defineProps<{
   fixtures: Array<{

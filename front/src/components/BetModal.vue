@@ -146,6 +146,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useApp } from '@/composables/useApp'
+import { useBets } from '@/composables/useBets'
 
 const props = defineProps<{
   isOpen: boolean
@@ -162,7 +163,7 @@ const emit = defineEmits<{
   (e: 'confirm-bet', amount: number): void
 }>()
 
-const { userBets } = useApp()
+const { userBets } = useBets()
 
 const amount = ref<number | null>(null)
 const loading = ref(false)

@@ -14,6 +14,12 @@ export const eventsStore = defineStore('events', () => {
     //vars here
     const events = ref<Array<any>>([])
 
+    // Pagination state
+    const currentPage = ref(1)
+    const pageSize = ref(10) // Fixed at 10 items per page
+    const selectedStatus = ref<string | undefined>(undefined)
+    const selectedTypeEvent = ref<string | undefined>(undefined)
+
     // Computed para construir la URL reactivamente
     const AppChainUrl = computed(() =>
         `${WsUrl}/chains/${ChainID.value}/applications/${AppID.value}`
@@ -25,8 +31,8 @@ export const eventsStore = defineStore('events', () => {
 
     // GraphQL queries
     const EVENTS_QUERY = gql`
-        query {
-          events {
+        query Events($status: String, $typeEvent: String, $offset: Int, $limit: Int) {
+          events(status: $status, typeEvent: $typeEvent, offset: $offset, limit: $limit) {
             id
             typeEvent
             league
@@ -56,9 +62,11 @@ export const eventsStore = defineStore('events', () => {
         }
     `;
 
-    async function getEvents() {
+    async function getEvents(status?: string, typeEvent?: string, page: number = 1) {
         try {
-            console.log('Fetching events from:', AppChainUrl.value)
+            const offset = (page - 1) * pageSize.value
+
+            console.log('Fetching events with filters:', { status, typeEvent, offset, limit: pageSize.value })
 
             const response = await fetch(AppChainUrl.value, {
                 method: 'POST',
@@ -66,7 +74,13 @@ export const eventsStore = defineStore('events', () => {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    query: EVENTS_QUERY.loc?.source.body || ''
+                    query: EVENTS_QUERY.loc?.source.body || '',
+                    variables: {
+                        status,
+                        typeEvent,
+                        offset,
+                        limit: pageSize.value
+                    }
                 }),
             });
 
@@ -82,7 +96,7 @@ export const eventsStore = defineStore('events', () => {
                 return;
             }
 
-            events.value = data.data?.events;
+            events.value = data.data?.events || [];
             console.log('Events loaded:', events.value.length);
         } catch (error) {
             console.error('Error fetching events:', error);
@@ -113,7 +127,7 @@ export const eventsStore = defineStore('events', () => {
             console.log('Starting notification subscription for chain:', ChainID.value);
 
             // Cargar eventos inmediatamente
-            getEvents();
+            getEvents(selectedStatus.value, selectedTypeEvent.value, currentPage.value);
 
             // Suscribirse a notificaciones
             notificationSubscription = apolloClient.subscribe({
@@ -126,7 +140,7 @@ export const eventsStore = defineStore('events', () => {
                     console.log('Notification received:', result);
                     // Cuando llega una notificación, recargar eventos
                     console.log('Refreshing events due to notification...');
-                    getEvents();
+                    getEvents(selectedStatus.value, selectedTypeEvent.value, currentPage.value);
                 },
                 error: (error: any) => {
                     console.error('Subscription error:', error);
@@ -212,9 +226,34 @@ export const eventsStore = defineStore('events', () => {
     // Inicializar inmediatamente si ya está conectado
     initialize();
 
+    // Pagination functions
+    function nextPage() {
+        currentPage.value++
+        getEvents(selectedStatus.value, selectedTypeEvent.value, currentPage.value)
+    }
+
+    function previousPage() {
+        if (currentPage.value > 1) {
+            currentPage.value--
+            getEvents(selectedStatus.value, selectedTypeEvent.value, currentPage.value)
+        }
+    }
+
+    function setFilters(status?: string, typeEvent?: string) {
+        selectedStatus.value = status
+        selectedTypeEvent.value = typeEvent
+        currentPage.value = 1 // Reset to first page
+        getEvents(status, typeEvent, 1)
+    }
+
     return {
         events,
+        currentPage,
+        pageSize,
         getEvents,
+        nextPage,
+        previousPage,
+        setFilters,
         startNotificationSubscription,
         stopNotificationSubscription,
         initialize,

@@ -3,7 +3,15 @@ import { appStore } from '@/stores/app'
 
 export function useApp() {
     const store = appStore()
-    const { backend, backendReady, isBackendReady, walletBalance, events, userBets, AppID, ChainID } = storeToRefs(store)
+    const {
+        backend,
+        backendReady,
+        isBackendReady,
+        walletBalance,
+        events,
+        AppID,
+        ChainID
+    } = storeToRefs(store)
 
     return {
         // Estado (refs reactivos)
@@ -12,7 +20,6 @@ export function useApp() {
         isBackendReady,
         walletBalance,
         events,
-        userBets,
         AppID,
         ChainID,
 

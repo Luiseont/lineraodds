@@ -8,8 +8,8 @@ export const appStore = defineStore('app', () => {
     const backendReady = ref(false)
     const walletBalance = ref(0)
     const events = ref<Array<any>>([])
-    const userBets = ref<Array<any>>([])
     const isTransactionPending = ref(false)
+
     const AppID = ref(import.meta.env.VITE_APP_ID == "" ? '04ea8a0cd8fe7c648596f404e53e2d90ab7f30df82186b798ecc85e63ebfd353' : import.meta.env.VITE_APP_ID)
     const ChainID = ref(import.meta.env.VITE_MAIN_CHAIN_ID == "" ? '1b21fe8df6c980ead17148966d747f6303cd84e00e50988634fc23b47c1f3cbd' : import.meta.env.VITE_MAIN_CHAIN_ID)
 
@@ -19,7 +19,6 @@ export const appStore = defineStore('app', () => {
 
     // Queries GraphQL
     const UserBalanceQuery = '{"query":"query{balance}"}'
-    const UserBetsQuery = '{ "query": "query { myOdds { eventId, odd, league, teams{ home, away }, status, startTime, selection, bid, placedAt } } "  }'
     const MintTokensQuery = '{"query":"mutation{requestMint(amount: \\"$AMOUNT\\")}"}'
     const PlaceBetQuery = '{"query":"mutation{placeBet(home: \\"$HOME\\", away: \\"$AWAY\\", league: \\"$LEAGUE\\", startTime: $START_TIME, odd: $ODD, selection: \\"$SELECTION\\", bid: \\"$BID\\", eventId: \\"$EVENT_ID\\")}"}'
     const ClaimRewardQuery = '{"query":"mutation{claimReward(eventId: \\"$EVENT_ID\\")}"}'
@@ -120,10 +119,7 @@ export const appStore = defineStore('app', () => {
             console.log('No se recibieron más mensajes, actualizando datos y suscribiendo...')
             try {
                 // Actualizar datos primero
-                await Promise.all([
-                    getUserBalance(),
-                    getUserBets(),
-                ])
+                await getUserBalance()
             } catch (error) {
                 console.error('Error al actualizar datos:', error)
             }
@@ -137,18 +133,6 @@ export const appStore = defineStore('app', () => {
         backendReady.value = false
         walletBalance.value = 0
         events.value = []
-        userBets.value = []
-    }
-
-    async function getUserBets() {
-        try {
-            const result = await backend.value.query(UserBetsQuery)
-            const response = JSON.parse(result)
-            console.log("Apuestas del usuario:", response.data?.myOdds)
-            userBets.value = response.data?.myOdds || []
-        } catch (error) {
-            console.error('Error al obtener apuestas del usuario:', error)
-        }
     }
 
     async function getUserBalance() {
@@ -242,10 +226,7 @@ export const appStore = defineStore('app', () => {
     watch(isBackendReady, async (newVal) => {
         if (newVal) {
 
-            await Promise.all([
-                getUserBalance(),
-                getUserBets(),
-            ])
+            await getUserBalance()
 
             setupNotificationListener()
 
@@ -259,7 +240,6 @@ export const appStore = defineStore('app', () => {
         isBackendReady,
         walletBalance,
         events,
-        userBets,
         AppID,
         ChainID,
 

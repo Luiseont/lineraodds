@@ -11,7 +11,7 @@
         <!-- Event Type Filters -->
         <div class="flex gap-2 flex-wrap">
           <button
-            @click="selectedEventType = null"
+            @click="handleTypeFilter(null)"
             class="px-2 py-1 sm:px-3 rounded-full text-xs sm:text-sm font-medium transition-all border-2"
             :class="selectedEventType === null 
               ? 'bg-primary text-white border-primary' 
@@ -22,7 +22,7 @@
           <button
             v-for="type in eventTypes"
             :key="type"
-            @click="selectedEventType = type"
+            @click="handleTypeFilter(type)"
             class="px-2 py-1 sm:px-3 rounded-full text-xs sm:text-sm font-medium transition-all border-2"
             :class="selectedEventType === type 
               ? 'bg-primary text-white border-primary' 
@@ -40,7 +40,7 @@
         <button
           v-for="status in statusFilters"
           :key="status"
-          @click="selectedStatus = status"
+          @click="handleStatusFilter(status)"
           class="px-2 py-1 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-base font-medium transition-all relative"
           :class="selectedStatus === status 
             ? 'bg-primary text-white shadow-md' 
@@ -59,23 +59,52 @@
       </div>
     </div>
 
-    <!-- Events List or Empty State -->
-    <FixturesList v-if="filteredEvents.length > 0" :fixtures="filteredEvents" :show-header="false"/>
-    <div v-else class="card p-12 text-center">
-      <div class="text-gray-400 text-lg">
-        {{ emptyStateMessage }}
-      </div>
+    <!-- Loading state -->
+    <div v-if="isLoading" class="card p-12 text-center">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+      <p class="mt-4 text-gray-600">Loading events...</p>
     </div>
+
+    <!-- Events List -->
+    <template v-else>
+      <FixturesList 
+        v-if="events.length > 0" 
+        :fixtures="events" 
+        :show-header="false"
+      />
+      <div v-else class="card p-12 text-center">
+        <div class="text-gray-400 text-lg">
+          {{ emptyStateMessage }}
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <Pagination
+        v-if="events.length > 0"
+        :current-page="currentPage"
+        :has-more="events.length === 10"
+        @next="nextPage"
+        @previous="previousPage"
+      />
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import FixturesList from '@/components/FixturesList.vue'
+import Pagination from '@/components/Pagination.vue'
 import { useEvents } from '@/composables/useEvents'
 
-const { events } = useEvents()
+const { 
+  events,
+  currentPage,
+  nextPage,
+  previousPage,
+  setFilters
+} = useEvents()
 
+const isLoading = ref(false)
 const statusFilters = ['SCHEDULED', 'LIVE', 'FINISHED', 'POSTPONED']
 const selectedStatus = ref('SCHEDULED')
 const selectedEventType = ref<string | null>(null)
@@ -91,22 +120,31 @@ const eventTypes = computed(() => {
   return Array.from(types).sort()
 })
 
-// Filter events by both status and type, then shuffle randomly
-const filteredEvents = computed(() => {
-  const filtered = events.value.filter((event: any) => {
-    const matchesStatus = event.status.toUpperCase() === selectedStatus.value
-    const matchesType = selectedEventType.value === null || event.typeEvent === selectedEventType.value
-    return matchesStatus && matchesType
-  })
-  
-  // Shuffle array randomly
-  return filtered.sort(() => Math.random() - 0.5)
-})
-
 const emptyStateMessage = computed(() => {
   if (selectedStatus.value === 'SCHEDULED') {
     return 'Waiting for new opportunities...'
   }
   return 'No events available'
+})
+
+async function handleStatusFilter(status: string) {
+  selectedStatus.value = status
+  isLoading.value = true
+  await setFilters(status, selectedEventType.value || undefined)
+  isLoading.value = false
+}
+
+async function handleTypeFilter(type: string | null) {
+  selectedEventType.value = type
+  isLoading.value = true
+  await setFilters(selectedStatus.value, type || undefined)
+  isLoading.value = false
+}
+
+// Load initial events
+onMounted(async () => {
+  isLoading.value = true
+  await setFilters(selectedStatus.value, undefined)
+  isLoading.value = false
 })
 </script>
