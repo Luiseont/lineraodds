@@ -24,10 +24,36 @@ export const appStore = defineStore('app', () => {
     const ClaimRewardQuery = '{"query":"mutation{claimReward(eventId: \\"$EVENT_ID\\")}"}'
 
     // Composables
-    const { connected, provider } = useWallet()
+    const { connected, provider, address } = useWallet()
 
     // Computed
     const isBackendReady = computed(() => backendReady.value)
+
+    // Helper functions for block height tracking
+    function getBlockHeights(): Record<string, { highestHeight: number; lastUpdated: string }> {
+        const stored = localStorage.getItem('blockHeights')
+        return stored ? JSON.parse(stored) : {}
+    }
+
+    function getHighestHeight(userAddress: string): number {
+        const heights = getBlockHeights()
+        return heights[userAddress]?.highestHeight || 0
+    }
+
+    function setHighestHeight(userAddress: string, height: number): void {
+        const heights = getBlockHeights()
+        heights[userAddress] = {
+            highestHeight: height,
+            lastUpdated: new Date().toISOString()
+        }
+        localStorage.setItem('blockHeights', JSON.stringify(heights))
+        console.log(`Updated highest height for ${userAddress}: ${height}`)
+    }
+
+    function shouldProcessBlock(userAddress: string, height: number): boolean {
+        const currentHighest = getHighestHeight(userAddress)
+        return height > currentHighest
+    }
 
     // Funciones
     async function setBackend() {
@@ -61,29 +87,29 @@ export const appStore = defineStore('app', () => {
         notificationUnsubscribe = provider.value.provider.client.onNotification(async (notification: any) => {
             console.log('Notificación recibida:', notification)
 
-            const hash = notification.reason.BlockExecuted?.hash || notification.reason.NewBlock?.hash
+            // Extraer información del bloque
+            const blockInfo = notification.reason.BlockExecuted || notification.reason.NewBlock
 
-            if (hash) {
-                const processedHashes = JSON.parse(localStorage.getItem('processedBlockHashes') || '[]')
-                const lastHash = localStorage.getItem('lastProcessedBlockHash')
+            if (blockInfo) {
+                const height = blockInfo.height
+                const hash = blockInfo.hash
 
-                const isNew = !processedHashes.includes(hash)
-                const isLastProcessed = hash === lastHash
+                // Obtener dirección del usuario actual
+                const userAddress = address.value
+                console.log("User address: " + userAddress)
+                if (height !== undefined && userAddress) {
+                    console.log(`Bloque recibido - Height: ${height}, Hash: ${hash?.substring(0, 8)}...`)
 
-                if (isNew || isLastProcessed) {
-                    if (isNew) {
-                        processedHashes.push(hash)
-                        //if (processedHashes.length > 50) processedHashes.shift()
-                        localStorage.setItem('processedBlockHashes', JSON.stringify(processedHashes))
-                        localStorage.setItem('lastProcessedBlockHash', hash)
+                    if (shouldProcessBlock(userAddress, height)) {
+                        setHighestHeight(userAddress, height)
+                        scheduleSubscription()
+                    } else {
+                        const currentHighest = getHighestHeight(userAddress)
+                        console.log(`Ignorando bloque antiguo (height: ${height} <= ${currentHighest})`)
                     }
-                    scheduleSubscription()
                 } else {
-                    console.log('Ignorando bloque ya procesado:', hash)
+                    scheduleSubscription()
                 }
-            } else if (notification.reason.BlockExecuted || notification.reason.NewBlock) {
-                // Fallback for when hash is not present but event type matches
-                scheduleSubscription()
             }
         })
 
@@ -133,6 +159,10 @@ export const appStore = defineStore('app', () => {
         backendReady.value = false
         walletBalance.value = 0
         events.value = []
+
+        // Limpiar sistema viejo de hashes (migración)
+        localStorage.removeItem('processedBlockHashes')
+        localStorage.removeItem('lastProcessedBlockHash')
     }
 
     async function getUserBalance() {

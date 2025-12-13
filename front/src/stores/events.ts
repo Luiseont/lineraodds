@@ -126,8 +126,8 @@ export const eventsStore = defineStore('events', () => {
 
             console.log('Starting notification subscription for chain:', ChainID.value);
 
-            // Cargar eventos inmediatamente
-            getEvents(selectedStatus.value, selectedTypeEvent.value, currentPage.value);
+            // Cargar eventos con filtro inicial de SCHEDULED
+            setFilters('Scheduled');
 
             // Suscribirse a notificaciones
             notificationSubscription = apolloClient.subscribe({
