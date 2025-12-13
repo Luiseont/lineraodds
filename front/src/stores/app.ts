@@ -1,6 +1,7 @@
 import { ref, computed, watch, provide } from 'vue'
 import { defineStore } from 'pinia'
 import { useWallet } from '@/composables/useWallet'
+import { getBalance } from '@dynamic-labs-sdk/client'
 
 export const appStore = defineStore('app', () => {
     // Estado
@@ -93,7 +94,6 @@ export const appStore = defineStore('app', () => {
             if (blockInfo) {
                 const height = blockInfo.height
                 const hash = blockInfo.hash
-
                 // Obtener dirección del usuario actual
                 const userAddress = address.value
                 console.log("User address: " + userAddress)
@@ -110,6 +110,10 @@ export const appStore = defineStore('app', () => {
                 } else {
                     scheduleSubscription()
                 }
+            }
+
+            if (notification.reason.NewIncomingBundle) {
+                getUserBalance()
             }
         })
 
