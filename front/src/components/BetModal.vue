@@ -145,7 +145,6 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { useApp } from '@/composables/useApp'
 import { useBets } from '@/composables/useBets'
 
 const props = defineProps<{
@@ -163,7 +162,7 @@ const emit = defineEmits<{
   (e: 'confirm-bet', amount: number): void
 }>()
 
-const { userBets } = useBets()
+const { allUserBets  } = useBets()
 
 const amount = ref<number | null>(null)
 const loading = ref(false)
@@ -171,7 +170,7 @@ const loading = ref(false)
 // Check if user already has a bet on this event
 const existingBet = computed(() => {
   if (!props.event) return null
-  return userBets.value.find((bet: any) => 
+  return allUserBets.value.find((bet: any) => 
     bet.eventId === props.event.id.toString() && 
     (bet.status === 'PLACED' || bet.status === 'WON')
   )

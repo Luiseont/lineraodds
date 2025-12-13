@@ -10,6 +10,7 @@ export const betsStore = defineStore('bets', () => {
 
     // State
     const userBets = ref<Array<any>>([])
+    const allUserBets = ref<Array<any>>([]) // All bets without filters for checking
 
     // Pagination state
     const currentBetsPage = ref(1)
@@ -102,8 +103,28 @@ export const betsStore = defineStore('bets', () => {
         getUserBets(status, 1)
     }
 
+    async function getAllUserBets() {
+        try {
+            // Fetch ALL bets without any filters
+            const query = JSON.stringify({
+                query: 'query { myOdds { eventId, odd, league, teams{ home, away }, status, startTime, selection, bid, placedAt } }'
+            })
+
+            console.log('Fetching all user bets (no filters)')
+
+            const result = await backend.value.query(query)
+            const response = JSON.parse(result)
+            console.log("All user bets:", response.data?.myOdds)
+            allUserBets.value = response.data?.myOdds || []
+        } catch (error) {
+            console.error('Error al obtener todas las apuestas del usuario:', error)
+            allUserBets.value = []
+        }
+    }
+
     function resetBets() {
         userBets.value = []
+        allUserBets.value = []
         currentBetsPage.value = 1
         selectedBetStatus.value = undefined
         totalStaked.value = '0'
@@ -114,12 +135,14 @@ export const betsStore = defineStore('bets', () => {
         if (connected.value) {
             getUserBets()
             getBetsSummary()
+            getAllUserBets()
         }
     })
 
     return {
         // State
         userBets,
+        allUserBets,
         currentBetsPage,
         betsPageSize,
         selectedBetStatus,
@@ -128,6 +151,7 @@ export const betsStore = defineStore('bets', () => {
 
         // Functions
         getUserBets,
+        getAllUserBets,
         getBetsSummary,
         nextBetsPage,
         previousBetsPage,

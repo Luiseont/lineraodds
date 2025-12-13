@@ -6,6 +6,7 @@ export function useBets() {
 
     const {
         userBets,
+        allUserBets,
         currentBetsPage,
         betsPageSize,
         selectedBetStatus,
@@ -16,6 +17,7 @@ export function useBets() {
     return {
         // State
         userBets,
+        allUserBets,
         currentBetsPage,
         betsPageSize,
         selectedBetStatus,
@@ -24,6 +26,7 @@ export function useBets() {
 
         // Functions
         getUserBets: store.getUserBets,
+        getAllUserBets: store.getAllUserBets,
         getBetsSummary: store.getBetsSummary,
         nextBetsPage: store.nextBetsPage,
         previousBetsPage: store.previousBetsPage,
