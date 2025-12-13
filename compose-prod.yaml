@@ -22,7 +22,6 @@ services:
     container_name: front
     volumes:
       - ./front:/front
-      - frontend-dist:/front/dist
       - shared-env:/shared
     entrypoint: ["bash", "/front/build-prod.bash"]
     restart: unless-stopped  # Mantener el contenedor activo
@@ -56,4 +55,3 @@ volumes:
   service-wallet:
   linera-wallet:
   shared-env:
-  frontend-dist:
