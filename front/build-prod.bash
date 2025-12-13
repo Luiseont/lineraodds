@@ -72,6 +72,11 @@ fi
 
 echo "✓ Proceso de build completado"
 
-# Mantener el contenedor corriendo para que el deploy pueda copiar los archivos
+# Mantener el contenedor corriendo indefinidamente para que el deploy pueda copiar los archivos
 echo "Manteniendo contenedor activo para copia de archivos..."
-sleep 300
+echo "Contenedor listo para docker cp"
+
+# Loop infinito para mantener el contenedor vivo
+while true; do
+  sleep 3600  # Dormir 1 hora a la vez
+done

@@ -25,6 +25,7 @@ services:
       - frontend-dist:/front/dist
       - shared-env:/shared
     entrypoint: ["bash", "/front/build-prod.bash"]
+    restart: unless-stopped  # Mantener el contenedor activo
     depends_on:
       service:
         condition: service_started  # Solo esperar que inicie, no que esté healthy
