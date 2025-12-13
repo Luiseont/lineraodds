@@ -109,7 +109,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useApp } from '@/composables/useApp'
 import { useBets } from '@/composables/useBets'
 import { useEvents } from '@/composables/useEvents'
@@ -123,7 +123,8 @@ const {
   previousBetsPage,
   setBetFilters,
   totalStaked,
-  potentialWinnings
+  potentialWinnings,
+  resetBets
 } = useBets()
 const { events } = useEvents()
 const loadingClaims = ref<Record<string, boolean>>({})
@@ -190,5 +191,10 @@ onMounted(async () => {
   isLoading.value = true
   await setBetFilters(selectedStatus.value)
   isLoading.value = false
+})
+
+// Cleanup when component unmounts
+onUnmounted(() => {
+  resetBets()
 })
 </script>

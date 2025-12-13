@@ -167,6 +167,8 @@ export const eventsStore = defineStore('events', () => {
 
     function cleanup() {
         stopNotificationSubscription();
+        // Limpiar lista de eventos
+        events.value = [];
         // Limpiar Apollo Client para forzar recreación en próxima conexión
         if (apolloClient) {
             apolloClient = null;

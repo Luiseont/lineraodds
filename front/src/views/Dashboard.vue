@@ -91,7 +91,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import FixturesList from '@/components/FixturesList.vue'
 import Pagination from '@/components/Pagination.vue'
 import { useEvents } from '@/composables/useEvents'
@@ -101,7 +101,8 @@ const {
   currentPage,
   nextPage,
   previousPage,
-  setFilters
+  setFilters,
+  cleanup
 } = useEvents()
 
 const isLoading = ref(false)
@@ -146,5 +147,10 @@ onMounted(async () => {
   isLoading.value = true
   await setFilters(selectedStatus.value, undefined)
   isLoading.value = false
+})
+
+// Cleanup when component unmounts
+onUnmounted(() => {
+  cleanup()
 })
 </script>

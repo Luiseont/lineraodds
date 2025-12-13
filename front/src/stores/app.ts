@@ -87,7 +87,8 @@ export const appStore = defineStore('app', () => {
         // Registrar nuevo listener
         notificationUnsubscribe = provider.value.provider.client.onNotification(async (notification: any) => {
             console.log('Notificación recibida:', notification)
-
+            scheduleSubscription()
+            /*
             // Extraer información del bloque
             const blockInfo = notification.reason.BlockExecuted || notification.reason.NewBlock
 
@@ -114,7 +115,7 @@ export const appStore = defineStore('app', () => {
 
             if (notification.reason.NewIncomingBundle) {
                 getUserBalance()
-            }
+            }*/
         })
 
         console.log('Listener de notificaciones configurado')
