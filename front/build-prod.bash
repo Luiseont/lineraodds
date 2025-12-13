@@ -43,11 +43,6 @@ VITE_APP_SERVICE=https://api.lineraodds.bet
 EOF
 echo "✓ Archivo .env creado"
 
-# Limpiar build anterior y cache
-echo "Limpiando build anterior y cache..."
-rm -rf /front/dist
-rm -rf /front/node_modules/.vite
-echo "✓ Cache limpiado"
 
 # Instalar dependencias
 echo "Instalando dependencias de npm..."
