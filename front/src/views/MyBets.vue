@@ -126,7 +126,7 @@ const {
   potentialWinnings,
   resetBets
 } = useBets()
-const { events } = useEvents()
+const { allEvents } = useEvents()
 const loadingClaims = ref<Record<string, boolean>>({})
 const isLoading = ref(false)
 
@@ -159,9 +159,7 @@ function calculatePotential(bid: number | string, odd: number | string) {
 
 function isClaimable(bet: any) {
   if (bet.status !== 'PLACED') return false
-  
-  // Find corresponding event
-  const event = events.value.find((e: any) => e.id === bet.eventId)
+  const event = allEvents.value.find((e: any) => e.id === bet.eventId)
   return event && event.status === 'FINISHED'
 }
 
@@ -191,10 +189,5 @@ onMounted(async () => {
   isLoading.value = true
   await setBetFilters(selectedStatus.value)
   isLoading.value = false
-})
-
-// Cleanup when component unmounts
-onUnmounted(() => {
-  resetBets()
 })
 </script>

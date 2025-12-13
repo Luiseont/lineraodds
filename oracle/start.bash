@@ -77,28 +77,6 @@ linera wallet show 2>/dev/null || echo "No se pudo mostrar información de la wa
 echo "Chain ID principal: $CHAIN_ID"
 echo "Balance de la wallet: $CHAIN_BALANCE"
 
-# crea wallet temporal para publicar blobs
-export LINERA_TMP_DIR=$(mktemp -d)
-echo "Usando LINERA_TMP_DIR=$LINERA_TMP_DIR"
-if [[ ! -d "$LINERA_TMP_DIR" ]]; then
-  echo "Error: no se creó LINERA_TMP_DIR" >&2
-  exit 1
-fi
-
-export LINERA_WALLET_2="$LINERA_TMP_DIR/wallet_2.json"
-export LINERA_KEYSTORE_2="$LINERA_TMP_DIR/keystore_2.json"
-export LINERA_STORAGE_2="rocksdb:$LINERA_TMP_DIR/client_2.db"
-
-# Inicializar wallet temporal (puede fallar si no hay conexión a validadores, pero no es crítico)
-linera -w2 wallet init --faucet "$LINERA_FAUCET" || echo "⚠ Advertencia: No se pudo inicializar wallet temporal"
-export INFO_2=($(linera --with-wallet 2 wallet request-chain --faucet $LINERA_FAUCET 2>/dev/null || echo ""))
-export CHAIN_2="${INFO_2[0]}"
-export OWNER_2="${INFO_2[1]}"
-
-echo "Wallet temporal: $CHAIN_2"
-echo "Owner  temporal: $OWNER_2"
-
-
 
 #inicia servicio de la wallet 
 
@@ -116,8 +94,6 @@ cleanup() {
   echo "Deteniendo servicios..."
   kill "$PID_MAIN" "$ORACLE_PID" 2>/dev/null || true
   wait "$PID_MAIN" "$ORACLE_PID" 2>/dev/null || true
-  echo "Limpieza de temporales: $LINERA_TMP_DIR"
-  rm -rf "$LINERA_TMP_DIR"
 }
 trap cleanup INT TERM EXIT
 

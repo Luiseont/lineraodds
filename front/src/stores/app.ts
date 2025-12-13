@@ -1,7 +1,6 @@
 import { ref, computed, watch, provide } from 'vue'
 import { defineStore } from 'pinia'
 import { useWallet } from '@/composables/useWallet'
-import { getBalance } from '@dynamic-labs-sdk/client'
 import { betsStore } from '@/stores/bets'
 
 export const appStore = defineStore('app', () => {
@@ -155,7 +154,7 @@ export const appStore = defineStore('app', () => {
 
                 // Actualizar lista completa de apuestas
                 const bets = betsStore()
-                await bets.getAllUserBets()
+                await bets.fetchAllBets()
             } catch (error) {
                 console.error('Error al actualizar datos:', error)
             }
@@ -267,6 +266,10 @@ export const appStore = defineStore('app', () => {
         if (newVal) {
 
             await getUserBalance()
+
+            // Initialize user bets
+            const bets = betsStore()
+            await bets.fetchAllBets()
 
             setupNotificationListener()
 

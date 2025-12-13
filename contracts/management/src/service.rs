@@ -61,51 +61,15 @@ struct QueryRoot {
 
 #[Object]
 impl QueryRoot {
-    async fn events(
-        &self,
-        status: Option<String>,
-        type_event: Option<String>,
-        offset: Option<u32>,
-        limit: Option<u32>,
-    ) -> Vec<Event> {
-        let offset = offset.unwrap_or(0) as usize;
-        let limit = limit.unwrap_or(1000).min(1000) as usize; // Default: all events, max 1000
-
-        match ManagementState::load(self.storage_context.clone()).await {
+    async fn events(&self) -> Vec<Event> {
+        match ManagementState::load(self.storage_context.clone()).await{
             Ok(state) => {
                 let mut all_events = Vec::new();
-                
                 match state.events.indices().await {
                     Ok(event_ids) => {
                         for event_id in event_ids {
                             if let Ok(Some(event)) = state.events.get(&event_id).await {
-                                // Apply optional filters
-                                let matches_status = if let Some(ref s) = status {
-                                    match s.to_uppercase().as_str() {
-                                        "SCHEDULED" => matches!(event.status, MatchStatus::Scheduled),
-                                        "LIVE" => matches!(event.status, MatchStatus::Live),
-                                        "FINISHED" => matches!(event.status, MatchStatus::Finished),
-                                        "POSTPONED" => matches!(event.status, MatchStatus::Postponed),
-                                        _ => true,
-                                    }
-                                } else {
-                                    true
-                                };
-                                
-                                let matches_type = if let Some(ref t) = type_event {
-                                    match t.to_uppercase().as_str() {
-                                        "FOOTBALL" => matches!(event.type_event, TypeEvent::Football),
-                                        "ESPORTS" => matches!(event.type_event, TypeEvent::Esports),
-                                        "BASEBALL" => matches!(event.type_event, TypeEvent::Baseball),
-                                        _ => true,
-                                    }
-                                } else {
-                                    true
-                                };
-                                
-                                if matches_status && matches_type {
-                                    all_events.push(event);
-                                }
+                                all_events.push(event);
                             }
                         }
                     }
@@ -113,14 +77,7 @@ impl QueryRoot {
                         eprintln!("Failed to get event indices: {:?}", e);
                     }
                 }
-
-                // Apply pagination
-                let end = (offset + limit).min(all_events.len());
-                if offset < all_events.len() {
-                    all_events[offset..end].to_vec()
-                } else {
-                    Vec::new()
-                }
+                all_events
             }
             Err(e) => {
                 eprintln!("Failed to load state: {:?}", e);
@@ -141,53 +98,10 @@ impl QueryRoot {
         }
     }
 
-    async fn my_odds(
-        &self,
-        status: Option<String>,
-        offset: Option<u32>,
-        limit: Option<u32>,
-    ) -> Vec<UserOdds> {
-        let offset = offset.unwrap_or(0) as usize;
-        let limit = limit.unwrap_or(1000).min(1000) as usize;
-
-        match ManagementState::load(self.storage_context.clone()).await {
+    async fn my_odds(&self) -> Vec<UserOdds>{
+        match ManagementState::load(self.storage_context.clone()).await{
             Ok(state) => {
-                // Clone the vector immediately to avoid borrow issues
-                let all_bets: Vec<UserOdds> = state.user_odds.get().clone();
-                
-                // Handle empty case early
-                if all_bets.is_empty() {
-                    return Vec::new();
-                }
-                
-                // Apply optional status filter
-                let mut filtered_bets: Vec<UserOdds> = if let Some(ref s) = status {
-                    all_bets.into_iter().filter(|bet| {
-                        match s.to_uppercase().as_str() {
-                            "PLACED" => matches!(bet.status, BetStatus::Placed),
-                            "WON" => matches!(bet.status, BetStatus::Won),
-                            "LOST" => matches!(bet.status, BetStatus::Lost),
-                            "CANCELLED" => matches!(bet.status, BetStatus::Cancelled),
-                            _ => true,
-                        }
-                    }).collect()
-                } else {
-                    all_bets
-                };
-
-                // Handle empty filtered results
-                if filtered_bets.is_empty() {
-                    return Vec::new();
-                }
-
-                // Apply pagination safely
-                let total = filtered_bets.len();
-                if offset >= total {
-                    return Vec::new();
-                }
-                
-                let end = (offset + limit).min(total);
-                filtered_bets.drain(offset..end).collect()
+                state.user_odds.get().clone()
             }
             Err(e) => {
                 eprintln!("Failed to load state: {:?}", e);

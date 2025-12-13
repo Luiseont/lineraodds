@@ -11,10 +11,10 @@ export const eventsStore = defineStore('events', () => {
     const { AppID, ChainID } = useApp()
     const WsUrl = import.meta.env.VITE_APP_SERVICE == '' ? 'http://localhost:8081' : import.meta.env.VITE_APP_SERVICE
 
-    //vars here
-    const events = ref<Array<any>>([])
+    // State - all events fetched from backend
+    const allEvents = ref<Array<any>>([])
 
-    // Pagination state
+    // Pagination and filter state
     const currentPage = ref(1)
     const pageSize = ref(10) // Fixed at 10 items per page
     const selectedStatus = ref<string | undefined>(undefined)
@@ -29,10 +29,10 @@ export const eventsStore = defineStore('events', () => {
     let apolloClient: any = null;
     let notificationSubscription: any = null;
 
-    // GraphQL queries
+    // GraphQL queries - simplified to fetch all events
     const EVENTS_QUERY = gql`
-        query Events($status: String, $typeEvent: String, $offset: Int, $limit: Int) {
-          events(status: $status, typeEvent: $typeEvent, offset: $offset, limit: $limit) {
+        query Events {
+          events {
             id
             typeEvent
             league
@@ -62,11 +62,52 @@ export const eventsStore = defineStore('events', () => {
         }
     `;
 
-    async function getEvents(status?: string, typeEvent?: string, page: number = 1) {
-        try {
-            const offset = (page - 1) * pageSize.value
+    // Computed: Apply filters to all events
+    const filteredEvents = computed(() => {
+        let filtered = allEvents.value
 
-            console.log('Fetching events with filters:', { status, typeEvent, offset, limit: pageSize.value })
+        // Apply status filter
+        if (selectedStatus.value) {
+            filtered = filtered.filter(event =>
+                event.status.toLowerCase() === selectedStatus.value!.toLowerCase()
+            )
+        }
+
+        // Apply type event filter
+        if (selectedTypeEvent.value) {
+            filtered = filtered.filter(event =>
+                event.typeEvent.toLowerCase() === selectedTypeEvent.value!.toLowerCase()
+            )
+        }
+
+        return filtered
+    })
+
+    // Computed: Apply pagination to filtered events
+    const events = computed(() => {
+        const start = (currentPage.value - 1) * pageSize.value
+        const end = start + pageSize.value
+        return filteredEvents.value.slice(start, end)
+    })
+
+    // Computed: Total pages based on filtered events
+    const totalPages = computed(() => {
+        return Math.ceil(filteredEvents.value.length / pageSize.value)
+    })
+
+    // Computed: Check if there's a next page
+    const hasNextPage = computed(() => {
+        return currentPage.value < totalPages.value
+    })
+
+    // Computed: Check if there's a previous page
+    const hasPreviousPage = computed(() => {
+        return currentPage.value > 1
+    })
+
+    async function getEvents() {
+        try {
+            console.log('Fetching all events (no filters)')
 
             const response = await fetch(AppChainUrl.value, {
                 method: 'POST',
@@ -75,12 +116,7 @@ export const eventsStore = defineStore('events', () => {
                 },
                 body: JSON.stringify({
                     query: EVENTS_QUERY.loc?.source.body || '',
-                    variables: {
-                        status,
-                        typeEvent,
-                        offset,
-                        limit: pageSize.value
-                    }
+                    variables: {}
                 }),
             });
 
@@ -96,11 +132,11 @@ export const eventsStore = defineStore('events', () => {
                 return;
             }
 
-            events.value = data.data?.events || [];
-            console.log('Events loaded:', events.value.length);
+            allEvents.value = data.data?.events || [];
+            console.log('All events loaded:', allEvents.value.length);
         } catch (error) {
             console.error('Error fetching events:', error);
-            events.value = [];
+            allEvents.value = [];
         }
     }
 
@@ -126,9 +162,6 @@ export const eventsStore = defineStore('events', () => {
 
             console.log('Starting notification subscription for chain:', ChainID.value);
 
-            // Cargar eventos con filtro inicial de SCHEDULED
-            setFilters('Scheduled');
-
             // Suscribirse a notificaciones
             notificationSubscription = apolloClient.subscribe({
                 query: NOTIFICATIONS_SUBSCRIPTION,
@@ -140,7 +173,7 @@ export const eventsStore = defineStore('events', () => {
                     console.log('Notification received:', result);
                     // Cuando llega una notificación, recargar eventos
                     console.log('Refreshing events due to notification...');
-                    getEvents(selectedStatus.value, selectedTypeEvent.value, currentPage.value);
+                    getEvents();
                 },
                 error: (error: any) => {
                     console.error('Subscription error:', error);
@@ -168,7 +201,7 @@ export const eventsStore = defineStore('events', () => {
     function cleanup() {
         stopNotificationSubscription();
         // Limpiar lista de eventos
-        events.value = [];
+        allEvents.value = [];
         // Limpiar Apollo Client para forzar recreación en próxima conexión
         if (apolloClient) {
             apolloClient = null;
@@ -218,7 +251,6 @@ export const eventsStore = defineStore('events', () => {
         } else {
             // Solo limpiar cuando se desconecta
             cleanup();
-            events.value = [];
         }
     }, { immediate: true })
 
@@ -228,30 +260,36 @@ export const eventsStore = defineStore('events', () => {
     // Inicializar inmediatamente si ya está conectado
     initialize();
 
-    // Pagination functions
+    // Pagination functions - now only update state
     function nextPage() {
-        currentPage.value++
-        getEvents(selectedStatus.value, selectedTypeEvent.value, currentPage.value)
+        if (hasNextPage.value) {
+            currentPage.value++
+        }
     }
 
     function previousPage() {
-        if (currentPage.value > 1) {
+        if (hasPreviousPage.value) {
             currentPage.value--
-            getEvents(selectedStatus.value, selectedTypeEvent.value, currentPage.value)
         }
     }
 
     function setFilters(status?: string, typeEvent?: string) {
         selectedStatus.value = status
         selectedTypeEvent.value = typeEvent
-        currentPage.value = 1 // Reset to first page
-        getEvents(status, typeEvent, 1)
+        currentPage.value = 1 // Reset to first page when filters change
     }
 
     return {
         events,
+        allEvents,
+        filteredEvents,
         currentPage,
         pageSize,
+        totalPages,
+        hasNextPage,
+        hasPreviousPage,
+        selectedStatus,
+        selectedTypeEvent,
         getEvents,
         nextPage,
         previousPage,

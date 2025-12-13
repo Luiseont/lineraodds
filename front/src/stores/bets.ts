@@ -1,15 +1,12 @@
 import { ref, computed, watch } from 'vue'
 import { defineStore } from 'pinia'
-import { useWallet } from '@/composables/useWallet'
 import { useApp } from '@/composables/useApp'
 
 export const betsStore = defineStore('bets', () => {
     // Composables
-    const { connected } = useWallet()
     const { backend } = useApp()
 
     // State
-    const userBets = ref<Array<any>>([])
     const allUserBets = ref<Array<any>>([]) // All bets without filters for checking
 
     // Pagination state
@@ -21,7 +18,41 @@ export const betsStore = defineStore('bets', () => {
     const totalStaked = ref('0')
     const potentialWinnings = ref('0')
 
-    // Computed para construir la URL reactivamente
+    // Computed: Apply status filter to all bets
+    const filteredBets = computed(() => {
+        let filtered = allUserBets.value
+
+        // Apply status filter
+        if (selectedBetStatus.value) {
+            filtered = filtered.filter(bet =>
+                bet.status.toLowerCase() === selectedBetStatus.value!.toLowerCase()
+            )
+        }
+
+        return filtered
+    })
+
+    // Computed: Apply pagination to filtered bets
+    const userBets = computed(() => {
+        const start = (currentBetsPage.value - 1) * betsPageSize.value
+        const end = start + betsPageSize.value
+        return filteredBets.value.slice(start, end)
+    })
+
+    // Computed: Total pages based on filtered bets
+    const totalBetsPages = computed(() => {
+        return Math.ceil(filteredBets.value.length / betsPageSize.value)
+    })
+
+    // Computed: Check if there's a next page
+    const hasNextBetsPage = computed(() => {
+        return currentBetsPage.value < totalBetsPages.value
+    })
+
+    // Computed: Check if there's a previous page
+    const hasPreviousBetsPage = computed(() => {
+        return currentBetsPage.value > 1
+    })
 
     // Functions
     async function getBetsSummary() {
@@ -49,61 +80,7 @@ export const betsStore = defineStore('bets', () => {
         }
     }
 
-    async function getUserBets(status?: string, page: number = 1) {
-        try {
-            const offset = (page - 1) * betsPageSize.value
-            const limit = betsPageSize.value
-
-            // Build simple query with values embedded directly
-            let queryStr = 'query { myOdds('
-            const params: string[] = []
-
-            if (status) {
-                params.push(`status: "${status}"`)
-            }
-            params.push(`offset: ${offset}`)
-            params.push(`limit: ${limit}`)
-
-            queryStr += params.join(', ')
-            queryStr += ') { eventId, odd, league, teams{ home, away }, status, startTime, selection, bid, placedAt } }'
-
-            const query = JSON.stringify({ query: queryStr })
-
-            console.log('Fetching bets with query:', query)
-
-            const result = await backend.value.query(query)
-            const response = JSON.parse(result)
-            console.log("Apuestas del usuario:", response.data?.myOdds)
-            userBets.value = response.data?.myOdds || []
-
-            // Also fetch summary
-            await getBetsSummary()
-        } catch (error) {
-            console.error('Error al obtener apuestas del usuario:', error)
-            userBets.value = []
-        }
-    }
-
-    // Pagination functions
-    function nextBetsPage() {
-        currentBetsPage.value++
-        getUserBets(selectedBetStatus.value, currentBetsPage.value)
-    }
-
-    function previousBetsPage() {
-        if (currentBetsPage.value > 1) {
-            currentBetsPage.value--
-            getUserBets(selectedBetStatus.value, currentBetsPage.value)
-        }
-    }
-
-    function setBetFilters(status?: string) {
-        selectedBetStatus.value = status
-        currentBetsPage.value = 1 // Reset to first page
-        getUserBets(status, 1)
-    }
-
-    async function getAllUserBets() {
+    async function fetchAllBets() {
         try {
             // Fetch ALL bets without any filters
             const query = JSON.stringify({
@@ -113,17 +90,38 @@ export const betsStore = defineStore('bets', () => {
             console.log('Fetching all user bets (no filters)')
 
             const result = await backend.value.query(query)
+            console.log("Result:", result)
             const response = JSON.parse(result)
             console.log("All user bets:", response.data?.myOdds)
             allUserBets.value = response.data?.myOdds || []
+
+            // Also fetch summary
+            await getBetsSummary()
         } catch (error) {
-            console.error('Error al obtener todas las apuestas del usuario:', error)
+            console.error('Error al obtener apuestas del usuario:', error)
             allUserBets.value = []
         }
     }
 
+    // Pagination functions - now only update state
+    function nextBetsPage() {
+        if (hasNextBetsPage.value) {
+            currentBetsPage.value++
+        }
+    }
+
+    function previousBetsPage() {
+        if (hasPreviousBetsPage.value) {
+            currentBetsPage.value--
+        }
+    }
+
+    function setBetFilters(status?: string) {
+        selectedBetStatus.value = status
+        currentBetsPage.value = 1 // Reset to first page when filters change
+    }
+
     function resetBets() {
-        userBets.value = []
         allUserBets.value = []
         currentBetsPage.value = 1
         selectedBetStatus.value = undefined
@@ -131,27 +129,22 @@ export const betsStore = defineStore('bets', () => {
         potentialWinnings.value = '0'
     }
 
-    watch(() => connected.value, () => {
-        if (connected.value) {
-            getUserBets()
-            getBetsSummary()
-            getAllUserBets()
-        }
-    })
-
     return {
         // State
         userBets,
         allUserBets,
+        filteredBets,
         currentBetsPage,
         betsPageSize,
         selectedBetStatus,
         totalStaked,
         potentialWinnings,
+        totalBetsPages,
+        hasNextBetsPage,
+        hasPreviousBetsPage,
 
         // Functions
-        getUserBets,
-        getAllUserBets,
+        fetchAllBets,
         getBetsSummary,
         nextBetsPage,
         previousBetsPage,

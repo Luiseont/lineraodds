@@ -82,7 +82,7 @@
       <Pagination
         v-if="events.length > 0"
         :current-page="currentPage"
-        :has-more="events.length === 10"
+        :has-more="hasNextPage"
         @next="nextPage"
         @previous="previousPage"
       />
@@ -98,10 +98,13 @@ import { useEvents } from '@/composables/useEvents'
 
 const { 
   events,
+  allEvents,
   currentPage,
+  hasNextPage,
   nextPage,
   previousPage,
   setFilters,
+  getEvents,
   cleanup
 } = useEvents()
 
@@ -110,10 +113,10 @@ const statusFilters = ['SCHEDULED', 'LIVE', 'FINISHED', 'POSTPONED']
 const selectedStatus = ref('SCHEDULED')
 const selectedEventType = ref<string | null>(null)
 
-// Extract unique event types from events
+// Extract unique event types from all events (not just filtered)
 const eventTypes = computed(() => {
   const types = new Set<string>()
-  events.value.forEach((event: any) => {
+  allEvents.value.forEach((event: any) => {
     if (event.typeEvent) {
       types.add(event.typeEvent)
     }
@@ -128,29 +131,26 @@ const emptyStateMessage = computed(() => {
   return 'No events available'
 })
 
-async function handleStatusFilter(status: string) {
+function handleStatusFilter(status: string) {
   selectedStatus.value = status
-  isLoading.value = true
-  await setFilters(status, selectedEventType.value || undefined)
-  isLoading.value = false
+  setFilters(status, selectedEventType.value || undefined)
 }
 
-async function handleTypeFilter(type: string | null) {
+function handleTypeFilter(type: string | null) {
   selectedEventType.value = type
-  isLoading.value = true
-  await setFilters(selectedStatus.value, type || undefined)
-  isLoading.value = false
+  setFilters(selectedStatus.value, type || undefined)
 }
 
 // Load initial events
 onMounted(async () => {
   isLoading.value = true
-  await setFilters(selectedStatus.value, undefined)
+  await getEvents()
+  setFilters(selectedStatus.value, undefined)
   isLoading.value = false
 })
 
 // Cleanup when component unmounts
 onUnmounted(() => {
-  cleanup()
+  //cleanup()
 })
 </script>

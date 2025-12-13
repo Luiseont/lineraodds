@@ -7,26 +7,33 @@ export function useBets() {
     const {
         userBets,
         allUserBets,
+        filteredBets,
         currentBetsPage,
         betsPageSize,
         selectedBetStatus,
         totalStaked,
-        potentialWinnings
+        potentialWinnings,
+        totalBetsPages,
+        hasNextBetsPage,
+        hasPreviousBetsPage
     } = storeToRefs(store)
 
     return {
         // State
         userBets,
         allUserBets,
+        filteredBets,
         currentBetsPage,
         betsPageSize,
         selectedBetStatus,
         totalStaked,
         potentialWinnings,
+        totalBetsPages,
+        hasNextBetsPage,
+        hasPreviousBetsPage,
 
         // Functions
-        getUserBets: store.getUserBets,
-        getAllUserBets: store.getAllUserBets,
+        fetchAllBets: store.fetchAllBets,
         getBetsSummary: store.getBetsSummary,
         nextBetsPage: store.nextBetsPage,
         previousBetsPage: store.previousBetsPage,

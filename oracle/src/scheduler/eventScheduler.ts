@@ -10,9 +10,9 @@ import { config } from '../config';
 export function scheduleWeeklyEventUpdate() {
     // Production: Every Monday at 00:00
     // Demo: Every 15 minutes
-    const cronPattern = config.demoMode ? '*/15 * * * *' : '0 0 * * 1';
+    const cronPattern = config.demoMode ? '*/10 * * * *' : '0 0 * * 1';
     const modeDescription = config.demoMode
-        ? 'Demo: every 15 minutes'
+        ? 'Demo: every 10 minutes'
         : 'Production: weekly (Monday 00:00)';
 
     const task = cron.schedule(cronPattern, async () => {
