@@ -26,7 +26,8 @@ source /shared/env.sh
 
 echo "Variables cargadas del servicio:"
 echo "  APP_ID: $VITE_APP_ID"
-
+ 
+ 
 export LINERA_FAUCET=${LINERA_FAUCET:-https://faucet.testnet-conway.linera.net}
 
 # Verificar y generar wallet de Linera si es necesario
