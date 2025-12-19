@@ -244,7 +244,7 @@ export const appStore = defineStore('app', () => {
             console.log(`Claiming reward for event ${eventId}`)
             const query = ClaimRewardQuery.replace('$EVENT_ID', eventId)
 
-            const result = await backend.value.query(query, { owner: provider.value.autoSignerAddress })
+            const result = await backend.value.query(query)
             const response = JSON.parse(result)
             console.log("Reward claimed successfully:", response)
 

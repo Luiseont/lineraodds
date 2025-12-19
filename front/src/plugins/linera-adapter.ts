@@ -76,14 +76,14 @@ export class LineraAdapter {
         const userSigner = new MetaMaskCompatibleSigner();
 
         // Create Composite signer with both signers (Linera native)
-        const compositeSigner = new linera.signer.Composite(autoSigner, userSigner);
+        const compositeSigner = new linera.signer.Composite(userSigner);
 
         const client = await new Client(wallet, compositeSigner);
         console.log("Autosigner Address: ", autoSigner.address());
         // Obtain chain instance
         const chain = await client.chain(chainId);
-        await chain.addOwner(autoSigner.address());
-        await wallet.setOwner(chainId, autoSigner.address());
+        //await chain.addOwner(autoSigner.address());
+        //await wallet.setOwner(chainId, autoSigner.address());
         this.provider = {
           client,
           wallet,
