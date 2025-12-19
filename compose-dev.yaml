@@ -1,6 +1,9 @@
 services:
   service:
     build: ./service
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     ports:
     - "8081:8081" # service main
     volumes:
@@ -29,10 +32,8 @@ services:
   oracle:
     build: ./oracle
     ports:
-      - "9999:9999"
-      - "8090:8090"
-      - "9002:9001"   
-      - "13002:13001"
+      - "127.0.0.1:9999:9999"
+      - "127.0.0.1:8090:8090"
     volumes:
       - ./oracle:/oracle
       - linera-wallet:/root/.config/linera
@@ -41,7 +42,7 @@ services:
       - LINERA_FAUCET=https://faucet.testnet-conway.linera.net
       - SERVICE_URL=http://localhost:8090
       - API=https://v3.football.api-sports.io
-      - API_KEY=${API_KEY}
+      - API_KEY=0ea8f6e37f0d7f34b36f300b31afd19c
       - DEMO_MODE=true
     restart: unless-stopped
     entrypoint: ["bash", "/oracle/start.bash"]

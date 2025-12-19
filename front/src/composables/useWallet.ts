@@ -40,7 +40,7 @@ export async function connect(key?: string) {
     console.log("✅ Conectado! Chain ID:", chainId.value)
     console.log("✅ Address:", address.value)
 
-    providerRef.value = LineraAdapter.getInstance()
+    providerRef.value = LineraAdapter.getInstance().getProvider()
     connected.value = true
   } catch (e: any) {
     error.value = e?.message ?? String(e)

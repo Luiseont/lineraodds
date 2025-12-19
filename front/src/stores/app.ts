@@ -62,8 +62,11 @@ export const appStore = defineStore('app', () => {
             try {
                 backendReady.value = false
                 console.log("Setting backend... " + AppID.value)
-                await provider.value.setApplication(AppID.value)
-                backend.value = provider.value.getApplication()
+
+                // Use LineraAdapter for application setup
+                const adapter = (await import('@/plugins/linera-adapter')).lineraAdapter
+                await adapter.setApplication(AppID.value)
+                backend.value = adapter.getApplication()
                 backendReady.value = true
             } catch (error) {
                 console.error('Error al configurar backend:', error)
@@ -74,7 +77,7 @@ export const appStore = defineStore('app', () => {
     }
 
     function setupNotificationListener() {
-        if (!provider.value?.provider?.client) {
+        if (!provider.value?.client) {
             console.warn('Cliente no disponible para notificaciones')
             return
         }
@@ -85,7 +88,7 @@ export const appStore = defineStore('app', () => {
         console.log('Configurando listener de notificaciones...')
 
         // Registrar nuevo listener
-        notificationUnsubscribe = provider.value.provider.client.onNotification(async (notification: any) => {
+        notificationUnsubscribe = provider.value.chain.onNotification(async (notification: any) => {
             console.log('Notificación recibida:', notification)
             scheduleSubscription()
             /*
@@ -112,10 +115,10 @@ export const appStore = defineStore('app', () => {
                     scheduleSubscription()
                 }
             }
-
+            */
             if (notification.reason.NewIncomingBundle) {
                 getUserBalance()
-            }*/
+            }
         })
 
         console.log('Listener de notificaciones configurado')
@@ -252,6 +255,8 @@ export const appStore = defineStore('app', () => {
             isTransactionPending.value = false
         }
     }
+
+
 
     // Watchers
     watch(connected, async (newVal) => {

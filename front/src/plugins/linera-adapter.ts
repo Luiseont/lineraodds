@@ -3,9 +3,10 @@ import {
   Faucet,
   Client,
   Wallet,
-  Application,
+  Application
 } from "@linera/client";
-import { DynamicSigner, DynamicSdkSigner } from "./dynamic-signer";
+import * as linera from '@linera/client';
+import MetaMaskCompatibleSigner from "./metamask-compatible-signer";
 
 export interface LineraProvider {
   client: Client;
@@ -13,6 +14,9 @@ export interface LineraProvider {
   faucet: Faucet;
   address: string;
   chainId: string;
+  chain: any;
+  autoSigner: any; // Store the actual PrivateKey object
+  autoSignerAddress: string;
 }
 
 export class LineraAdapter {
@@ -65,16 +69,30 @@ export class LineraAdapter {
         const wallet = await faucet.createWallet();
         const chainId = await faucet.claimChain(wallet, address);
 
-        const signer = createSigner(dynamicWalletOrAccount);
-        const client = await new Client(wallet, signer, false);
-        console.log("✅ Linera wallet created successfully!");
+        // Create auto-signer for automatic operations
+        const autoSigner = linera.signer.PrivateKey.createRandom();
 
+        // Create user signer for wallet operations
+        const userSigner = new MetaMaskCompatibleSigner();
+
+        // Create Composite signer with both signers (Linera native)
+        const compositeSigner = new linera.signer.Composite(autoSigner, userSigner);
+
+        const client = await new Client(wallet, compositeSigner);
+        console.log("Autosigner Address: ", autoSigner.address());
+        // Obtain chain instance
+        const chain = await client.chain(chainId);
+        await chain.addOwner(autoSigner.address());
+        await wallet.setOwner(chainId, autoSigner.address());
         this.provider = {
           client,
           wallet,
           faucet,
           chainId,
           address,
+          chain,
+          autoSigner: autoSigner,
+          autoSignerAddress: autoSigner.address()
         };
 
         this.onConnectionChange?.();
@@ -97,9 +115,10 @@ export class LineraAdapter {
   async setApplication(appId: string) {
     if (!this.provider) throw new Error("Not connected to Linera");
     if (!appId) throw new Error("Application ID is required");
+    if (!this.provider.chain) throw new Error("Chain instance not available");
 
-    const application = await this.provider.client.application(appId);
-
+    // Use chain instance to get application (new API in v0.15.8)
+    const application = await this.provider.chain.application(appId);
     if (!application) throw new Error("Failed to get application");
     console.log("✅ Linera application set successfully!");
     this.application = application;
@@ -152,6 +171,8 @@ export class LineraAdapter {
     this.onConnectionChange = undefined;
   }
 
+
+
   reset(): void {
     this.application = null;
     this.provider = null;
@@ -163,16 +184,7 @@ export class LineraAdapter {
 // Export singleton instance
 export const lineraAdapter = LineraAdapter.getInstance();
 
-// Helpers to support both Dynamic React wallet and JS SDK wallet account
+// Helper to extract address from Dynamic wallet
 function getAddressFromDynamic(obj: any): string {
   return (obj?.address ?? obj?.accountAddress ?? obj?.user?.primaryWallet?.address ?? '').toString();
-}
-
-function createSigner(obj: any) {
-  if (obj && (obj.accountAddress || obj.chain)) {
-    // JS SDK WalletAccount-like
-    return new DynamicSdkSigner(obj);
-  }
-  // React wallet-like
-  return new DynamicSigner(obj);
 }

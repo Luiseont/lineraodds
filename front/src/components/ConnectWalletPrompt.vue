@@ -32,9 +32,20 @@
       </button>
       
       <!-- Error Message -->
-      <p v-if="error" class="mt-4 text-red-500 text-sm">
-        {{ error }}
-      </p>
+      <div v-if="error" class="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
+        <div class="flex items-start gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
+          </svg>
+          <div class="flex-1">
+            <p class="text-sm font-medium text-red-800 mb-1">Connection Failed</p>
+            <p class="text-xs text-red-700">{{ error }}</p>
+            <p v-if="error.includes('Linera testnet')" class="text-xs text-red-600 mt-2">
+              💡 Try refreshing the page and connecting again
+            </p>
+          </div>
+        </div>
+      </div>
       
       <!-- Helper Text -->
       <p class="mt-6 text-gray-400 text-[13px]">
