@@ -206,6 +206,11 @@ impl Contract for ManagementContract {
             },
             Operation::RequestMint{ amount } => {
                 let chain_id = self.runtime.application_creator_chain_id();
+                let bonus_claimed = self.state.bonus_claimed.get().clone();
+                if bonus_claimed {
+                    return;
+                }
+                self.state.bonus_claimed.set(true);
                 self.runtime.prepare_message(
                     Message::MintTokens { amount: amount.clone() }
                 ).with_authentication().send_to(chain_id);  

@@ -3,7 +3,7 @@
     <ul>
       <li v-for="fixture in props.fixtures" :key="fixture.id" class="border-b last:border-b-0 py-2 sm:py-3 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div class="flex-1">
-          <p class="font-semibold flex items-center gap-2 flex-wrap">
+          <p class="font-semibold flex items-center justify-center sm:justify-start gap-2 flex-wrap">
             <!-- Home Team Logo -->
             <img 
               :src="getTeamLogoUrl(fixture.teams.home)"

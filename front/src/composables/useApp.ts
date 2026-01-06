@@ -27,6 +27,7 @@ export function useApp() {
         userBalance: store.getUserBalance,
         mintTokens: store.mintTokens,
         placeBet: store.placeBet,
-        claimReward: store.claimReward
+        claimReward: store.claimReward,
+        checkBonusClaimed: store.checkBonusClaimed
     }
 }

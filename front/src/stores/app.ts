@@ -20,6 +20,7 @@ export const appStore = defineStore('app', () => {
 
     // Queries GraphQL
     const UserBalanceQuery = '{"query":"query{balance}"}'
+    const BonusClaimedQuery = '{"query":"query{bonusClaimed}"}'
     const MintTokensQuery = '{"query":"mutation{requestMint(amount: \\"$AMOUNT\\")}"}'
     const PlaceBetQuery = '{"query":"mutation{placeBet(home: \\"$HOME\\", away: \\"$AWAY\\", league: \\"$LEAGUE\\", startTime: $START_TIME, odd: $ODD, selection: \\"$SELECTION\\", bid: \\"$BID\\", eventId: \\"$EVENT_ID\\")}"}'
     const ClaimRewardQuery = '{"query":"mutation{claimReward(eventId: \\"$EVENT_ID\\")}"}'
@@ -256,6 +257,17 @@ export const appStore = defineStore('app', () => {
         }
     }
 
+    async function checkBonusClaimed(): Promise<boolean> {
+        try {
+            const result = await backend.value.query(BonusClaimedQuery)
+            const response = JSON.parse(result)
+            console.log("Bonus claimed status:", response.data?.bonusClaimed)
+            return response.data?.bonusClaimed || false
+        } catch (error) {
+            console.error('Error checking bonus claimed:', error)
+            return false
+        }
+    }
 
 
     // Watchers
@@ -297,6 +309,7 @@ export const appStore = defineStore('app', () => {
         getUserBalance,
         mintTokens,
         placeBet,
-        claimReward
+        claimReward,
+        checkBonusClaimed
     }
 })

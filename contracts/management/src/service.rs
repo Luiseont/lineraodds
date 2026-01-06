@@ -153,4 +153,16 @@ impl QueryRoot {
             }
         }
     }
+
+    async fn bonus_claimed(&self) -> bool {
+        match ManagementState::load(self.storage_context.clone()).await{
+            Ok(state) => {
+                state.bonus_claimed.get().clone()
+            }
+            Err(e) => {
+                eprintln!("Failed to load state: {:?}", e);
+                false
+            }
+        }
+    }
 }

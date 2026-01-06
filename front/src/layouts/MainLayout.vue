@@ -5,6 +5,7 @@
       <ConnectWalletPrompt v-if="!connected" />
       <RouterView v-else />
     </main>
+    <OnboardingModal />
   </div>
 </template>
 
@@ -12,6 +13,7 @@
 import { RouterView } from 'vue-router'
 import NavBar from '@/components/NavBarMobile.vue'
 import ConnectWalletPrompt from '@/components/ConnectWalletPrompt.vue'
+import OnboardingModal from '@/components/OnboardingModal.vue'
 import { useWallet } from '@/composables/useWallet'
 
 const { connected } = useWallet()

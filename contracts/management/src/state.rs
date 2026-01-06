@@ -14,6 +14,7 @@ pub struct ManagementState {
     pub user_odds: RegisterView<Vec<UserOdds>>,
     pub user_balance: RegisterView<Amount>,
     pub nonce: RegisterView<u64>,
+    pub bonus_claimed: RegisterView<bool>,
 }
 
 

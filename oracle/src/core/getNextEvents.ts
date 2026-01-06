@@ -15,7 +15,7 @@ interface APIFootballResponse {
 
 export async function getNextEvents() {
     const apiKey = config.apiKey;
-    const currentYear = new Date().getFullYear().toString();
+    const currentYear = '2025';//new Date().getFullYear().toString();
 
     console.log('Checking existing SCHEDULED events...');
     const { getEvents } = await import('./operations/getEvents');

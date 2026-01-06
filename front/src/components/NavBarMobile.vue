@@ -15,7 +15,16 @@
         </button>
         <div class="hidden sm:flex items-center gap-2">
           <router-link to="/" class="text-white/90 hover:text-white px-3">Sports</router-link>
-          <router-link to="/mint" class="block text-white/90 hover:text-white py-1.5">Mint</router-link>
+          <router-link to="/welcome-bonus" class="relative block text-white/90 hover:text-white py-1.5 px-3 group">
+            <span class="relative inline-block">
+              <span class="relative z-10 font-semibold">Bonus</span>
+              <span class="absolute inset-0 bg-gradient-to-r from-yellow-400 via-orange-400 to-yellow-400 opacity-0 group-hover:opacity-30 blur-sm animate-pulse-slow"></span>
+            </span>
+            <span class="absolute -top-1 -right-1 flex h-3 w-3">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-3 w-3 bg-yellow-500"></span>
+            </span>
+          </router-link>
           <!-- Balance Card -->
           <div class="ml-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-brand bg-white/10 border border-white/20 text-sm">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 text-yellow-400">
@@ -49,7 +58,16 @@
       </div>
       <div v-show="open" class="sm:hidden pb-3 space-y-1">
         <router-link to="/" class="block text-white/90 hover:text-white py-1.5">Sports</router-link>
-        <router-link to="/mint" class="block text-white/90 hover:text-white py-1.5">Mint</router-link>
+        <router-link to="/welcome-bonus" class="relative block text-white/90 hover:text-white py-1.5 pr-6 group">
+          <span class="relative inline-block">
+            <span class="relative z-10 font-semibold">Bonus</span>
+            <span class="absolute inset-0 bg-gradient-to-r from-yellow-400 via-orange-400 to-yellow-400 opacity-0 group-hover:opacity-30 blur-sm animate-pulse-slow"></span>
+          </span>
+          <span class="absolute top-0 right-0 flex h-3 w-3">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-3 w-3 bg-yellow-500"></span>
+          </span>
+        </router-link>
         <!-- Balance Card Mobile -->
         <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-brand bg-white/10 border border-white/20 text-sm">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 text-yellow-400">
@@ -139,3 +157,18 @@ onMounted(async () => {
 onBeforeUnmount(() => document.removeEventListener('click', onClickOutside))
  
 </script>
+
+<style scoped>
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+</style>
