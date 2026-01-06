@@ -122,6 +122,15 @@ else
     echo "Saltando compilación y despliegue"
 fi
 
+# Validar que APP_ID no esté vacío o null
+if [ -z "$VITE_APP_ID" ] || [ "$VITE_APP_ID" = "null" ]; then
+    echo "❌ ERROR CRÍTICO: APP_ID está vacío o es null"
+    echo "El deploy del contrato falló. Revisa los logs anteriores."
+    exit 1
+fi
+
+echo "✓ APP_ID validado: $VITE_APP_ID"
+
 echo "Iniciando servicios..."
 echo "Logs de servicios en: $LINERA_TMP_DIR/service_*.log"
 

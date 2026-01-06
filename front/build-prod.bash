@@ -27,6 +27,15 @@ echo "Variables cargadas del servicio:"
 echo "  APP_ID: $VITE_APP_ID"
 echo "  MAIN_CHAIN_ID: $VITE_MAIN_CHAIN_ID"
 
+# Validar que APP_ID no esté vacío o null
+if [ -z "$VITE_APP_ID" ] || [ "$VITE_APP_ID" = "null" ]; then
+    echo "❌ ERROR CRÍTICO: APP_ID recibido está vacío o es null"
+    echo "El servicio no generó un APP_ID válido."
+    exit 1
+fi
+
+echo "✓ APP_ID validado: $VITE_APP_ID"
+
 # Exportar variables como variables de entorno para que Vite las use
 export VITE_APP_ID
 export VITE_MAIN_CHAIN_ID
