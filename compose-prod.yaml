@@ -8,8 +8,8 @@ services:
       - .:/build
       - service-wallet:/root/.config/linera
       - shared-env:/shared
-    environment:
-      - FORCE_REDEPLOY=true  # Forzar redespliegue del contrato
+    #environment:
+    # - FORCE_REDEPLOY=true  # Forzar redespliegue del contrato
     entrypoint: ["bash", "/build/service/run.bash"]
     restart: unless-stopped
     healthcheck:
