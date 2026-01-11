@@ -89,6 +89,7 @@ export interface Event {
     live_score?: LiveScore;  // Optional
     match_events?: MatchEvent[];  // Optional
     last_updated?: string;  // Optional Timestamp
+    current_minute?: number;  // Optional - Current match minute
 }
 
 // Match Rust struct: UserOdd

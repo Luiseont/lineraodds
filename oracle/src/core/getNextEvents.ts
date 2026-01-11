@@ -15,7 +15,7 @@ interface APIFootballResponse {
 
 export async function getNextEvents() {
     const apiKey = config.apiKey;
-    const currentYear = '2023';//new Date().getFullYear().toString();
+    const currentYear = '2025';//new Date().getFullYear().toString();
 
     console.log('Checking existing SCHEDULED events...');
     const { getEvents } = await import('./operations/getEvents');
@@ -63,8 +63,8 @@ export async function getNextEvents() {
             console.log(`Fetching fixtures for ${league.name}...`);
 
             // Construir URL con parámetros
-            //const url = `${config.api}/fixtures?league=${league.id}&season=${league.season}&next=8`;
-            const url = `${config.api}/fixtures?league=${league.id}&season=${league.season}`;
+            const url = `${config.api}/fixtures?league=${league.id}&season=${league.season}&next=8`;
+            //const url = `${config.api}/fixtures?league=${league.id}&season=${league.season}`;
 
             const response = await fetch(url, {
                 method: 'GET',

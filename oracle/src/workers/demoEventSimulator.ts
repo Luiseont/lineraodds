@@ -1,6 +1,7 @@
-import { MatchStatus, Selection, MatchEventType, MatchEvent } from '../core/types';
+import { MatchStatus, Selection, MatchEventType, MatchEvent, Event } from '../core/types';
 import { updateEventStatus } from '../core/operations/updateEventStatus';
 import { updateEventScore } from '../core/operations/updateEventScore';
+import { updateCurrentMinute } from '../core/operations/updateCurrentMinute';
 import { addMatchEvent } from '../core/operations/addMatchEvent';
 import { resolveEvent } from '../core/operations/resolveEvent';
 import { DemoEvent, MatchSimulation } from './types';
@@ -12,10 +13,9 @@ export class DemoEventSimulator {
     private checkInterval: NodeJS.Timeout | null = null;
     private isRunning: boolean = false;
 
-    // Configuración de tiempo: 1 minuto real = 10 minutos de partido
+    // Configuración de tiempo: 10 segundos reales = 1 minuto de partido
     private readonly MATCH_DURATION_MINUTES = 90;
-    private readonly REAL_TIME_PER_MATCH_MINUTE = 6000; // 6 segundos reales = 1 minuto partido
-    private readonly TOTAL_MATCH_DURATION = this.MATCH_DURATION_MINUTES * this.REAL_TIME_PER_MATCH_MINUTE; // 9 minutos
+    private readonly MINUTE_INTERVAL = 10000; // 10 segundos reales = 1 minuto partido
 
     async start(): Promise<void> {
         if (this.isRunning) {
@@ -28,6 +28,26 @@ export class DemoEventSimulator {
 
         // Load existing events from the contract
         await this.loadExistingEvents();
+
+        // Resume live events that were in progress
+        const allEvents = await getEvents();
+        console.log(`📋 Found ${allEvents.length} total events in contract`);
+
+        // Log status of each event
+        allEvents.forEach(e => {
+            console.log(`  - Event ${e.id}: status=${e.status}, current_minute=${e.current_minute}`);
+        });
+
+        const liveEvents = allEvents.filter(e => e.status.toLowerCase() === 'live');
+
+        if (liveEvents.length > 0) {
+            console.log(`🔄 Resuming ${liveEvents.length} live event(s)...`);
+            for (const event of liveEvents) {
+                await this.resumeLiveEvent(event);
+            }
+        } else {
+            console.log(`ℹ️  No live events to resume`);
+        }
 
         // Check every 30 seconds for events that need to transition
         this.checkInterval = setInterval(() => {
@@ -69,6 +89,7 @@ export class DemoEventSimulator {
             fixtureId,
             status: MatchStatus.Scheduled,
             createdAt: Date.now(),
+            startDelay: Math.random() * (5 * 60 * 1000 - 30 * 1000) + 30 * 1000  // 30s - 5min
         };
 
         this.events.set(eventId, event);
@@ -98,15 +119,15 @@ export class DemoEventSimulator {
                     const demoEvent: DemoEvent = {
                         eventId: event.id,
                         fixtureId: event.id,
-                        status: normalizedStatus as MatchStatus,
-                        createdAt: now - (Math.random() * 60000),
-                    };
+                        status: event.status as MatchStatus,
+                        createdAt: now,
+                        startDelay: Math.random() * (5 * 60 * 1000 - 30 * 1000) + 30 * 1000, // 30s - 5min
+                    }
 
-                    // If already live, set liveAt timestamp and start simulation
+                    // If already live, set liveAt timestamp
+                    // DON'T start simulation here - let resumeLiveEvent handle it with correct current_minute
                     if (normalizedStatus === MatchStatus.Live) {
-                        demoEvent.liveAt = now - (Math.random() * 60000);
-                        // Start simulation for already live events
-                        await this.startMatchSimulation(event.id);
+                        demoEvent.liveAt = now;
                     }
 
                     this.events.set(event.id, demoEvent);
@@ -139,15 +160,12 @@ export class DemoEventSimulator {
     }
 
     private async checkScheduledToLive(event: DemoEvent, now: number): Promise<void> {
-        // Random interval between 1-3 minutes before going live
-        const minInterval = 1 * 60 * 1000;
-        const maxInterval = 3 * 60 * 1000;
-        const randomInterval = Math.random() * (maxInterval - minInterval) + minInterval;
-
         const elapsed = now - event.createdAt;
 
-        if (elapsed >= randomInterval) {
-            console.log(`🟢 Event ${event.eventId} → LIVE (starting match simulation)`);
+        // Use the fixed random delay assigned to this event
+        if (elapsed >= event.startDelay) {
+            const delayMinutes = (event.startDelay / 1000 / 60).toFixed(1);
+            console.log(`🟢 Event ${event.eventId} → LIVE after ${delayMinutes}min (starting match simulation)`);
 
             await updateEventStatus(event.eventId, MatchStatus.Live);
 
@@ -172,20 +190,45 @@ export class DemoEventSimulator {
 
         this.liveMatches.set(eventId, simulation);
 
-        // Update every match minute
+        // Single interval: every 30 seconds = 1 match minute
         const interval = setInterval(async () => {
             try {
                 const sim = this.liveMatches.get(eventId);
                 if (!sim) {
-                    // Simulation was removed, clean up interval
                     console.log(`⚠️  Simulation ${eventId} not found, stopping interval`);
                     clearInterval(interval);
                     return;
                 }
-                await this.updateMatchMinute(eventId);
+
+                // Increment minute
+                sim.matchMinute++;
+
+                // Update current minute in contract
+                await updateCurrentMinute(eventId, sim.matchMinute);
+
+                // Probabilistic event generation (only one event per minute)
+                await this.tryGenerateEvents(sim);
+
+                // Update score if changed
+                await updateEventScore(
+                    eventId,
+                    sim.homeScore.toString(),
+                    sim.awayScore.toString()
+                );
+
+                console.log(`⚽ ${eventId} - Min ${sim.matchMinute}: ${sim.homeScore}-${sim.awayScore}`);
+
+                // Halftime
+                if (sim.matchMinute === 45) {
+                    console.log(`⏸️  HALFTIME: ${sim.homeScore}-${sim.awayScore}`);
+                }
+
+                // Check if match should end
+                if (sim.matchMinute >= this.MATCH_DURATION_MINUTES) {
+                    await this.finishMatch(eventId, sim);
+                }
             } catch (error) {
-                console.error(`❌ Error updating match ${eventId}:`, error);
-                // Clean up on error
+                console.error(`❌ Error in match simulation ${eventId}:`, error);
                 const sim = this.liveMatches.get(eventId);
                 if (sim) {
                     await this.finishMatch(eventId, sim);
@@ -193,47 +236,16 @@ export class DemoEventSimulator {
                     clearInterval(interval);
                 }
             }
-        }, this.REAL_TIME_PER_MATCH_MINUTE);
+        }, this.MINUTE_INTERVAL);
 
-        // Save interval reference
         simulation.interval = interval;
-
         console.log(`⚽ Match simulation started for event ${eventId}`);
     }
 
-    private async updateMatchMinute(eventId: string): Promise<void> {
-        const simulation = this.liveMatches.get(eventId);
-        if (!simulation) return;
-
-        simulation.matchMinute++;
-
-        // Simulate match events
-        await this.simulateMatchEvents(simulation);
-
-        // Update score in blockchain
-        await updateEventScore(
-            eventId,
-            simulation.homeScore.toString(),
-            simulation.awayScore.toString()
-        );
-
-        console.log(`⚽ ${eventId} - Min ${simulation.matchMinute}: ${simulation.homeScore}-${simulation.awayScore}`);
-
-        // Halftime
-        if (simulation.matchMinute === 45) {
-            console.log(`⏸️  HALFTIME: ${simulation.homeScore}-${simulation.awayScore}`);
-        }
-
-        // End of match
-        if (simulation.matchMinute >= this.MATCH_DURATION_MINUTES) {
-            await this.finishMatch(eventId, simulation);
-        }
-    }
-
-    private async simulateMatchEvents(simulation: MatchSimulation): Promise<void> {
+    private async tryGenerateEvents(simulation: MatchSimulation): Promise<void> {
         const minute = simulation.matchMinute;
 
-        // Goal probability: 3% per minute = ~2.7 goals in 90 minutes
+        // Goal: 3% probability per minute (~2.7 goals in 90 minutes)
         if (Math.random() < 0.03) {
             const team = Math.random() < 0.5 ? 'home' : 'away';
 
@@ -255,10 +267,11 @@ export class DemoEventSimulator {
             await addMatchEvent(simulation.eventId, matchEvent);
             simulation.events.push(matchEvent);
 
-            console.log(`⚽ GOAL! ${team.toUpperCase()} - Minute ${minute} (${simulation.homeScore}-${simulation.awayScore})`);
+            console.log(`⚽ GOAL! ${team.toUpperCase()} - Min ${minute} (${simulation.homeScore}-${simulation.awayScore})`);
+            return; // Only one event per minute
         }
 
-        // Yellow card probability: 4% per minute
+        // Yellow card: 4% probability
         if (Math.random() < 0.04) {
             const team = Math.random() < 0.5 ? 'home' : 'away';
 
@@ -275,9 +288,10 @@ export class DemoEventSimulator {
             simulation.events.push(matchEvent);
 
             console.log(`🟨 Yellow Card - ${team} - Min ${minute}`);
+            return; // Only one event per minute
         }
 
-        // Red card probability: 0.5% per minute
+        // Red card: 0.5% probability
         if (Math.random() < 0.005) {
             const team = Math.random() < 0.5 ? 'home' : 'away';
 
@@ -294,6 +308,7 @@ export class DemoEventSimulator {
             simulation.events.push(matchEvent);
 
             console.log(`🟥 Red Card - ${team} - Min ${minute}`);
+            return; // Only one event per minute
         }
 
         // Substitutions (more likely in second half)
@@ -313,8 +328,13 @@ export class DemoEventSimulator {
             simulation.events.push(matchEvent);
 
             console.log(`🔄 Substitution - ${team} - Min ${minute}`);
+            return; // Only one event per minute
         }
+
+        // If no event occurred, the minute passes without events
     }
+
+
 
     private async finishMatch(eventId: string, simulation: MatchSimulation): Promise<void> {
         // Stop interval
@@ -353,6 +373,100 @@ export class DemoEventSimulator {
         this.events.delete(eventId);
 
         console.log(`✅ Cleaned up simulation for event ${eventId}`);
+    }
+
+    private async resumeLiveEvent(event: Event): Promise<void> {
+        const eventId = event.id;
+
+        // Don't resume if already simulating
+        if (this.liveMatches.has(eventId)) {
+            console.log(`⚠️  Event ${eventId} already being simulated`);
+            return;
+        }
+
+        // Get current minute from event
+        const currentMinute = event.current_minute || 0;
+
+        // Don't resume if match is over
+        if (currentMinute >= this.MATCH_DURATION_MINUTES) {
+            console.log(`⚠️  Event ${eventId} already finished (min ${currentMinute}), resolving...`);
+            // Resolve the event
+            const homeScore = parseInt(event.live_score?.home || '0');
+            const awayScore = parseInt(event.live_score?.away || '0');
+            let winner: Selection;
+            if (homeScore > awayScore) winner = Selection.Home;
+            else if (awayScore > homeScore) winner = Selection.Away;
+            else winner = Selection.Tie;
+
+            await resolveEvent(eventId, winner, homeScore.toString(), awayScore.toString());
+            return;
+        }
+
+        console.log(`🔄 Resuming event ${eventId} from minute ${currentMinute}`);
+        console.log(`   📊 Event data: current_minute=${event.current_minute}, live_score=${JSON.stringify(event.live_score)}`);
+
+        // Create simulation state from existing event data
+        const simulation: MatchSimulation = {
+            eventId,
+            matchMinute: currentMinute,
+            homeScore: parseInt(event.live_score?.home || '0'),
+            awayScore: parseInt(event.live_score?.away || '0'),
+            events: event.match_events || [],
+            startedAt: Date.now() - (currentMinute * this.MINUTE_INTERVAL)
+        };
+
+        this.liveMatches.set(eventId, simulation);
+
+        // Start simulation interval from current minute
+        const interval = setInterval(async () => {
+            try {
+                const sim = this.liveMatches.get(eventId);
+                if (!sim) {
+                    clearInterval(interval);
+                    return;
+                }
+
+                // Increment minute
+                sim.matchMinute++;
+
+                // Update current minute in contract
+                await updateCurrentMinute(eventId, sim.matchMinute);
+
+                // Probabilistic event generation
+                await this.tryGenerateEvents(sim);
+
+                // Update score
+                await updateEventScore(
+                    eventId,
+                    sim.homeScore.toString(),
+                    sim.awayScore.toString()
+                );
+
+                console.log(`⚽ ${eventId} - Min ${sim.matchMinute}: ${sim.homeScore}-${sim.awayScore} (RESUMED)`);
+
+                // Halftime
+                if (sim.matchMinute === 45) {
+                    console.log(`⏸️  HALFTIME: ${sim.homeScore}-${sim.awayScore}`);
+                }
+
+                // Check if match should end
+                if (sim.matchMinute >= this.MATCH_DURATION_MINUTES) {
+                    await this.finishMatch(eventId, sim);
+                }
+            } catch (error) {
+                console.error(`❌ Error in resumed match simulation ${eventId}:`, error);
+                const sim = this.liveMatches.get(eventId);
+                if (sim) {
+                    await this.finishMatch(eventId, sim);
+                } else {
+                    clearInterval(interval);
+                }
+            }
+        }, this.MINUTE_INTERVAL);
+
+        simulation.interval = interval;
+
+        console.log(`✅ Event ${eventId} resumed successfully from minute ${currentMinute}`);
     }
 
     private async checkLiveTimeout(event: DemoEvent, now: number): Promise<void> {

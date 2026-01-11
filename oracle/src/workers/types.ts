@@ -42,6 +42,7 @@ export interface DemoEvent {
     fixtureId: string;
     status: MatchStatus;
     createdAt: number;
+    startDelay: number;  // Random delay in ms before going live (30s - 5min)
     liveAt?: number;
     finishedAt?: number;
 }
@@ -53,5 +54,7 @@ export interface MatchSimulation {
     awayScore: number;
     events: MatchEvent[];
     startedAt: number;
-    interval?: any;  // NodeJS.Timeout
+    interval?: any;  // NodeJS.Timeout - Single 30s interval for time-based simulation
 }
+
+

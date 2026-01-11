@@ -65,7 +65,8 @@ export const eventsStore = defineStore('events', () => {
                 away
                 updatedAt
             },
-            lastUpdated
+            lastUpdated,
+            currentMinute
           }
         }
     `;

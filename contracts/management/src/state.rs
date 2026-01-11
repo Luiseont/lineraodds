@@ -32,6 +32,7 @@ pub struct Event {
     pub live_score: LiveScore,
     pub match_events: Vec<MatchEvent>,
     pub last_updated: Timestamp,
+    pub current_minute: Option<u32>,
 }
 
 #[derive(Clone, Debug, Copy, Eq, PartialEq, Serialize, Deserialize, Enum, Default)]

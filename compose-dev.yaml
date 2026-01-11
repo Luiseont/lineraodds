@@ -9,8 +9,8 @@ services:
     volumes:
     - .:/build
     - shared-env:/shared
-    #environment:
-      #- FORCE_REDEPLOY=true  # Forzar redespliegue del contrato
+    environment:
+      - FORCE_REDEPLOY=true  # Forzar redespliegue del contrato
     entrypoint: ["bash", "/build/service/run.bash"]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081"]

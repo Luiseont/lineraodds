@@ -61,7 +61,7 @@
                   <circle cx="10" cy="10" r="8"/>
                 </svg>
               </div>
-              <span class="text-lg font-bold">{{ currentMinute }}'</span>
+              <span class="text-lg font-bold">{{ event.currentMinute }}'</span>
               <span class="text-xs opacity-90">Match Time</span>
             </div>
             

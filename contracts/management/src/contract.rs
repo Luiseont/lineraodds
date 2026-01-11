@@ -80,6 +80,7 @@ impl Contract for ManagementContract {
                     live_score: event.live_score,
                     match_events: event.match_events,
                     last_updated: self.runtime.system_time(),
+                    current_minute: event.current_minute,
                 };
                 let _ = self.state.events.insert(&event_id, new_event.clone());
 
@@ -108,6 +109,7 @@ impl Contract for ManagementContract {
                     live_score: event.live_score,
                     match_events: event.match_events,
                     last_updated: self.runtime.system_time(),
+                    current_minute: event.current_minute,
                 };
                 let _ = self.state.events.insert(&event_id, new_event.clone()); 
                 
@@ -137,6 +139,31 @@ impl Contract for ManagementContract {
                     live_score: live_score,
                     match_events: event.match_events,
                     last_updated: self.runtime.system_time(),
+                    current_minute: event.current_minute,
+                };
+                let _ = self.state.events.insert(&event_id, new_event.clone());
+                
+                self.runtime.prepare_message(
+                    Message::EventUpdated { event_id: event_id.clone(), event: new_event.clone() }
+                ).with_authentication().send_to(management_chain_id);
+            },
+            Operation::UpdateCurrentMinute { event_id, current_minute } => {
+                let management_chain_id = self.runtime.application_creator_chain_id();
+                let event = self.state.events.get(&event_id).await.expect("Event not found").unwrap();
+                
+                let new_event = Event {
+                    id: event_id.clone(),
+                    status: event.status,
+                    type_event: event.type_event,
+                    league: event.league,
+                    teams: event.teams,
+                    odds: event.odds,
+                    start_time: event.start_time,
+                    result: event.result,
+                    live_score: event.live_score,
+                    match_events: event.match_events,
+                    last_updated: self.runtime.system_time(),
+                    current_minute: Some(current_minute),
                 };
                 let _ = self.state.events.insert(&event_id, new_event.clone());
                 
@@ -201,6 +228,7 @@ impl Contract for ManagementContract {
                     live_score: LiveScore::default(),
                     match_events: Vec::new(),
                     last_updated: self.runtime.system_time(),
+                    current_minute: Some(0),
                 };
 
                 let _ = self.state.events.insert(&id.clone(), event.clone());

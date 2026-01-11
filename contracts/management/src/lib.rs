@@ -29,6 +29,7 @@ pub enum Operation {
     CreateEvent { id: String, type_event: String, league: String, home: String, away: String, home_odds: u64, away_odds: u64, tie_odds: u64, start_time: Timestamp },
     UpdateEventStatus { event_id: String, status: String },
     UpdateEventOdds { event_id: String, home_odds: u64, away_odds: u64, tie_odds: u64 },
+    UpdateCurrentMinute { event_id: String, current_minute: u32 },
     ResolveEvent { event_id: String, winner: String, home_score: String, away_score: String },
     UpdateEventLiveScore { event_id: String, home_score: String, away_score: String },
     AddMatchEvent { 
