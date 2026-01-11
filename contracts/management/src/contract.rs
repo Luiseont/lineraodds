@@ -2,7 +2,7 @@
 
 use linera_sdk::{
     linera_base_types::{
-        Amount, WithContractAbi, StreamUpdate
+        Amount, WithContractAbi, StreamUpdate, Timestamp
     },
     views::{RootView, View},
     Contract, ContractRuntime,
@@ -10,7 +10,7 @@ use linera_sdk::{
 
 use management::{
     Operation, Message, Bet, Event,
-    state::{ManagementState, MatchStatus, Teams, Odds, MatchResult, TypeEvent, UserOdd, UserOdds, Selection, BetStatus}
+    state::{ManagementState, MatchStatus, Teams, Odds, MatchResult, TypeEvent, UserOdd, UserOdds, Selection, BetStatus, LiveScore, MatchEvent, MatchEventType}
 };
 
 const STREAM_NAME: &[u8] = b"bets";
@@ -77,6 +77,9 @@ impl Contract for ManagementContract {
                     odds: event.odds,
                     start_time: event.start_time,
                     result: event.result,
+                    live_score: event.live_score,
+                    match_events: event.match_events,
+                    last_updated: self.runtime.system_time(),
                 };
                 let _ = self.state.events.insert(&event_id, new_event.clone());
 
@@ -102,6 +105,9 @@ impl Contract for ManagementContract {
                     odds: odds,
                     start_time: event.start_time,
                     result: event.result,
+                    live_score: event.live_score,
+                    match_events: event.match_events,
+                    last_updated: self.runtime.system_time(),
                 };
                 let _ = self.state.events.insert(&event_id, new_event.clone()); 
                 
@@ -109,6 +115,68 @@ impl Contract for ManagementContract {
                     Message::EventUpdated { event_id: event_id.clone(), event: new_event.clone() }
                 ).with_authentication().send_to(management_chain_id);
                 
+            },
+            Operation::UpdateEventLiveScore { event_id, home_score, away_score } => {
+                //assert!(self.runtime.chain_id() != self.runtime.application_creator_chain_id());
+                let management_chain_id = self.runtime.application_creator_chain_id();
+                let event = self.state.events.get(&event_id).await.expect("Event not found").unwrap();
+                let live_score = LiveScore {
+                    home: home_score,
+                    away: away_score,
+                    updated_at: self.runtime.system_time(),
+                };
+                let new_event = Event {
+                    id: event_id.clone(),
+                    status: event.status,
+                    type_event: event.type_event,
+                    league: event.league,
+                    teams: event.teams,
+                    odds: event.odds,
+                    start_time: event.start_time,
+                    result: event.result,
+                    live_score: live_score,
+                    match_events: event.match_events,
+                    last_updated: self.runtime.system_time(),
+                };
+                let _ = self.state.events.insert(&event_id, new_event.clone());
+                
+                self.runtime.prepare_message(
+                    Message::EventUpdated { event_id: event_id.clone(), event: new_event.clone() }
+                ).with_authentication().send_to(management_chain_id);
+            },
+            Operation::AddMatchEvent { event_id, event_type, time, team, player, detail, timestamp } => {
+                //assert!(self.runtime.chain_id() != self.runtime.application_creator_chain_id());
+                let management_chain_id = self.runtime.application_creator_chain_id();
+                let mut event = self.state.events.get(&event_id).await.expect("Event not found").unwrap();
+                
+                // Parse event_type string to enum
+                let event_type_enum = match event_type.as_str() {
+                    "Goal" => MatchEventType::Goal,
+                    "YellowCard" => MatchEventType::YellowCard,
+                    "RedCard" => MatchEventType::RedCard,
+                    "Substitution" => MatchEventType::Substitution,
+                    "Corner" => MatchEventType::Corner,
+                    "Penalty" => MatchEventType::Penalty,
+                    _ => MatchEventType::None,
+                };
+                
+                // Construct MatchEvent from individual parameters
+                let match_event = MatchEvent {
+                    event_type: event_type_enum,
+                    time: time,
+                    team,
+                    player,
+                    detail,
+                    timestamp,
+                };
+                
+                event.match_events.push(match_event);
+                let updated_event = event.clone();
+                let _ = self.state.events.insert(&event_id, event);  
+                
+                self.runtime.prepare_message(
+                    Message::EventUpdated { event_id: event_id.clone(), event: updated_event }
+                ).with_authentication().send_to(management_chain_id);
             },
             Operation::CreateEvent { id, type_event, league, home, away, home_odds, away_odds, tie_odds, start_time } => {
 
@@ -130,6 +198,9 @@ impl Contract for ManagementContract {
                     odds: Odds { home: home_odds, away: away_odds, tie: tie_odds },
                     start_time,
                     result: MatchResult::default(),
+                    live_score: LiveScore::default(),
+                    match_events: Vec::new(),
+                    last_updated: self.runtime.system_time(),
                 };
 
                 let _ = self.state.events.insert(&id.clone(), event.clone());
@@ -151,6 +222,7 @@ impl Contract for ManagementContract {
 
                 event.result = MatchResult { winner: victory, home_score: home_score.clone(), away_score: away_score.clone() };
                 event.status = MatchStatus::Finished;
+                event.last_updated = self.runtime.system_time();
                 let _ = self.state.events.insert(&event_id, event.clone());
                 
                 self.runtime.prepare_message(

@@ -62,6 +62,7 @@
           <button 
             v-else-if="!['postponed', 'cancelled'].includes(fixture.status.toLowerCase())"
             class="px-3 sm:px-4 py-2 bg-secondary text-white text-sm font-medium rounded-lg hover:bg-secondary-dark transition-colors w-full"
+            @click="$router.push(`/event/${fixture.id}`)"
           >
             View Live Event
           </button>

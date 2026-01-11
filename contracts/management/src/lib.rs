@@ -9,7 +9,6 @@ use linera_sdk::{
 use serde::{Deserialize, Serialize};
 
 pub use self::state::{Event, UserOdd};
-
 pub struct ManagementAbi;
 
 impl ContractAbi for ManagementAbi {
@@ -31,6 +30,16 @@ pub enum Operation {
     UpdateEventStatus { event_id: String, status: String },
     UpdateEventOdds { event_id: String, home_odds: u64, away_odds: u64, tie_odds: u64 },
     ResolveEvent { event_id: String, winner: String, home_score: String, away_score: String },
+    UpdateEventLiveScore { event_id: String, home_score: String, away_score: String },
+    AddMatchEvent { 
+        event_id: String, 
+        event_type: String,
+        time: String,
+        team: String,
+        player: Option<String>,
+        detail: Option<String>,
+        timestamp: Timestamp
+    },
     //userChain
     PlaceBet{ home: String, away: String, league: String, start_time: Timestamp, odd: u64, selection: String, bid: Amount, event_id: String},
     ClaimReward { event_id: String },

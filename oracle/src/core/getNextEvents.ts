@@ -15,7 +15,7 @@ interface APIFootballResponse {
 
 export async function getNextEvents() {
     const apiKey = config.apiKey;
-    const currentYear = '2025';//new Date().getFullYear().toString();
+    const currentYear = '2023';//new Date().getFullYear().toString();
 
     console.log('Checking existing SCHEDULED events...');
     const { getEvents } = await import('./operations/getEvents');
@@ -63,7 +63,8 @@ export async function getNextEvents() {
             console.log(`Fetching fixtures for ${league.name}...`);
 
             // Construir URL con parámetros
-            const url = `${config.api}/fixtures?league=${league.id}&season=${league.season}&next=8`;
+            //const url = `${config.api}/fixtures?league=${league.id}&season=${league.season}&next=8`;
+            const url = `${config.api}/fixtures?league=${league.id}&season=${league.season}`;
 
             const response = await fetch(url, {
                 method: 'GET',
@@ -132,14 +133,19 @@ export async function getNextEvents() {
         const eventsToSubmit = events.slice(0, eventsToCreate);
         console.log(`Creating ${eventsToSubmit.length} events in Linera contract...`);
 
-        const { EventMonitor } = await import('../workers/eventMonitor');
-        const monitor = new EventMonitor();
+        // Import global event monitor
+        const { eventMonitor } = await import('../index');
 
         for (const event of eventsToSubmit) {
             try {
                 await createEvent(event);
-                // Add to monitoring queue
-                monitor.addEvent(event.id, event.id, event.league);
+                console.log(`✅ Created event: ${event.teams.home} vs ${event.teams.away}`);
+
+                // Add to global monitor if it exists
+                if (eventMonitor) {
+                    eventMonitor.addEvent(event.id, event.id, event.league);
+                    console.log(`🔍 Added event ${event.id} to monitor`);
+                }
             } catch (error) {
                 console.error(`Failed to create event ${event.id}:`, error);
             }

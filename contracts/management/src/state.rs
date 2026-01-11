@@ -1,7 +1,7 @@
 use linera_sdk::views::{linera_views, RegisterView, RootView, ViewStorageContext, MapView };
 use linera_sdk::linera_base_types::{ChainId, Timestamp, ApplicationId, Amount, DataBlobHash};
 use serde::{Deserialize, Serialize};
-use async_graphql::{SimpleObject, Enum};
+use async_graphql::{SimpleObject, Enum, InputObject};
 
 #[derive(RootView, SimpleObject)]
 #[view(context = ViewStorageContext)]
@@ -29,6 +29,9 @@ pub struct Event {
     pub odds: Odds,
     pub start_time: Timestamp,
     pub result: MatchResult,
+    pub live_score: LiveScore,
+    pub match_events: Vec<MatchEvent>,
+    pub last_updated: Timestamp,
 }
 
 #[derive(Clone, Debug, Copy, Eq, PartialEq, Serialize, Deserialize, Enum, Default)]
@@ -59,6 +62,17 @@ pub enum BetStatus {
     Won,
     Lost,
     Cancelled
+}
+
+#[derive(Clone, Debug, Copy, Eq, PartialEq, Serialize, Deserialize, Enum, Default)]
+pub enum MatchEventType {
+    #[default] None,
+    Goal,
+    YellowCard,
+    RedCard,
+    Substitution,
+    Corner,
+    Penalty,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default, SimpleObject)]
@@ -107,4 +121,21 @@ pub struct UserOdds {
 pub struct BetsSummary {
     pub total_staked: String,
     pub potential_winnings: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, Default, SimpleObject)]
+pub struct LiveScore {
+    pub home: String,
+    pub away: String,
+    pub updated_at: Timestamp,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, SimpleObject, Default)]
+pub struct MatchEvent {
+    pub event_type: MatchEventType,
+    pub time: String,  // minuto del partido
+    pub team: String,
+    pub player: Option<String>,
+    pub detail: Option<String>,
+    pub timestamp: Timestamp,
 }

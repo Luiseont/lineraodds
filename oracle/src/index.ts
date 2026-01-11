@@ -5,8 +5,9 @@ import { getNextEvents } from './core/getNextEvents';
 import { scheduleWeeklyEventUpdate } from './scheduler/eventScheduler';
 import { DemoEventSimulator } from './workers/demoEventSimulator';
 
-// Global instance for demo simulator (accessible from other modules)
+// Global instances (accessible from other modules)
 export let demoSimulator: DemoEventSimulator | null = null;
+export let eventMonitor: any | null = null;
 
 const server = http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
@@ -45,13 +46,13 @@ server.listen(9998, async () => {
         } else {
             // Production mode: usar monitor real
             const { EventMonitor } = await import('./workers/eventMonitor');
-            const monitor = new EventMonitor();
-            monitor.start();
+            eventMonitor = new EventMonitor();
+            eventMonitor.start();
             console.log('Event monitor initialized');
 
             // Inicializar servidor de status
             const { initStatusServer } = await import('./api/statusServer');
-            initStatusServer(monitor);
+            initStatusServer(eventMonitor);
         }
 
         // Ejecutar una vez al inicio para poblar eventos

@@ -51,7 +51,21 @@ export const eventsStore = defineStore('events', () => {
               winner
               awayScore
               homeScore
-            }
+            },
+            matchEvents {
+                eventType,
+                time,
+                team,
+                player,
+                detail,
+                timestamp
+            },
+            liveScore{
+                home,
+                away
+                updatedAt
+            },
+            lastUpdated
           }
         }
     `;

@@ -1,4 +1,4 @@
-import { MatchStatus } from '../core/types';
+import { MatchStatus, MatchEvent } from '../core/types';
 
 export interface MonitoringJob {
     fixtureId: string;
@@ -44,4 +44,14 @@ export interface DemoEvent {
     createdAt: number;
     liveAt?: number;
     finishedAt?: number;
+}
+
+export interface MatchSimulation {
+    eventId: string;
+    matchMinute: number;
+    homeScore: number;
+    awayScore: number;
+    events: MatchEvent[];
+    startedAt: number;
+    interval?: any;  // NodeJS.Timeout
 }

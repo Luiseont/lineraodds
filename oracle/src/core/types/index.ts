@@ -28,6 +28,17 @@ export enum BetStatus {
     Cancelled = "Cancelled"
 }
 
+// Match Rust enum: MatchEventType
+export enum MatchEventType {
+    None = "None",
+    Goal = "Goal",
+    YellowCard = "YellowCard",
+    RedCard = "RedCard",
+    Substitution = "Substitution",
+    Corner = "Corner",
+    Penalty = "Penalty"
+}
+
 // Match Rust struct: Teams
 export interface Teams {
     home: string;
@@ -48,6 +59,23 @@ export interface MatchResult {
     away_score: string;
 }
 
+// Match Rust struct: LiveScore
+export interface LiveScore {
+    home: string;
+    away: string;
+    updated_at: string;  // Timestamp as string
+}
+
+// Match Rust struct: MatchEvent
+export interface MatchEvent {
+    event_type: MatchEventType;
+    time: string;  // String in Rust - minute of the match
+    team: string;
+    player: string | null;
+    detail: string | null;
+    timestamp: number;  // Timestamp as number (u64 in Rust)
+}
+
 // Match Rust struct: Event
 export interface Event {
     id: string;
@@ -58,6 +86,9 @@ export interface Event {
     odds: Odds;
     start_time: string;  // Timestamp as string (micros since epoch)
     result: MatchResult;
+    live_score?: LiveScore;  // Optional
+    match_events?: MatchEvent[];  // Optional
+    last_updated?: string;  // Optional Timestamp
 }
 
 // Match Rust struct: UserOdd
