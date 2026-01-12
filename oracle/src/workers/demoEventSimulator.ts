@@ -18,7 +18,7 @@ export class DemoEventSimulator {
     private readonly MAX_SCHEDULED_EVENTS = 3;
     // Partido de 45 minutos = 7.5 minutos reales
     private readonly MATCH_DURATION_MINUTES = 45;
-    private readonly MINUTE_INTERVAL = 10000; // 10 segundos reales = 1 minuto partido
+    private readonly MINUTE_INTERVAL = 20000; // 20 segundos reales = 1 minuto partido
 
     async start(): Promise<void> {
         if (this.isRunning) {
