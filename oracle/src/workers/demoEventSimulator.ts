@@ -14,12 +14,11 @@ export class DemoEventSimulator {
     private isRunning: boolean = false;
 
     // Event limits
-    private readonly MAX_LIVE_EVENTS = 3;
+    private readonly MAX_LIVE_EVENTS = 4;
     private readonly MAX_SCHEDULED_EVENTS = 3;
-
-    // Configuración de tiempo: 10 segundos reales = 1 minuto de partido
-    private readonly MATCH_DURATION_MINUTES = 90;
-    private readonly MINUTE_INTERVAL = 6667; // 10 segundos reales = 1 minuto partido
+    // Partido de 45 minutos = 7.5 minutos reales
+    private readonly MATCH_DURATION_MINUTES = 45;
+    private readonly MINUTE_INTERVAL = 10000; // 10 segundos reales = 1 minuto partido
 
     async start(): Promise<void> {
         if (this.isRunning) {
@@ -207,6 +206,9 @@ export class DemoEventSimulator {
             matchMinute: 0,
             homeScore: 0,
             awayScore: 0,
+            lastSentHomeScore: 0,  // Initialize to track score updates
+            lastSentAwayScore: 0,
+            lastEventCount: 0,  // Track events for smart updates
             events: [],
             startedAt: Date.now()
         };
@@ -226,18 +228,38 @@ export class DemoEventSimulator {
                 // Increment minute
                 sim.matchMinute++;
 
-                // Update current minute in contract
-                await updateCurrentMinute(eventId, sim.matchMinute);
-
-                // Probabilistic event generation (only one event per minute)
+                // Probabilistic event generation (may update score)
                 await this.tryGenerateEvents(sim);
 
-                // Update score if changed
-                await updateEventScore(
-                    eventId,
-                    sim.homeScore.toString(),
-                    sim.awayScore.toString()
-                );
+                // Parallelize independent HTTP operations
+                const httpOperations = [];
+
+                // Update current minute if:
+                // 1. Every 5 minutes (0, 5, 10, 15, 20, 25, 30, 35, 40, 45)
+                // 2. When new events occur (goals, cards, substitutions)
+                const hasNewEvents = sim.events.length > sim.lastEventCount;
+                if (sim.matchMinute % 5 === 0 || hasNewEvents) {
+                    httpOperations.push(updateCurrentMinute(eventId, sim.matchMinute));
+                    sim.lastEventCount = sim.events.length;
+                }
+
+                // Only update score if it changed (reduces 90% of calls)
+                if (sim.homeScore !== sim.lastSentHomeScore || sim.awayScore !== sim.lastSentAwayScore) {
+                    httpOperations.push(
+                        updateEventScore(
+                            eventId,
+                            sim.homeScore.toString(),
+                            sim.awayScore.toString()
+                        )
+                    );
+                    sim.lastSentHomeScore = sim.homeScore;
+                    sim.lastSentAwayScore = sim.awayScore;
+                }
+
+                // Execute operations in parallel (only if there are any)
+                if (httpOperations.length > 0) {
+                    await Promise.all(httpOperations);
+                }
 
                 console.log(`⚽ ${eventId} - Min ${sim.matchMinute}: ${sim.homeScore}-${sim.awayScore}`);
 
@@ -252,10 +274,9 @@ export class DemoEventSimulator {
                 }
             } catch (error) {
                 console.error(`❌ Error in match simulation ${eventId}:`, error);
-                const sim = this.liveMatches.get(eventId);
-                if (sim) {
-                    await this.finishMatch(eventId, sim);
-                } else {
+                // Don't terminate match - continue simulation despite errors
+                // Only stop interval if simulation was removed
+                if (!this.liveMatches.has(eventId)) {
                     clearInterval(interval);
                 }
             }
@@ -269,7 +290,7 @@ export class DemoEventSimulator {
         const minute = simulation.matchMinute;
 
         // Goal: 3% probability per minute (~2.7 goals in 90 minutes)
-        if (Math.random() < 0.03) {
+        if (Math.random() < 0.06) { // Ajustado de 3% a 6% para mantener ~2.7 goles en 45 min
             const team = Math.random() < 0.5 ? 'home' : 'away';
 
             if (team === 'home') {
@@ -287,7 +308,10 @@ export class DemoEventSimulator {
                 timestamp: Date.now()
             };
 
-            await addMatchEvent(simulation.eventId, matchEvent);
+            // Fire-and-forget: don't wait for addMatchEvent to complete
+            addMatchEvent(simulation.eventId, matchEvent).catch(err =>
+                console.error(`Failed to add goal event (continuing): ${err.message}`)
+            );
             simulation.events.push(matchEvent);
 
             console.log(`⚽ GOAL! ${team.toUpperCase()} - Min ${minute} (${simulation.homeScore}-${simulation.awayScore})`);
@@ -295,7 +319,7 @@ export class DemoEventSimulator {
         }
 
         // Yellow card: 4% probability
-        if (Math.random() < 0.04) {
+        if (Math.random() < 0.08) { // Ajustado de 4% a 8% para mantener ~3.6 amarillas en 45 min
             const team = Math.random() < 0.5 ? 'home' : 'away';
 
             const matchEvent: MatchEvent = {
@@ -307,7 +331,10 @@ export class DemoEventSimulator {
                 timestamp: Date.now()
             };
 
-            await addMatchEvent(simulation.eventId, matchEvent);
+            // Fire-and-forget
+            addMatchEvent(simulation.eventId, matchEvent).catch(err =>
+                console.error(`Failed to add yellow card event (continuing): ${err.message}`)
+            );
             simulation.events.push(matchEvent);
 
             console.log(`🟨 Yellow Card - ${team} - Min ${minute}`);
@@ -327,7 +354,10 @@ export class DemoEventSimulator {
                 timestamp: Date.now()
             };
 
-            await addMatchEvent(simulation.eventId, matchEvent);
+            // Fire-and-forget
+            addMatchEvent(simulation.eventId, matchEvent).catch(err =>
+                console.error(`Failed to add red card event (continuing): ${err.message}`)
+            );
             simulation.events.push(matchEvent);
 
             console.log(`🟥 Red Card - ${team} - Min ${minute}`);
@@ -347,7 +377,10 @@ export class DemoEventSimulator {
                 timestamp: Date.now()
             };
 
-            await addMatchEvent(simulation.eventId, matchEvent);
+            // Fire-and-forget
+            addMatchEvent(simulation.eventId, matchEvent).catch(err =>
+                console.error(`Failed to add substitution event (continuing): ${err.message}`)
+            );
             simulation.events.push(matchEvent);
 
             console.log(`🔄 Substitution - ${team} - Min ${minute}`);
@@ -434,6 +467,9 @@ export class DemoEventSimulator {
             matchMinute: currentMinute,
             homeScore: parseInt(event.live_score?.home || '0'),
             awayScore: parseInt(event.live_score?.away || '0'),
+            lastSentHomeScore: parseInt(event.live_score?.home || '0'),  // Initialize from current score
+            lastSentAwayScore: parseInt(event.live_score?.away || '0'),
+            lastEventCount: event.match_events?.length || 0,  // Initialize from existing events
             events: event.match_events || [],
             startedAt: Date.now() - (currentMinute * this.MINUTE_INTERVAL)
         };
@@ -452,18 +488,36 @@ export class DemoEventSimulator {
                 // Increment minute
                 sim.matchMinute++;
 
-                // Update current minute in contract
-                await updateCurrentMinute(eventId, sim.matchMinute);
-
                 // Probabilistic event generation
                 await this.tryGenerateEvents(sim);
 
-                // Update score
-                await updateEventScore(
-                    eventId,
-                    sim.homeScore.toString(),
-                    sim.awayScore.toString()
-                );
+                // Parallelize independent HTTP operations
+                const httpOperations = [];
+
+                // Update current minute every 5 minutes OR when new events occur
+                const hasNewEvents = sim.events.length > sim.lastEventCount;
+                if (sim.matchMinute % 5 === 0 || hasNewEvents) {
+                    httpOperations.push(updateCurrentMinute(eventId, sim.matchMinute));
+                    sim.lastEventCount = sim.events.length;
+                }
+
+                // Only update score if it changed
+                if (sim.homeScore !== sim.lastSentHomeScore || sim.awayScore !== sim.lastSentAwayScore) {
+                    httpOperations.push(
+                        updateEventScore(
+                            eventId,
+                            sim.homeScore.toString(),
+                            sim.awayScore.toString()
+                        )
+                    );
+                    sim.lastSentHomeScore = sim.homeScore;
+                    sim.lastSentAwayScore = sim.awayScore;
+                }
+
+                // Execute operations in parallel (only if there are any)
+                if (httpOperations.length > 0) {
+                    await Promise.all(httpOperations);
+                }
 
                 console.log(`⚽ ${eventId} - Min ${sim.matchMinute}: ${sim.homeScore}-${sim.awayScore} (RESUMED)`);
 
@@ -478,10 +532,8 @@ export class DemoEventSimulator {
                 }
             } catch (error) {
                 console.error(`❌ Error in resumed match simulation ${eventId}:`, error);
-                const sim = this.liveMatches.get(eventId);
-                if (sim) {
-                    await this.finishMatch(eventId, sim);
-                } else {
+                // Don't terminate match - continue simulation despite errors
+                if (!this.liveMatches.has(eventId)) {
                     clearInterval(interval);
                 }
             }

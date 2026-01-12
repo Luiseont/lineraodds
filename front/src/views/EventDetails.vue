@@ -61,7 +61,7 @@
                   <circle cx="10" cy="10" r="8"/>
                 </svg>
               </div>
-              <span class="text-lg font-bold">{{ event.currentMinute }}'</span>
+              <span class="text-lg font-bold">{{ displayMinute }}'</span>
               <span class="text-xs opacity-90">Match Time</span>
             </div>
             
@@ -430,7 +430,6 @@ const { allEvents, getEvents } = useEvents();
 const { walletBalance } = appStore();
 
 const isLoading = ref(true);
-const currentMinute = ref(0);
 const showBetModal = ref(false);
 const showVoteModal = ref(false);
 const voteData = ref<{ betId: number; isYes: boolean; amount: number }>({ betId: 0, isYes: true, amount: 0 });
@@ -500,37 +499,18 @@ const sortedMatchEvents = computed(() => {
   });
 });
 
-const calculateCurrentMinute = () => {
-  if (!event.value || event.value.status.toLowerCase() !== 'live') {
-    return 0;
-  }
-  
-  if (event.value.matchEvents && event.value.matchEvents.length > 0) {
-    const latestEvent = [...event.value.matchEvents].sort((a: any, b: any) => {
-      const timeA = parseInt(a.time) || 0;
-      const timeB = parseInt(b.time) || 0;
-      return timeB - timeA;
-    })[0];
-    return parseInt(latestEvent.time) || 0;
-  }
-  
-  const startTime = event.value.startTime;
-  if (!startTime) return 0;
-  
-  const start = typeof startTime === 'string' ? Number(startTime) : startTime;
-  const now = Date.now();
-  const elapsed = Math.floor((now - start) / 60000);
-  
-  return Math.max(0, Math.min(elapsed, 90));
-};
+// Display minute from backend
+const currentTime = ref(Date.now());
+const displayMinute = computed(() => {
+  if (!event.value) return 0;
+  return event.value.currentMinute || 0;
+});
 
 const startMinuteCounter = () => {
-  currentMinute.value = calculateCurrentMinute();
-  
   if (event.value?.status.toLowerCase() === 'live') {
     minuteInterval = setInterval(() => {
-      currentMinute.value = calculateCurrentMinute();
-    }, 30000);
+      currentTime.value = Date.now();
+    }, 1000);
   }
 };
 
@@ -607,13 +587,11 @@ const createBet = () => {
   
   peerBets.value.unshift(newBetData);
   
-  // Reset form
   newBet.value = {
     prediction: '',
     amount: 0
   };
   
-  // Show success message (you can add a toast notification here)
   console.log('Bet created successfully!');
 };
 

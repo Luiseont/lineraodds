@@ -29,7 +29,8 @@ export async function updateEventStatus(eventId: string, status: MatchStatus): P
             body: JSON.stringify({
                 query: mutation,
                 variables
-            })
+            }),
+            signal: AbortSignal.timeout(30000)
         });
 
         if (!response.ok) {

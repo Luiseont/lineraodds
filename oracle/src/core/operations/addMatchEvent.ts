@@ -43,7 +43,8 @@ export async function addMatchEvent(
         const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query: mutation, variables })
+            body: JSON.stringify({ query: mutation, variables }),
+            signal: AbortSignal.timeout(30000)
         });
 
         if (!response.ok) {

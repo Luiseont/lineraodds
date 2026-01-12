@@ -21,10 +21,11 @@ export async function getNextEvents() {
     const { getEvents } = await import('./operations/getEvents');
 
     let initialScheduledCount = 0;
+    let existingEvents: any[] = []; // Declare outside try block for later use
     const MAX_SCHEDULED_EVENTS = 6;
 
     try {
-        const existingEvents = await getEvents();
+        existingEvents = await getEvents();
         const scheduledEvents = existingEvents.filter(
             (event: any) => event.status.toUpperCase() === 'SCHEDULED'
         );
@@ -129,8 +130,23 @@ export async function getNextEvents() {
             return events;
         }
 
+        // Create a Set of existing event IDs to prevent duplicates
+        const existingEventIds = new Set(existingEvents.map((e: any) => e.id));
+
+        // Filter out events that already exist
+        const newEvents = events.filter(event => !existingEventIds.has(event.id));
+        const duplicateCount = events.length - newEvents.length;
+
+        if (duplicateCount > 0) {
+            const duplicateIds = events
+                .filter(event => existingEventIds.has(event.id))
+                .map(e => e.id)
+                .join(', ');
+            console.log(`🔍 Filtered out ${duplicateCount} duplicate event(s) (IDs: ${duplicateIds})`);
+        }
+
         const { createEvent } = await import('./operations/createEvents');
-        const eventsToSubmit = events.slice(0, eventsToCreate);
+        const eventsToSubmit = newEvents.slice(0, eventsToCreate);
         console.log(`Creating ${eventsToSubmit.length} events in Linera contract...`);
 
         // Import global event monitor

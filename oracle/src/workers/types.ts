@@ -52,6 +52,9 @@ export interface MatchSimulation {
     matchMinute: number;
     homeScore: number;
     awayScore: number;
+    lastSentHomeScore?: number;  // Track last sent score to avoid redundant updates
+    lastSentAwayScore?: number;  // Track last sent score to avoid redundant updates
+    lastEventCount: number;  // Track event count to detect when new events occur
     events: MatchEvent[];
     startedAt: number;
     interval?: any;  // NodeJS.Timeout - Single 30s interval for time-based simulation
