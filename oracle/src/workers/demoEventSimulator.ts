@@ -128,7 +128,7 @@ export class DemoEventSimulator {
                     const demoEvent: DemoEvent = {
                         eventId: event.id,
                         fixtureId: event.id,
-                        status: event.status as MatchStatus,
+                        status: normalizedStatus as MatchStatus, // Use normalized status
                         createdAt: now,
                         startDelay: Math.random() * (5 * 60 * 1000 - 30 * 1000) + 30 * 1000, // 30s - 5min
                     }
