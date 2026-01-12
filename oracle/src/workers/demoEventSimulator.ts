@@ -100,7 +100,7 @@ export class DemoEventSimulator {
         console.log(`📝 Added event ${eventId} to demo simulator`);
     }
 
-    private async loadExistingEvents(): Promise<void> {
+    async loadExistingEvents(): Promise<void> {
         try {
             console.log('📂 Loading existing events...');
             const existingEvents = await getEvents();
@@ -114,6 +114,11 @@ export class DemoEventSimulator {
             let loadedCount = 0;
 
             for (const event of existingEvents) {
+                // Skip if already loaded
+                if (this.events.has(event.id)) {
+                    continue;
+                }
+
                 // Normalize status from uppercase to PascalCase
                 const normalizedStatus = event.status.charAt(0).toUpperCase() +
                     event.status.slice(1).toLowerCase();

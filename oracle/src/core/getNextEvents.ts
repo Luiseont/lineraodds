@@ -153,6 +153,15 @@ export async function getNextEvents() {
 
         console.log(`Finished creating ${eventsToSubmit.length} events`);
 
+        // In demo mode, reload events in simulator to pick up newly created events
+        if (config.demoMode) {
+            const { demoSimulator } = await import('../index');
+            if (demoSimulator) {
+                await demoSimulator.loadExistingEvents();
+                console.log('🔄 Reloaded events in demo simulator');
+            }
+        }
+
         return events;
 
     } catch (error) {
