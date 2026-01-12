@@ -13,9 +13,13 @@ export class DemoEventSimulator {
     private checkInterval: NodeJS.Timeout | null = null;
     private isRunning: boolean = false;
 
+    // Event limits
+    private readonly MAX_LIVE_EVENTS = 3;
+    private readonly MAX_SCHEDULED_EVENTS = 3;
+
     // Configuración de tiempo: 10 segundos reales = 1 minuto de partido
     private readonly MATCH_DURATION_MINUTES = 90;
-    private readonly MINUTE_INTERVAL = 10000; // 10 segundos reales = 1 minuto partido
+    private readonly MINUTE_INTERVAL = 6667; // 10 segundos reales = 1 minuto partido
 
     async start(): Promise<void> {
         if (this.isRunning) {
@@ -164,8 +168,22 @@ export class DemoEventSimulator {
 
         // Use the fixed random delay assigned to this event
         if (elapsed >= event.startDelay) {
+            // Check if we already have 6 live events
+            const liveCount = this.liveMatches.size;
+
+            if (liveCount >= this.MAX_LIVE_EVENTS) {
+                // Reset delay to try again later (add 1-2 minutes)
+                const additionalDelay = Math.random() * (2 * 60 * 1000 - 1 * 60 * 1000) + 1 * 60 * 1000; // 1-2 min
+                event.startDelay = elapsed + additionalDelay;
+                event.createdAt = now; // Reset creation time
+                this.events.set(event.eventId, event);
+
+                console.log(`⏸️  Event ${event.eventId} delayed - already ${liveCount} live events (max: ${this.MAX_LIVE_EVENTS})`);
+                return;
+            }
+
             const delayMinutes = (event.startDelay / 1000 / 60).toFixed(1);
-            console.log(`🟢 Event ${event.eventId} → LIVE after ${delayMinutes}min (starting match simulation)`);
+            console.log(`🟢 Event ${event.eventId} → LIVE after ${delayMinutes}min (${liveCount + 1}/${this.MAX_LIVE_EVENTS} live events)`);
 
             await updateEventStatus(event.eventId, MatchStatus.Live);
 
