@@ -5,14 +5,12 @@ import { config } from '../config';
 /**
  * Programa la ejecución de getNextEvents
  * - Producción: Cada lunes a las 00:00
- * - Demo: Cada 15 minutos
+ * - Demo: Cada 30 minutos
  */
 export function scheduleWeeklyEventUpdate() {
-    // Production: Every Monday at 00:00
-    // Demo: Every 15 minutes
-    const cronPattern = config.demoMode ? '*/15 * * * *' : '0 0 * * 1';
+    const cronPattern = config.demoMode ? '*/30 * * * *' : '0 0 * * 1';
     const modeDescription = config.demoMode
-        ? 'Demo: every 15 minutes'
+        ? 'Demo: every 30 minutes'
         : 'Production: weekly (Monday 00:00)';
 
     const task = cron.schedule(cronPattern, async () => {
