@@ -22,7 +22,7 @@ export async function getNextEvents() {
 
     let initialScheduledCount = 0;
     let existingEvents: any[] = []; // Declare outside try block for later use
-    const MAX_SCHEDULED_EVENTS = 6;
+    const MAX_SCHEDULED_EVENTS = 10;
 
     try {
         existingEvents = await getEvents();
@@ -64,7 +64,7 @@ export async function getNextEvents() {
             console.log(`Fetching fixtures for ${league.name}...`);
 
             // Construir URL con parámetros
-            const url = `${config.api}/fixtures?league=${league.id}&season=${league.season}&next=8`;
+            const url = `${config.api}/fixtures?league=${league.id}&season=${league.season}&next=36`;
             //const url = `${config.api}/fixtures?league=${league.id}&season=${league.season}`;
 
             const response = await fetch(url, {
