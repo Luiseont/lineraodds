@@ -10,8 +10,11 @@ export const config = {
     apiKey: process.env.API_KEY || '',
     main_chain: process.env.VITE_MAIN_CHAIN_ID || '',
     demoMode: process.env.DEMO_MODE === 'true',
-
+    // Leaderboard configuration
+    leaderboardEnabled: process.env.LEADERBOARD_ENABLED !== 'false', // Default: enabled
+    leaderboardPrizePool: process.env.LEADERBOARD_PRIZE_POOL || '10000', // 10,000 USDL
 } as const;
+
 
 
 export function validateConfig(): void {

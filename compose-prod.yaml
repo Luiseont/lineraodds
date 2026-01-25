@@ -47,6 +47,8 @@ services:
       - API=https://v3.football.api-sports.io
       - API_KEY=${API_KEY}
       - DEMO_MODE=true
+      - LEADERBOARD_ENABLED=true
+      - LEADERBOARD_PRIZE_POOL=10000
     restart: unless-stopped
     entrypoint: ["bash", "/oracle/start-prod.bash"]
     depends_on:

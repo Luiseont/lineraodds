@@ -3,6 +3,7 @@ import Dashboard from '../views/Dashboard.vue'
 import MyBets from '../views/MyBets.vue'
 import WelcomeBonus from '../views/WelcomeBonus.vue'
 import EventDetails from '../views/EventDetails.vue'
+import Leaderboard from '../views/Leaderboard.vue'
 import MainLayout from '../layouts/MainLayout.vue'
 
 
@@ -16,6 +17,7 @@ const router = createRouter({
         { path: '', name: 'dashboard', component: Dashboard },
         { path: 'my-bets', name: 'my-bets', component: MyBets },
         { path: 'welcome-bonus', name: 'welcome-bonus', component: WelcomeBonus },
+        { path: 'leaderboard', name: 'leaderboard', component: Leaderboard },
         { path: 'event/:id', name: 'event-details', component: EventDetails },
       ],
     },
@@ -23,3 +25,4 @@ const router = createRouter({
 })
 
 export default router
+

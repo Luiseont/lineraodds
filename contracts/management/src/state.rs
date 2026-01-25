@@ -1,7 +1,8 @@
 use linera_sdk::views::{linera_views, RegisterView, RootView, ViewStorageContext, MapView };
-use linera_sdk::linera_base_types::{ChainId, Timestamp, ApplicationId, Amount, DataBlobHash};
+use linera_sdk::linera_base_types::{ChainId, Timestamp, Amount};
 use serde::{Deserialize, Serialize};
-use async_graphql::{SimpleObject, Enum, InputObject};
+use std::collections::HashMap;
+use async_graphql::{SimpleObject, Enum};
 
 #[derive(RootView, SimpleObject)]
 #[view(context = ViewStorageContext)]
@@ -10,6 +11,7 @@ pub struct ManagementState {
     pub event_odds: MapView<String, Vec<UserOdd>>,
     pub oracle: RegisterView<Option<ChainId>>,
     pub token_supp: RegisterView<Amount>,
+    pub leaderboard:RegisterView<LeaderboardData>,// <LeaderboardData>
     //state for local instance
     pub user_odds: RegisterView<Vec<UserOdds>>,
     pub user_balance: RegisterView<Amount>,
@@ -139,4 +141,30 @@ pub struct MatchEvent {
     pub player: Option<String>,
     pub detail: Option<String>,
     pub timestamp: Timestamp,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, SimpleObject, Default)]
+pub struct UserStats {
+    pub total_staked: Amount,
+    pub total_winnings: Amount,
+    pub total_bets: u64,
+    pub total_wins: u64,
+    pub total_losses: u64,
+    pub win_rate: u64,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, SimpleObject, Default)]
+pub struct LeaderboardWinner {
+    pub user: String,
+    pub rank: u64,
+    pub prize: Amount,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, SimpleObject, Default)]
+pub struct LeaderboardData {
+    pub week: u64,
+    pub year: u64,
+    pub winners: HashMap<String, Vec<LeaderboardWinner>>,   // "year-week" -> Vec<LeaderboardWinners>
+    pub user_stats: HashMap<String, UserStats>,              // user -> UserStats
+    pub prize_pool: Amount,
 }

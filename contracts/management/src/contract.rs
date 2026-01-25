@@ -2,7 +2,7 @@
 
 use linera_sdk::{
     linera_base_types::{
-        Amount, WithContractAbi, StreamUpdate, Timestamp
+        Amount, WithContractAbi, StreamUpdate, ChainId
     },
     views::{RootView, View},
     Contract, ContractRuntime,
@@ -10,9 +10,10 @@ use linera_sdk::{
 
 use management::{
     Operation, Message, Bet, Event,
-    state::{ManagementState, MatchStatus, Teams, Odds, MatchResult, TypeEvent, UserOdd, UserOdds, Selection, BetStatus, LiveScore, MatchEvent, MatchEventType}
+    state::{ManagementState, LeaderboardWinner, MatchStatus, Teams, Odds, MatchResult, TypeEvent, UserOdd, UserOdds, Selection, BetStatus, LiveScore, MatchEvent, MatchEventType, UserStats}
 };
-
+use std::collections::HashMap;
+use std::str::FromStr;
 const STREAM_NAME: &[u8] = b"bets";
 pub struct ManagementContract {
     state: ManagementState,
@@ -257,9 +258,34 @@ impl Contract for ManagementContract {
                     Message::EventUpdated { event_id: event_id.clone(), event: event.clone() }
                 ).with_authentication().send_to(management_chain_id);
             },
+            //leaderboad operations.
+            Operation::StartNewWeek{ week, year, prize_pool } =>{
+                let management_chain_id = self.runtime.application_creator_chain_id();
+                //copy oracle chain and set new week
+                let mut leaderboard_data = self.state.leaderboard.get().clone();
+                leaderboard_data.week = week;
+                leaderboard_data.year = year;
+                let _ = self.state.leaderboard.set(leaderboard_data);
+                
+                self.runtime.prepare_message(
+                    Message::NewWeekStarted { week: week.clone(), year: year.clone(), prize_pool: prize_pool.clone() }
+                ).with_authentication().send_to(management_chain_id);
+            },
+            Operation::EndCurrentWeek{ week, year } =>{
+                let management_chain_id = self.runtime.application_creator_chain_id();
+
+                //copy oracle chain and set new week
+                let mut leaderboard_data = self.state.leaderboard.get().clone();
+                leaderboard_data.week = 0;
+                leaderboard_data.year = 0;
+                let _ = self.state.leaderboard.set(leaderboard_data);
+
+                self.runtime.prepare_message(
+                    Message::CurrentWeekEnded { week: week.clone(), year: year.clone() }
+                ).with_authentication().send_to(management_chain_id);
+            },
             // UserChain operations.
             Operation::PlaceBet { home, away, league, start_time, odd, selection, bid, event_id } => {
-                let user_chain_id = self.runtime.chain_id();
                 let management_chain_id = self.runtime.application_creator_chain_id();
                 
                 let user_balance = self.state.user_balance.get().clone();
@@ -338,6 +364,12 @@ impl Contract for ManagementContract {
                     self.runtime.prepare_message(
                         Message::RevertUserBet { event_id: event_id.clone() }
                     ).with_authentication().send_to(user_id);
+
+                    //send back the bid
+                    self.runtime.prepare_message(
+                        Message::Receive { amount: bid.clone() }
+                    ).with_authentication().send_to(user_id);
+
                     return;
                 }
 
@@ -363,6 +395,23 @@ impl Contract for ManagementContract {
                 bets.push(bet.clone());
                 let _ = self.state.event_odds.insert(&event_id, bets);
                 self.runtime.emit(STREAM_NAME.into(), &Bet::NewEventBet { event_id, user_odd: bet });
+
+
+
+                let mut leaderboard_data = self.state.leaderboard
+                    .get().clone();
+
+                let user_stats = leaderboard_data.user_stats.get(&user_id.to_string()).cloned().unwrap_or_default();
+                let user_stats = UserStats {
+                    total_staked: user_stats.total_staked.saturating_add(bid),
+                    total_winnings: user_stats.total_winnings,
+                    total_bets: user_stats.total_bets.saturating_add(1),
+                    total_wins: user_stats.total_wins,
+                    total_losses: user_stats.total_losses,
+                    win_rate: user_stats.win_rate,
+                };
+                let _ = leaderboard_data.user_stats.insert(user_id.to_string(), user_stats);
+                let _ = self.state.leaderboard.set(leaderboard_data);
             },
 
             Message::RevertUserBet { event_id } => {
@@ -412,10 +461,42 @@ impl Contract for ManagementContract {
                             self.runtime.prepare_message(
                                 Message::ClaimResult { event_id: event_id.clone(), result: "Won".to_string()  }
                             ).with_authentication().send_to(user_id);
+
+                            let mut leaderboard_data = self.state.leaderboard
+                                .get().clone();
+
+                            let user_stats = leaderboard_data.user_stats.get(&user_id.to_string()).cloned().unwrap_or_default();
+                            let win_rate = (user_stats.total_wins.saturating_add(1) as f64 / user_stats.total_bets as f64 * 100.0) as u64;
+                            let user_stats = UserStats {
+                                total_staked: user_stats.total_staked,
+                                total_winnings: user_stats.total_winnings.saturating_add(prize),
+                                total_bets: user_stats.total_bets,
+                                total_wins: user_stats.total_wins.saturating_add(1),
+                                total_losses: user_stats.total_losses,
+                                win_rate: win_rate,
+                            };
+                            let _ = leaderboard_data.user_stats.insert(user_id.to_string(), user_stats);
+                            let _ = self.state.leaderboard.set(leaderboard_data);
                         } else {
                             self.runtime.prepare_message(
                                 Message::ClaimResult { event_id: event_id.clone(), result: "Lost".to_string() }
                             ).with_authentication().send_to(user_id);
+
+                            let mut leaderboard_data = self.state.leaderboard
+                                .get().clone();
+
+                            let user_stats = leaderboard_data.user_stats.get(&user_id.to_string()).cloned().unwrap_or_default();
+                            let win_rate = (user_stats.total_wins as f64 / user_stats.total_bets as f64 * 100.0) as u64;
+                            let user_stats = UserStats {
+                                total_staked: user_stats.total_staked,
+                                total_winnings: user_stats.total_winnings,
+                                total_bets: user_stats.total_bets,
+                                total_wins: user_stats.total_wins,
+                                total_losses: user_stats.total_losses.saturating_add(1),
+                                win_rate: win_rate,
+                            };
+                            let _ = leaderboard_data.user_stats.insert(user_id.to_string(), user_stats);
+                            let _ = self.state.leaderboard.set(leaderboard_data);
                         }
                     }
                 }
@@ -444,7 +525,7 @@ impl Contract for ManagementContract {
             },
             Message::MintTokens { amount } => {
                 let user_chain_id = self.runtime.message_origin_chain_id().unwrap();
-                let mut current_supply = self.state.token_supp.get().clone();
+                let current_supply = self.state.token_supp.get().clone();
                 let new_supply = current_supply.saturating_add(amount.into());
 
                 self.state.token_supp.set(new_supply);  
@@ -458,6 +539,53 @@ impl Contract for ManagementContract {
             },
             Message::EventUpdated { event_id, event } => {
                 let _ = self.state.events.insert(&event_id.clone(), event.clone());
+            }
+            //leaderboard cross-messages
+            Message::NewWeekStarted { week, year, prize_pool } => {
+                let mut leaderboard_data = self.state.leaderboard.get().clone();
+                leaderboard_data.week = week;
+                leaderboard_data.year = year;
+                leaderboard_data.user_stats = HashMap::new();
+                leaderboard_data.winners = leaderboard_data.winners.clone();
+                leaderboard_data.prize_pool = prize_pool;
+                let _ = self.state.leaderboard.set(leaderboard_data);
+            },
+            Message::CurrentWeekEnded { week, year } => {
+                let mut leaderboard_data = self.state.leaderboard.get().clone();
+                
+                // Calculate winners
+                let mut winners = Vec::new();
+                for (user_id, user_stats) in leaderboard_data.user_stats.iter() {
+                    winners.push((user_id.clone(), user_stats.total_winnings));
+                }
+                winners.sort_by(|a, b| b.1.cmp(&a.1));
+                
+                // Create Vec of top 3 winners
+                let mut week_winners = Vec::new();
+                for (i, (user_id, _)) in winners.iter().take(3).enumerate() {
+                    let pool_amount: u128 = leaderboard_data.prize_pool.into();
+                    let prize = match i {
+                        0 => Amount::from_attos(pool_amount * 50 / 100),  // 1er: 50%
+                        1 => Amount::from_attos(pool_amount * 30 / 100),  // 2do: 30%
+                        2 => Amount::from_attos(pool_amount * 20 / 100),  // 3er: 20%
+                        _ => Amount::ZERO,
+                    };
+
+                    week_winners.push(LeaderboardWinner {
+                        user: user_id.clone(),
+                        rank: i as u64 + 1,
+                        prize: prize,
+                    });
+
+                    let user_chain_id = ChainId::from_str(&user_id).unwrap();
+                    self.runtime.prepare_message(
+                        Message::Receive { amount: prize.clone() }
+                    ).with_authentication().send_to(user_chain_id);
+                }
+                
+                // Insert Vec of winners with "year-week" key
+                leaderboard_data.winners.insert(format!("{}-{}", year, week), week_winners);
+                let _ = self.state.leaderboard.set(leaderboard_data);
             }
          }
     }

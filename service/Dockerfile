@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
     curl
 
 # Instalar Linera tools
-RUN cargo install --locked linera-service@0.15.8 linera-storage-service@0.15.8
+RUN cargo install --locked linera-service@0.15.11 linera-storage-service@0.15.11
 
 # Instalar Node.js y pnpm
 RUN curl https://raw.githubusercontent.com/creationix/nvm/v0.40.3/install.sh | bash \

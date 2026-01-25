@@ -15,6 +15,7 @@
         </button>
         <div class="hidden sm:flex items-center gap-2">
           <router-link to="/" class="text-white/90 hover:text-white px-3">Sports</router-link>
+          <router-link to="/leaderboard" class="text-white/90 hover:text-white px-3">Leaderboard</router-link>
           <router-link to="/welcome-bonus" class="relative block text-white/90 hover:text-white py-1.5 px-3 group">
             <span class="relative inline-block">
               <span class="relative z-10 font-semibold">Bonus</span>
@@ -58,6 +59,7 @@
       </div>
       <div v-show="open" class="sm:hidden pb-3 space-y-1">
         <router-link to="/" class="block text-white/90 hover:text-white py-1.5">Sports</router-link>
+        <router-link to="/leaderboard" class="block text-white/90 hover:text-white py-1.5">Leaderboard</router-link>
         <router-link to="/welcome-bonus" class="relative block text-white/90 hover:text-white py-1.5 pr-6 group">
           <span class="relative inline-block">
             <span class="relative z-10 font-semibold">Bonus</span>

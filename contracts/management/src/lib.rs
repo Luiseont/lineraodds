@@ -41,6 +41,9 @@ pub enum Operation {
         detail: Option<String>,
         timestamp: Timestamp
     },
+    //leaderboard operations
+    StartNewWeek { week: u64, year: u64, prize_pool: Amount },
+    EndCurrentWeek { week: u64, year: u64 },
     //userChain
     PlaceBet{ home: String, away: String, league: String, start_time: Timestamp, odd: u64, selection: String, bid: Amount, event_id: String},
     ClaimReward { event_id: String },
@@ -57,7 +60,10 @@ pub enum Message {
    Receive { amount: Amount },
    //toAppChain
    NewEventCreated{event_id: String, event: Event},
-   EventUpdated{event_id: String, event: Event}
+   EventUpdated{event_id: String, event: Event},
+   //leaderboard cross-messages
+   NewWeekStarted { week: u64, year: u64, prize_pool: Amount },
+   CurrentWeekEnded { week: u64, year: u64},
 }
 
 #[derive(Debug, Serialize, Deserialize)]

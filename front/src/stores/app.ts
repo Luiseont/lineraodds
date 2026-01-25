@@ -198,6 +198,9 @@ export const appStore = defineStore('app', () => {
             const result = await backend.value.query(query)
             const response = JSON.parse(result)
             console.log("Minting exitoso:", response)
+
+            // Refresh user balance after successful mint
+            await getUserBalance()
         } catch (error) {
             console.error('Error en minting:', error)
             throw error
@@ -231,6 +234,9 @@ export const appStore = defineStore('app', () => {
             const response = JSON.parse(result)
             console.log("Bet placed successfully:", response)
 
+            // Refresh user balance after successful bet
+            await getUserBalance()
+
         } catch (error) {
             console.error('Error placing bet:', error)
             throw error
@@ -249,6 +255,8 @@ export const appStore = defineStore('app', () => {
             const response = JSON.parse(result)
             console.log("Reward claimed successfully:", response)
 
+            // Refresh user balance after successful claim
+            await getUserBalance()
         } catch (error) {
             console.error('Error claiming reward:', error)
             throw error

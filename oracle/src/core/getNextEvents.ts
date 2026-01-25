@@ -64,8 +64,8 @@ export async function getNextEvents() {
             console.log(`Fetching fixtures for ${league.name}...`);
 
             // Construir URL con parámetros
-            const url = `${config.api}/fixtures?league=${league.id}&season=${league.season}`;
             //const url = `${config.api}/fixtures?league=${league.id}&season=${league.season}`;
+            const url = `${config.api}/fixtures?league=${league.id}&season=${league.season}&next=99`;
 
             const response = await fetch(url, {
                 method: 'GET',

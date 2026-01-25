@@ -3,6 +3,7 @@ import { config, validateConfig } from './config';
 import { subscribe } from './core/subscribe';
 import { getNextEvents } from './core/getNextEvents';
 import { scheduleWeeklyEventUpdate } from './scheduler/eventScheduler';
+import { scheduleLeaderboardManagement } from './scheduler/leaderboardScheduler';
 import { DemoEventSimulator } from './workers/demoEventSimulator';
 
 // Global instances (accessible from other modules)
@@ -32,6 +33,42 @@ server.listen(9998, async () => {
         // Inicializar scheduler para actualizaciones
         await subscribe();
         scheduleWeeklyEventUpdate();
+
+        // Inicializar leaderboard
+        if (config.leaderboardEnabled) {
+            console.log('Initializing leaderboard...');
+
+            // Import leaderboard operations
+            const { checkExistingLeaderboard } = await import('./core/operations/checkExistingLeaderboard');
+            const { startLeaderboardWeek } = await import('./core/operations/startLeaderboardWeek');
+            const { getWeekNumber } = await import('./utils/getWeekNumber');
+
+            try {
+                // Check if leaderboard exists for current week
+                const existing = await checkExistingLeaderboard();
+                console.log('Existing leaderboard:', existing);
+
+                const now = new Date();
+                const currentWeek = getWeekNumber(now);
+                const currentYear = now.getFullYear();
+
+                if (!existing || existing.week !== currentWeek || existing.year !== currentYear) {
+                    console.log(`No leaderboard found for week ${currentYear}-${currentWeek}, creating...`);
+                    await startLeaderboardWeek();
+                } else {
+                    console.log(`Leaderboard for week ${currentYear}-${currentWeek} already exists`);
+                }
+
+                // Now set up the scheduler
+                scheduleLeaderboardManagement();
+            } catch (error) {
+                console.error('Error initializing leaderboard:', error);
+                console.log('Continuing without leaderboard...');
+            }
+
+        } else {
+            console.log('Leaderboard management is DISABLED');
+        }
 
         // Inicializar event monitor o demo simulator según el modo
         if (config.demoMode) {

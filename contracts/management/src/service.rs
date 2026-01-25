@@ -13,7 +13,7 @@ use linera_sdk::{
 };
 use management::Operation;
 
-use self::state::{ManagementState, Event, UserOdd, UserOdds, MatchStatus, TypeEvent, BetStatus, BetsSummary};
+use self::state::{ManagementState, Event, UserOdd, UserOdds, MatchStatus, TypeEvent, BetStatus, BetsSummary, LeaderboardData};
 
 pub struct ManagementService {
     state: ManagementState,
@@ -162,6 +162,18 @@ impl QueryRoot {
             Err(e) => {
                 eprintln!("Failed to load state: {:?}", e);
                 false
+            }
+        }
+    }
+
+    async fn leaderboard(&self) -> LeaderboardData {
+        match ManagementState::load(self.storage_context.clone()).await{
+            Ok(state) => {
+                state.leaderboard.get().clone()
+            }
+            Err(e) => {
+                eprintln!("Failed to load state: {:?}", e);
+                LeaderboardData::default()
             }
         }
     }
