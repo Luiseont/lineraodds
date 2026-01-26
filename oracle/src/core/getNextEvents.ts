@@ -2,11 +2,7 @@ import { config } from '../config';
 import { Event } from './types';
 import { transformFixtureToEvent } from '../utils/transformFixture';
 
-interface LeagueConfig {
-    id: string;
-    name: string;
-    season: string;
-}
+
 
 interface APIFootballResponse {
     response: any[];  // Array of fixture objects
@@ -46,14 +42,8 @@ export async function getNextEvents() {
         console.error('Error checking existing events:', error);
     }
 
-    // Configuración de ligas a consultar
-    const leagues: LeagueConfig[] = [
-        { id: '140', name: 'La Liga', season: currentYear },      // España
-        { id: '39', name: 'Premier League', season: currentYear }, // Inglaterra
-        { id: '78', name: 'Bundesliga', season: currentYear },    // Alemania
-        { id: '135', name: 'Serie A', season: currentYear },      // Italia
-        { id: '61', name: 'Ligue 1', season: currentYear }        // Francia
-    ];
+    // Configuración de ligas a consultar (importada de config)
+    const leagues = config.leagues;
 
     console.log('Fetching upcoming fixtures from API-Sports...');
 
@@ -155,7 +145,7 @@ export async function getNextEvents() {
         for (const event of eventsToSubmit) {
             try {
                 await createEvent(event);
-                console.log(`✅ Created event: ${event.teams.home} vs ${event.teams.away}`);
+                console.log(`✅ Created event: ${event.teams.home.name} vs ${event.teams.away.name}`);
 
                 // Add to global monitor if it exists
                 if (eventMonitor) {

@@ -23,11 +23,20 @@ server.listen(9998, async () => {
         console.log(`Linera Faucet: ${config.lineraFaucet}`);
         console.log(`Service URL: ${config.serviceUrl}`);
 
-        // Log demo mode status
-        if (config.demoMode) {
-            console.log('Demo Mode ENABLED - Events will simulate lifecycle');
-        } else {
-            console.log('Production Mode - Using real API data');
+        try {
+            // Check if teams exist in power ranking
+            const { getTeams } = await import('./core/operations/getTeams');
+            const teams = await getTeams();
+
+            if (teams.length === 0) {
+                console.log('⚠️ No teams found in contract. Initializing Power Rankings...');
+                const { updateGlobalPowerRankings } = await import('./core/operations/updatePowerRankings');
+                await updateGlobalPowerRankings();
+            } else {
+                console.log(`✅ Power Rankings already initialized (${teams.length} teams found). Skipping update.`);
+            }
+        } catch (error) {
+            console.error('Error checking/initializing power rankings:', error);
         }
 
         // Inicializar scheduler para actualizaciones

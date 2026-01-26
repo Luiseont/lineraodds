@@ -38,8 +38,14 @@ export const eventsStore = defineStore('events', () => {
             typeEvent
             league
             teams {
-              home
-              away
+              home {
+                id
+                name
+              }
+              away {
+                id
+                name
+              }
             }
             odds {
               home

@@ -63,7 +63,7 @@
                 
                 <span class="text-gray-500 text-xs sm:text-sm">{{ formatDate(b.startTime) }}</span>
               </div>
-              <div class="mt-2 font-semibold text-secondary text-sm sm:text-base">{{ b.teams.home }} vs {{ b.teams.away }}</div>
+              <div class="mt-2 font-semibold text-secondary text-sm sm:text-base">{{ b.teams.home.name }} vs {{ b.teams.away.name }}</div>
               <div class="text-xs sm:text-sm text-gray-500">Selection: <span class="font-medium text-secondary">{{ b.selection }}</span> @ <span class="font-medium text-secondary">{{ formatOdds(b.odd) }}</span></div>
               
               <!-- Claim Button -->
@@ -187,6 +187,14 @@ async function handleStatusFilter(status: string) {
 // Load initial bets
 onMounted(async () => {
   isLoading.value = true
+  // Force data refresh if backend is ready
+  const { isBackendReady } = useApp()
+  const { fetchAllBets } = useBets()
+  
+  if (isBackendReady.value) {
+      await fetchAllBets()
+  }
+  
   await setBetFilters(selectedStatus.value)
   isLoading.value = false
 })

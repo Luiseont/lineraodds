@@ -22,7 +22,7 @@ export const appStore = defineStore('app', () => {
     const UserBalanceQuery = '{"query":"query{balance}"}'
     const BonusClaimedQuery = '{"query":"query{bonusClaimed}"}'
     const MintTokensQuery = '{"query":"mutation{requestMint(amount: \\"$AMOUNT\\")}"}'
-    const PlaceBetQuery = '{"query":"mutation{placeBet(home: \\"$HOME\\", away: \\"$AWAY\\", league: \\"$LEAGUE\\", startTime: $START_TIME, odd: $ODD, selection: \\"$SELECTION\\", bid: \\"$BID\\", eventId: \\"$EVENT_ID\\")}"}'
+    const PlaceBetQuery = '{"query":"mutation{placeBet(homeId: \\"$HOME_ID\\", awayId: \\"$AWAY_ID\\", homeName: \\"$HOME_NAME\\", awayName: \\"$AWAY_NAME\\", league: \\"$LEAGUE\\", startTime: $START_TIME, odd: $ODD, selection: \\"$SELECTION\\", bid: \\"$BID\\", eventId: \\"$EVENT_ID\\")}"}'
     const ClaimRewardQuery = '{"query":"mutation{claimReward(eventId: \\"$EVENT_ID\\")}"}'
 
     // Composables
@@ -221,8 +221,10 @@ export const appStore = defineStore('app', () => {
             else if (selection === 'Tie') oddValue = event.odds.tie
 
             let query = PlaceBetQuery
-                .replace('$HOME', event.teams.home)
-                .replace('$AWAY', event.teams.away)
+                .replace('$HOME_ID', event.teams.home.id)
+                .replace('$AWAY_ID', event.teams.away.id)
+                .replace('$HOME_NAME', event.teams.home.name)
+                .replace('$AWAY_NAME', event.teams.away.name)
                 .replace('$LEAGUE', event.league)
                 .replace('$START_TIME', event.startTime.toString())
                 .replace('$ODD', oddValue.toString())
@@ -236,6 +238,7 @@ export const appStore = defineStore('app', () => {
 
             // Refresh user balance after successful bet
             await getUserBalance()
+            await betsStore().fetchAllBets()
 
         } catch (error) {
             console.error('Error placing bet:', error)

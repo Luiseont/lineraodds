@@ -14,8 +14,8 @@ export function generateDemoEvents(): Event[] {
             type_event: TypeEvent.Football,
             league: 'La Liga',
             teams: {
-                home: 'Barcelona',
-                away: 'Real Madrid'
+                home: { id: 'team_barcelona', name: 'Barcelona' },
+                away: { id: 'team_real_madrid', name: 'Real Madrid' }
             },
             odds: {
                 home: 180,  // 1.80
@@ -42,8 +42,8 @@ export function generateDemoEvents(): Event[] {
             type_event: TypeEvent.Football,
             league: 'Premier League',
             teams: {
-                home: 'Manchester City',
-                away: 'Liverpool'
+                home: { id: 'team_man_city', name: 'Manchester City' },
+                away: { id: 'team_liverpool', name: 'Liverpool' }
             },
             odds: {
                 home: 190,
@@ -70,8 +70,8 @@ export function generateDemoEvents(): Event[] {
             type_event: TypeEvent.Football,
             league: 'Serie A',
             teams: {
-                home: 'Juventus',
-                away: 'Inter Milan'
+                home: { id: 'team_juventus', name: 'Juventus' },
+                away: { id: 'team_inter', name: 'Inter Milan' }
             },
             odds: {
                 home: 200,
@@ -98,8 +98,8 @@ export function generateDemoEvents(): Event[] {
             type_event: TypeEvent.Football,
             league: 'Bundesliga',
             teams: {
-                home: 'Bayern Munich',
-                away: 'Borussia Dortmund'
+                home: { id: 'team_bayern', name: 'Bayern Munich' },
+                away: { id: 'team_dortmund', name: 'Borussia Dortmund' }
             },
             odds: {
                 home: 170,
@@ -126,8 +126,8 @@ export function generateDemoEvents(): Event[] {
             type_event: TypeEvent.Football,
             league: 'Ligue 1',
             teams: {
-                home: 'PSG',
-                away: 'Marseille'
+                home: { id: 'team_psg', name: 'PSG' },
+                away: { id: 'team_marseille', name: 'Marseille' }
             },
             odds: {
                 home: 150,
@@ -165,7 +165,7 @@ export async function createDemoEvents(): Promise<void> {
     for (const event of events) {
         try {
             await createEvent(event);
-            console.log(`✅ Created: ${event.teams.home} vs ${event.teams.away}`);
+            console.log(`✅ Created: ${event.teams.home.name} vs ${event.teams.away.name}`);
         } catch (error) {
             console.error(`❌ Failed to create event ${event.id}:`, error);
         }

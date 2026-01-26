@@ -56,8 +56,14 @@ export async function transformFixtureToEvent(fixture: any, leagueName: string):
         type_event: typeEvent,
         league: leagueName,
         teams: {
-            home: fixture.teams.home.name,
-            away: fixture.teams.away.name
+            home: {
+                id: fixture.teams.home.id.toString(),
+                name: fixture.teams.home.name
+            },
+            away: {
+                id: fixture.teams.away.id.toString(),
+                name: fixture.teams.away.name
+            }
         },
         odds,
         start_time: startTime,

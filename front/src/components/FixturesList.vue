@@ -31,10 +31,10 @@
             <div class="flex items-center gap-4">
               <!-- Home -->
               <div class="flex items-center gap-2 flex-1 justify-end">
-                <span class="font-bold text-gray-900 text-right text-sm sm:text-base leading-tight">{{ fixture.teams.home }}</span>
+                <span class="font-bold text-gray-900 text-right text-sm sm:text-base leading-tight">{{ fixture.teams.home.name }}</span>
                 <img 
-                  :src="getTeamLogoUrl(fixture.teams.home)"
-                  :alt="fixture.teams.home"
+                  :src="getTeamLogoUrl(fixture.teams.home.name)"
+                  :alt="fixture.teams.home.name"
                   class="w-6 h-6 sm:w-8 sm:h-8 object-contain drop-shadow-sm"
                 />
               </div>
@@ -57,11 +57,11 @@
               <!-- Away -->
               <div class="flex items-center gap-2 flex-1 justify-start">
                 <img 
-                  :src="getTeamLogoUrl(fixture.teams.away)"
-                  :alt="fixture.teams.away"
+                  :src="getTeamLogoUrl(fixture.teams.away.name)"
+                  :alt="fixture.teams.away.name"
                   class="w-6 h-6 sm:w-8 sm:h-8 object-contain drop-shadow-sm"
                 />
-                <span class="font-bold text-gray-900 text-left text-sm sm:text-base leading-tight">{{ fixture.teams.away }}</span>
+                <span class="font-bold text-gray-900 text-left text-sm sm:text-base leading-tight">{{ fixture.teams.away.name }}</span>
               </div>
             </div>
           </div>
@@ -139,7 +139,7 @@ import { getLeagueLogoUrlByName } from '@/utils/leagueLogos';
 const props = withDefaults(defineProps<{
   fixtures: Array<{
     id: number;
-    teams: { home: string; away: string };
+    teams: { home: { id: string; name: string }; away: { id: string; name: string } };
     league: string;
     date?: string;
     startTime: number | string;

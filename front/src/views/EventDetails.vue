@@ -69,11 +69,11 @@
               <!-- Home Team -->
               <div class="flex-1 flex flex-col items-center text-center">
                 <img 
-                  :src="getTeamLogoUrl(event.teams.home)"
-                  :alt="event.teams.home"
+                  :src="getTeamLogoUrl(event.teams.home.name)"
+                  :alt="event.teams.home.name"
                   class="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 object-contain mb-3 drop-shadow-lg"
                 />
-                <h2 class="text-base sm:text-lg lg:text-xl font-bold">{{ event.teams.home }}</h2>
+                <h2 class="text-base sm:text-lg lg:text-xl font-bold">{{ event.teams.home.name }}</h2>
               </div>
 
               <!-- Score -->
@@ -107,11 +107,11 @@
               <!-- Away Team -->
               <div class="flex-1 flex flex-col items-center text-center">
                 <img 
-                  :src="getTeamLogoUrl(event.teams.away)"
-                  :alt="event.teams.away"
+                  :src="getTeamLogoUrl(event.teams.away.name)"
+                  :alt="event.teams.away.name"
                   class="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 object-contain mb-3 drop-shadow-lg"
                 />
-                <h2 class="text-base sm:text-lg lg:text-xl font-bold">{{ event.teams.away }}</h2>
+                <h2 class="text-base sm:text-lg lg:text-xl font-bold">{{ event.teams.away.name }}</h2>
               </div>
             </div>
           </div>
@@ -228,7 +228,7 @@
                     >
                       <div class="flex items-center gap-3 justify-end">
                         <div class="text-right">
-                          <div class="font-semibold text-sm text-gray-900">{{ matchEvent.player || event.teams.home }}</div>
+                          <div class="font-semibold text-sm text-gray-900">{{ matchEvent.player || event.teams.home.name }}</div>
                           <div class="text-xs text-gray-600">{{ matchEvent.detail }}</div>
                         </div>
                         <div :class="getEventIconClass(matchEvent.eventType)">
@@ -259,7 +259,7 @@
                           {{ getEventIcon(matchEvent.eventType) }}
                         </div>
                         <div class="text-left">
-                          <div class="font-semibold text-sm text-gray-900">{{ matchEvent.player || event.teams.away }}</div>
+                          <div class="font-semibold text-sm text-gray-900">{{ matchEvent.player || event.teams.away.name }}</div>
                           <div class="text-xs text-gray-600">{{ matchEvent.detail }}</div>
                         </div>
                       </div>
@@ -306,14 +306,14 @@
               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
             >
               <option value="">Select a prediction...</option>
-              <option :value="`Next goal by ${event.teams.home}`">Next goal by {{ event.teams.home }}</option>
-              <option :value="`Next goal by ${event.teams.away}`">Next goal by {{ event.teams.away }}</option>
+              <option :value="`Next goal by ${event.teams.home.name}`">Next goal by {{ event.teams.home.name }}</option>
+              <option :value="`Next goal by ${event.teams.away.name}`">Next goal by {{ event.teams.away.name }}</option>
               <option value="Total goals over 2.5">Total goals over 2.5</option>
               <option value="Total corners over 10">Total corners over 10</option>
               <option value="Red card in match">Red card in match</option>
               <option value="Penalty awarded">Penalty awarded</option>
-              <option :value="`${event.teams.home} wins`">{{ event.teams.home }} wins</option>
-              <option :value="`${event.teams.away} wins`">{{ event.teams.away }} wins</option>
+              <option :value="`${event.teams.home.name} wins`">{{ event.teams.home.name }} wins</option>
+              <option :value="`${event.teams.away.name} wins`">{{ event.teams.away.name }} wins</option>
             </select>
           </div>
 

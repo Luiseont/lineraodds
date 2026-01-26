@@ -5,16 +5,13 @@ export async function createEvent(event: Event) {
     const url = `${config.serviceUrl}/chains/${config.chainId}/applications/${config.appId}`;
 
     const mutation = `
-        mutation($id: String!, $typeEvent: String!, $league: String!, $home: String!, $away: String!, $homeOdds: Int!, $awayOdds: Int!, $tieOdds: Int!, $startTime: String!) {
+        mutation($id: String!, $typeEvent: String!, $league: String!, $homeId: String!, $awayId: String!, $startTime: String!) {
             createEvent(
                 id: $id,
                 typeEvent: $typeEvent,
                 league: $league,
-                home: $home,
-                away: $away,
-                homeOdds: $homeOdds,
-                awayOdds: $awayOdds,
-                tieOdds: $tieOdds,
+                homeId: $homeId,
+                awayId: $awayId,
                 startTime: $startTime
             )
         }
@@ -24,16 +21,13 @@ export async function createEvent(event: Event) {
         id: event.id,
         typeEvent: event.type_event,
         league: event.league,
-        home: event.teams.home,
-        away: event.teams.away,
-        homeOdds: event.odds.home,
-        awayOdds: event.odds.away,
-        tieOdds: event.odds.tie,
+        homeId: event.teams.home.id,
+        awayId: event.teams.away.id,
         startTime: event.start_time
     };
 
     try {
-        console.log(`Creating event: ${event.teams.home} vs ${event.teams.away}`);
+        console.log(`Creating event: ${event.teams.home.name} vs ${event.teams.away.name}`);
 
         const response = await fetch(url, {
             method: 'POST',

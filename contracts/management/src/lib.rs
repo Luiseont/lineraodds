@@ -26,9 +26,8 @@ pub enum Operation {
     //appchain
     Subscribe { chain_id: ChainId },
     Unsubscribe { chain_id: ChainId },
-    CreateEvent { id: String, type_event: String, league: String, home: String, away: String, home_odds: u64, away_odds: u64, tie_odds: u64, start_time: Timestamp },
+    CreateEvent { id: String, type_event: String, league: String, home_id: String, away_id: String, start_time: Timestamp },
     UpdateEventStatus { event_id: String, status: String },
-    UpdateEventOdds { event_id: String, home_odds: u64, away_odds: u64, tie_odds: u64 },
     UpdateCurrentMinute { event_id: String, current_minute: u32 },
     ResolveEvent { event_id: String, winner: String, home_score: String, away_score: String },
     UpdateEventLiveScore { event_id: String, home_score: String, away_score: String },
@@ -41,11 +40,13 @@ pub enum Operation {
         detail: Option<String>,
         timestamp: Timestamp
     },
+    //power ranking operations
+    UpdateTeamPower { team_id: String, name: String, power: u64, form: i64, goal_average: i64 },
     //leaderboard operations
     StartNewWeek { week: u64, year: u64, prize_pool: Amount },
     EndCurrentWeek { week: u64, year: u64 },
     //userChain
-    PlaceBet{ home: String, away: String, league: String, start_time: Timestamp, odd: u64, selection: String, bid: Amount, event_id: String},
+    PlaceBet{ home_id: String, away_id: String, home_name: String, away_name: String, league: String, start_time: Timestamp, odd: u64, selection: String, bid: Amount, event_id: String},
     ClaimReward { event_id: String },
     RequestMint { amount: Amount },
 }
@@ -58,6 +59,8 @@ pub enum Message {
    ClaimResult { event_id: String, result: String},
    MintTokens { amount: Amount },
    Receive { amount: Amount },
+   //power ranking cross-messages
+   UpdateTeamPower { team_id: String, name: String, power: u64, form: i64, goal_average: i64 },
    //toAppChain
    NewEventCreated{event_id: String, event: Event},
    EventUpdated{event_id: String, event: Event},

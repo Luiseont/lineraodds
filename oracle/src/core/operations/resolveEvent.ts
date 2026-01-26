@@ -1,5 +1,6 @@
 import { config } from '../../config';
 import { Selection, GraphQLResponse } from '../types';
+import { updatePowerAfterMatch } from './updatePowerAfterMatch';
 
 export async function resolveEvent(
     eventId: string,
@@ -53,6 +54,9 @@ export async function resolveEvent(
         }
 
         console.log(`Resolved event ${eventId}: ${winnerString} (${homeScore}-${awayScore})`);
+
+        // Recalculate power rankings for involved teams
+        await updatePowerAfterMatch(eventId, winner, homeScore, awayScore);
 
     } catch (error) {
         console.error(`Error resolving event ${eventId}:`, error);

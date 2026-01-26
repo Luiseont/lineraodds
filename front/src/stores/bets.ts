@@ -84,7 +84,7 @@ export const betsStore = defineStore('bets', () => {
         try {
             // Fetch ALL bets without any filters
             const query = JSON.stringify({
-                query: 'query { myOdds { eventId, odd, league, teams{ home, away }, status, startTime, selection, bid, placedAt } }'
+                query: 'query { myOdds { eventId, odd, league, teams{ home { id name }, away { id name } }, status, startTime, selection, bid, placedAt } }'
             })
 
             console.log('Fetching all user bets (no filters)')

@@ -27,7 +27,7 @@
           <!-- Event Info -->
           <div class="mb-6 text-center">
             <p class="text-sm text-gray-500 mb-1">{{ event.league }}</p>
-            <h4 class="text-xl font-bold text-secondary mb-2">{{ event.teams.home }} vs {{ event.teams.away }}</h4>
+            <h4 class="text-xl font-bold text-secondary mb-2">{{ event.teams.home.name }} vs {{ event.teams.away.name }}</h4>
             <p class="text-sm text-gray-400">{{ formatDate(event.startTime) }}</p>
           </div>
 

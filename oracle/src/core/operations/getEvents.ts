@@ -12,8 +12,14 @@ export async function getEvents() {
                 typeEvent
                 league
                 teams {
-                    home
-                    away
+                    home {
+                        id
+                        name
+                    }
+                    away {
+                        id
+                        name
+                    }
                 }
                 odds {
                     home

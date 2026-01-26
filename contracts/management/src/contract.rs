@@ -10,7 +10,7 @@ use linera_sdk::{
 
 use management::{
     Operation, Message, Bet, Event,
-    state::{ManagementState, LeaderboardWinner, MatchStatus, Teams, Odds, MatchResult, TypeEvent, UserOdd, UserOdds, Selection, BetStatus, LiveScore, MatchEvent, MatchEventType, UserStats}
+    state::{ManagementState, LeaderboardWinner, MatchStatus, TeamInfo, Teams, Team, Odds, MatchResult, TypeEvent, UserOdd, UserOdds, Selection, BetStatus, LiveScore, MatchEvent, MatchEventType, UserStats}
 };
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -56,10 +56,25 @@ impl Contract for ManagementContract {
                 self.runtime
                     .unsubscribe_from_events(chain_id, app_id, STREAM_NAME.into());
             },
+            Operation::UpdateTeamPower { team_id, name, power, form, goal_average } => {
+                let management_chain_id = self.runtime.application_creator_chain_id();
+                let mut team = self.state.power_ranking.get(&team_id).await.expect("Team not found").unwrap_or_default();
+                team.id = team_id.clone();
+                team.name = name.clone();
+                team.power = power.clone();
+                team.form = form.clone();
+                team.goal_average = goal_average.clone();
+                team.last_updated = self.runtime.system_time();
+                let _ = self.state.power_ranking.insert(&team_id.clone(), team.clone());
+                
+                self.runtime.prepare_message(
+                    Message::UpdateTeamPower { team_id: team_id.clone(), name: name.clone(), power: power.clone(), form: form.clone(), goal_average: goal_average.clone() }
+                ).with_authentication().send_to(management_chain_id);
+            },
             Operation::UpdateEventStatus { event_id, status } => {
                 //assert!(self.runtime.chain_id() != self.runtime.application_creator_chain_id());
                 let management_chain_id = self.runtime.application_creator_chain_id();
-                let event = self.state.events.get(&event_id).await.expect("Event not found").unwrap();
+                let mut event = self.state.events.get(&event_id).await.expect("Event not found").unwrap();
 
                 let new_status = match status.as_str() {
                     "Scheduled" => MatchStatus::Scheduled,
@@ -69,107 +84,40 @@ impl Contract for ManagementContract {
                     _ => MatchStatus::Scheduled,
                 };
 
-                let new_event = Event {
-                    id: event_id.clone(),
-                    status: new_status,
-                    type_event: event.type_event,   
-                    league: event.league,
-                    teams: event.teams,
-                    odds: event.odds,
-                    start_time: event.start_time,
-                    result: event.result,
-                    live_score: event.live_score,
-                    match_events: event.match_events,
-                    last_updated: self.runtime.system_time(),
-                    current_minute: event.current_minute,
-                };
-                let _ = self.state.events.insert(&event_id, new_event.clone());
-
-                self.runtime.prepare_message(
-                    Message::EventUpdated { event_id: event_id.clone(), event: new_event.clone() }
-                ).with_authentication().send_to(management_chain_id);
-            },
-            Operation::UpdateEventOdds { event_id, home_odds, away_odds, tie_odds } => {
-                //assert!(self.runtime.chain_id() != self.runtime.application_creator_chain_id());
-                let management_chain_id = self.runtime.application_creator_chain_id();
-                let event = self.state.events.get(&event_id).await.expect("Event not found").unwrap();
-                let odds = Odds {
-                    home: home_odds,
-                    away: away_odds,
-                    tie: tie_odds,
-                };
-                let new_event = Event {
-                    id: event_id.clone(),
-                    status: event.status,
-                    type_event: event.type_event,
-                    league: event.league,
-                    teams: event.teams,
-                    odds: odds,
-                    start_time: event.start_time,
-                    result: event.result,
-                    live_score: event.live_score,
-                    match_events: event.match_events,
-                    last_updated: self.runtime.system_time(),
-                    current_minute: event.current_minute,
-                };
-                let _ = self.state.events.insert(&event_id, new_event.clone()); 
+                event.status = new_status;
+                event.last_updated = self.runtime.system_time();
+                let _ = self.state.events.insert(&event_id, event.clone());
                 
                 self.runtime.prepare_message(
-                    Message::EventUpdated { event_id: event_id.clone(), event: new_event.clone() }
+                    Message::EventUpdated { event_id: event_id.clone(), event: event.clone() }
                 ).with_authentication().send_to(management_chain_id);
-                
             },
             Operation::UpdateEventLiveScore { event_id, home_score, away_score } => {
                 //assert!(self.runtime.chain_id() != self.runtime.application_creator_chain_id());
                 let management_chain_id = self.runtime.application_creator_chain_id();
-                let event = self.state.events.get(&event_id).await.expect("Event not found").unwrap();
+                let mut event = self.state.events.get(&event_id).await.expect("Event not found").unwrap();
                 let live_score = LiveScore {
                     home: home_score,
                     away: away_score,
                     updated_at: self.runtime.system_time(),
                 };
-                let new_event = Event {
-                    id: event_id.clone(),
-                    status: event.status,
-                    type_event: event.type_event,
-                    league: event.league,
-                    teams: event.teams,
-                    odds: event.odds,
-                    start_time: event.start_time,
-                    result: event.result,
-                    live_score: live_score,
-                    match_events: event.match_events,
-                    last_updated: self.runtime.system_time(),
-                    current_minute: event.current_minute,
-                };
-                let _ = self.state.events.insert(&event_id, new_event.clone());
+                event.live_score = live_score;
+                event.last_updated = self.runtime.system_time();
+                let _ = self.state.events.insert(&event_id, event.clone());
                 
                 self.runtime.prepare_message(
-                    Message::EventUpdated { event_id: event_id.clone(), event: new_event.clone() }
+                    Message::EventUpdated { event_id: event_id.clone(), event: event.clone() }
                 ).with_authentication().send_to(management_chain_id);
             },
             Operation::UpdateCurrentMinute { event_id, current_minute } => {
                 let management_chain_id = self.runtime.application_creator_chain_id();
-                let event = self.state.events.get(&event_id).await.expect("Event not found").unwrap();
-                
-                let new_event = Event {
-                    id: event_id.clone(),
-                    status: event.status,
-                    type_event: event.type_event,
-                    league: event.league,
-                    teams: event.teams,
-                    odds: event.odds,
-                    start_time: event.start_time,
-                    result: event.result,
-                    live_score: event.live_score,
-                    match_events: event.match_events,
-                    last_updated: self.runtime.system_time(),
-                    current_minute: Some(current_minute),
-                };
-                let _ = self.state.events.insert(&event_id, new_event.clone());
+                let mut event = self.state.events.get(&event_id).await.expect("Event not found").unwrap();
+                event.last_updated = self.runtime.system_time();
+                event.current_minute = Some(current_minute);
+                let _ = self.state.events.insert(&event_id, event.clone());
                 
                 self.runtime.prepare_message(
-                    Message::EventUpdated { event_id: event_id.clone(), event: new_event.clone() }
+                    Message::EventUpdated { event_id: event_id.clone(), event: event.clone() }
                 ).with_authentication().send_to(management_chain_id);
             },
             Operation::AddMatchEvent { event_id, event_type, time, team, player, detail, timestamp } => {
@@ -206,7 +154,7 @@ impl Contract for ManagementContract {
                     Message::EventUpdated { event_id: event_id.clone(), event: updated_event }
                 ).with_authentication().send_to(management_chain_id);
             },
-            Operation::CreateEvent { id, type_event, league, home, away, home_odds, away_odds, tie_odds, start_time } => {
+            Operation::CreateEvent { id, type_event, league, home_id, away_id, start_time } => {
 
                 //assert_eq!(self.runtime.chain_id(), self.runtime.application_creator_chain_id());
                 let management_chain_id = self.runtime.application_creator_chain_id();
@@ -217,13 +165,29 @@ impl Contract for ManagementContract {
                     _ => TypeEvent::Football,
                 };
 
+                //get home and away team info from power ranking
+                let home_team = self.state.power_ranking.get(&home_id).await.expect("Home team not found").unwrap();
+                let away_team = self.state.power_ranking.get(&away_id).await.expect("Away team not found").unwrap();
+
+                //calculate odds from team power ranking
+                let odds = calculate_odds(&home_team, &away_team);
+
                 let event = Event {
                     id : id.clone(),
                     status: MatchStatus::Scheduled,
                     type_event: type_eventE,
                     league: league.clone(),
-                    teams: Teams { home: home.clone(), away: away.clone() },
-                    odds: Odds { home: home_odds, away: away_odds, tie: tie_odds },
+                    teams: Teams { 
+                        home: Team { 
+                            name: home_team.name.clone(), 
+                            id: home_team.id.clone() 
+                        },
+                        away: Team {
+                            name: away_team.name.clone(), 
+                            id: away_team.id.clone() 
+                        } 
+                    },
+                    odds: Odds { home: odds.0, away: odds.2, tie: odds.1 },
                     start_time,
                     result: MatchResult::default(),
                     live_score: LiveScore::default(),
@@ -285,7 +249,7 @@ impl Contract for ManagementContract {
                 ).with_authentication().send_to(management_chain_id);
             },
             // UserChain operations.
-            Operation::PlaceBet { home, away, league, start_time, odd, selection, bid, event_id } => {
+            Operation::PlaceBet { home_id, away_id, home_name, away_name, league, start_time, odd, selection, bid, event_id } => {
                 let management_chain_id = self.runtime.application_creator_chain_id();
                 
                 let user_balance = self.state.user_balance.get().clone();
@@ -300,7 +264,16 @@ impl Contract for ManagementContract {
                 // Record bet locally
                 let user_bet = UserOdds {
                     event_id: event_id.clone(),
-                    teams: Teams { home: home.clone(), away: away.clone() },
+                    teams: Teams { 
+                        home: Team { 
+                            name: home_name.clone(), 
+                            id: home_id.clone() 
+                        },
+                        away: Team {
+                            name: away_name.clone(), 
+                            id: away_id.clone() 
+                        } 
+                    },
                     league: league.clone(),
                     start_time,
                     odd,
@@ -321,7 +294,7 @@ impl Contract for ManagementContract {
 
                 // Notify management chain
                 self.runtime.prepare_message(
-                    Message::NewBetPlaced { home, away, league, start_time, odd, selection, bid, status: "Placed".to_string(), event_id  }
+                    Message::NewBetPlaced { home: home_id, away: away_id, league, start_time, odd, selection, bid, status: "Placed".to_string(), event_id  }
                 ).with_authentication().send_to(management_chain_id);
             },
             Operation::ClaimReward{ event_id } => {
@@ -346,11 +319,22 @@ impl Contract for ManagementContract {
 
     async fn execute_message(&mut self, message: Self::Message) {
         match message {
+            Message::UpdateTeamPower { team_id, name, power, form, goal_average } => {
+                let management_chain_id = self.runtime.application_creator_chain_id();
+                let mut team = self.state.power_ranking.get(&team_id).await.expect("Team not found").unwrap_or_default();
+                team.id = team_id.clone();
+                team.name = name;
+                team.power = power;
+                team.form = form;
+                team.goal_average = goal_average;
+                team.last_updated = self.runtime.system_time();
+                let _ = self.state.power_ranking.insert(&team_id.clone(), team.clone());
+            },
             Message::NewBetPlaced { home, away, league, start_time, odd, selection, bid, status, event_id } => {
                 let user_id = self.runtime.message_origin_chain_id().unwrap();
                 
                 // Check if event exists, if not revert the bet
-                let event = match self.state.events.get(&event_id).await {
+                let mut event = match self.state.events.get(&event_id).await {
                     Ok(Some(e)) => e,
                     _ => {
                         self.runtime.prepare_message(
@@ -393,10 +377,17 @@ impl Contract for ManagementContract {
                 };
 
                 bets.push(bet.clone());
-                let _ = self.state.event_odds.insert(&event_id, bets);
-                self.runtime.emit(STREAM_NAME.into(), &Bet::NewEventBet { event_id, user_odd: bet });
+                let _ = self.state.event_odds.insert(&event_id, bets.clone());
+                self.runtime.emit(STREAM_NAME.into(), &Bet::NewEventBet { event_id: event_id.clone(), user_odd: bet });
 
+                //calculate new odds
+                let initial_odds = (event.odds.home, event.odds.tie, event.odds.away);
+                let (new_home, new_tie, new_away) = get_market_odds(initial_odds, &bets);
 
+                event.odds.home = new_home;
+                event.odds.tie = new_tie;
+                event.odds.away = new_away;
+                let _ = self.state.events.insert(&event_id, event);
 
                 let mut leaderboard_data = self.state.leaderboard
                     .get().clone();
@@ -629,4 +620,105 @@ fn calculate_prize(_event: &Event, user_bet: &UserOdd) -> Amount {
     let prize = (bet_amount * odd) / 100;
     
     Amount::from_attos(prize)
+}
+
+// Retorna (Cuota Local, Cuota Empate, Cuota Visita) escaladas x100
+// Ejemplo: Retorna (188, 355, 370) que significa 1.88, 3.55, 3.70
+pub fn calculate_odds(home: &TeamInfo, away: &TeamInfo) -> (u64, u64, u64) {
+    
+    let base_h = (home.power as i64 + home.form + home.goal_average).max(1) as f64;
+    let base_a = (away.power as i64 + away.form + away.goal_average).max(1) as f64;
+
+    let p_home = base_h * 1.10; 
+    let p_away = base_a * 0.95; 
+
+    let delta = (p_home - p_away).abs(); 
+    let max_draw = 0.28; 
+    let min_draw = 0.10; 
+    let decay = 65.0;    
+
+    // A más diferencia (delta), menos probabilidad de empate
+    let mut prob_draw = max_draw * (-delta / decay).exp();
+    if prob_draw < min_draw { prob_draw = min_draw; }
+
+    let rem_prob = 1.0 - prob_draw; 
+
+    let str_h = p_home.powf(2.0);
+    let str_a = p_away.powf(2.0);
+    let total_str = str_h + str_a;
+
+    let prob_home = (str_h / total_str) * rem_prob;
+    let prob_away = (str_a / total_str) * rem_prob;
+
+    // --- 5. Convertir a Cuota + Margen (8%) ---
+    let margin = 1.08;
+    
+    // Cuota = (1 / Probabilidad) / Margen
+    let raw_odd_h = (1.0 / prob_home) / margin;
+    let raw_odd_d = (1.0 / prob_draw) / margin;
+    let raw_odd_a = (1.0 / prob_away) / margin;
+
+    // Ejemplo: 1.884 -> 188.4 -> 188
+    (
+        (raw_odd_h * 100.0) as u64,
+        (raw_odd_d * 100.0) as u64,
+        (raw_odd_a * 100.0) as u64
+    )
+}
+
+pub fn get_market_odds(initial_odds: (u64, u64, u64), current_bets: &Vec<UserOdd>) -> (u64, u64, u64) {
+    
+    // 1. Constantes
+    const VIRTUAL_LIQUIDITY: f64 = 1_000.0;
+    const MARGIN: f64 = 1.08;
+    const TOKEN_DECIMALS: f64 = 1_000_000_000_000_000_000.0; 
+
+    // 2. Probabilidades Base
+    // .max(1) evita división por cero si el input viene mal
+    let p_base_h = 100.0 / (initial_odds.0.max(1) as f64); 
+    let p_base_t = 100.0 / (initial_odds.1.max(1) as f64);
+    let p_base_a = 100.0 / (initial_odds.2.max(1) as f64);
+
+    let mut pool_h = VIRTUAL_LIQUIDITY * p_base_h;
+    let mut pool_t = VIRTUAL_LIQUIDITY * p_base_t;
+    let mut pool_a = VIRTUAL_LIQUIDITY * p_base_a;
+
+    // 3. Sumar apuestas
+    for bet in current_bets {
+        let amount_normalized = u128::from(bet.bid) as f64 / TOKEN_DECIMALS;
+        
+        match bet.selection {
+            Selection::Home => pool_h += amount_normalized,
+            Selection::Tie  => pool_t += amount_normalized,
+            Selection::Away => pool_a += amount_normalized,
+        }
+    }
+
+    let total_pool = pool_h + pool_t + pool_a;
+
+    // 4. Calcular Probabilidades (Con protección contra 0)
+    let (raw_prob_h, raw_prob_t, raw_prob_a) = if total_pool > 0.0 {
+        (
+            pool_h / total_pool,
+            pool_t / total_pool,
+            pool_a / total_pool
+        )
+    } else {
+        (0.33, 0.33, 0.33) // Fallback imposible pero seguro
+    };
+
+    // 5. Función auxiliar para calcular cuota segura
+    // Evita el 0.92 y el Overflow
+    let calc_safe_odd = |prob: f64| -> u64 {
+        let safe_prob = prob.clamp(0.01, 0.98);
+        let odd_decimal = (1.0 / safe_prob) / MARGIN;
+        let odd_u64 = (odd_decimal * 100.0) as u64;
+        odd_u64.clamp(101, 10_000)
+    };
+
+    (
+        calc_safe_odd(raw_prob_h),
+        calc_safe_odd(raw_prob_t),
+        calc_safe_odd(raw_prob_a)
+    )
 }

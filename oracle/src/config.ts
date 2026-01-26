@@ -13,6 +13,13 @@ export const config = {
     // Leaderboard configuration
     leaderboardEnabled: process.env.LEADERBOARD_ENABLED !== 'false', // Default: enabled
     leaderboardPrizePool: process.env.LEADERBOARD_PRIZE_POOL || '10000', // 10,000 USDL
+    leagues: [
+        { id: '140', name: 'La Liga', season: '2025' },      // España
+        { id: '39', name: 'Premier League', season: '2025' }, // Inglaterra
+        { id: '78', name: 'Bundesliga', season: '2025' },    // Alemania
+        { id: '135', name: 'Serie A', season: '2025' },      // Italia
+        { id: '61', name: 'Ligue 1', season: '2025' }        // Francia
+    ]
 } as const;
 
 

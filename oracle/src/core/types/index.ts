@@ -41,8 +41,14 @@ export enum MatchEventType {
 
 // Match Rust struct: Teams
 export interface Teams {
-    home: string;
-    away: string;
+    home: {
+        id: string;
+        name: string;
+    };
+    away: {
+        id: string;
+        name: string;
+    };
 }
 
 // Match Rust struct: Odds
@@ -129,8 +135,14 @@ export interface GetEventsResponse {
             typeEvent: string;
             league: string;
             teams: {
-                home: string;
-                away: string;
+                home: {
+                    id: string;
+                    name: string;
+                };
+                away: {
+                    id: string;
+                    name: string;
+                };
             };
             odds: {
                 home: number;

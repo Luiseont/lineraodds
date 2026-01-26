@@ -12,6 +12,8 @@ pub struct ManagementState {
     pub oracle: RegisterView<Option<ChainId>>,
     pub token_supp: RegisterView<Amount>,
     pub leaderboard:RegisterView<LeaderboardData>,// <LeaderboardData>
+
+    pub power_ranking: MapView<String, TeamInfo>,
     //state for local instance
     pub user_odds: RegisterView<Vec<UserOdds>>,
     pub user_balance: RegisterView<Amount>,
@@ -80,8 +82,14 @@ pub enum MatchEventType {
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default, SimpleObject)]
 pub struct Teams {
-    pub home: String,
-    pub away: String,
+    pub home: Team,
+    pub away: Team,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, Default, SimpleObject)]
+pub struct Team {
+    pub id: String,
+    pub name: String,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default,SimpleObject)]
@@ -167,4 +175,14 @@ pub struct LeaderboardData {
     pub winners: HashMap<String, Vec<LeaderboardWinner>>,   // "year-week" -> Vec<LeaderboardWinners>
     pub user_stats: HashMap<String, UserStats>,              // user -> UserStats
     pub prize_pool: Amount,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, SimpleObject, Default)]
+pub struct TeamInfo {
+    pub id: String,
+    pub name: String,
+    pub power: u64,       
+    pub form: i64,
+    pub goal_average: i64,
+    pub last_updated: Timestamp,
 }
