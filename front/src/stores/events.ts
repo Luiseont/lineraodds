@@ -4,6 +4,7 @@ import { useWallet } from '@/composables/useWallet'
 import { useApp } from '@/composables/useApp'
 import { createApolloClient } from '@/plugins/apollo-client'
 import gql from 'graphql-tag'
+import { useWebSubscriptionStore } from './webSubscription'
 
 export const eventsStore = defineStore('events', () => {
     // Composables
@@ -155,125 +156,25 @@ export const eventsStore = defineStore('events', () => {
         }
     }
 
-    function startNotificationSubscription() {
-        try {
-            // Crear Apollo Client si no existe
-            if (!apolloClient) {
-                const httpUrl = `${WsUrl}/ws`;
-                const wsUrl = httpUrl.replace('http://', 'ws://').replace('https://', 'wss://');
+    const webSubscription = useWebSubscriptionStore()
 
-                console.log('Creating Apollo Client');
-                console.log('HTTP URL:', httpUrl);
-                console.log('WS URL:', wsUrl);
+    // Register simple listener to reload events
+    webSubscription.registerListener(() => {
+        console.log('EventStore: Notification received, reloading events...')
+        getEvents()
+    })
 
-                apolloClient = createApolloClient(httpUrl, wsUrl);
-            }
-
-            // Si ya hay una subscription activa, no crear otra
-            if (notificationSubscription) {
-                console.log('Notification subscription already active');
-                return;
-            }
-
-            console.log('Starting notification subscription for chain:', ChainID.value);
-
-            // Suscribirse a notificaciones
-            notificationSubscription = apolloClient.subscribe({
-                query: NOTIFICATIONS_SUBSCRIPTION,
-                variables: {
-                    chainId: ChainID.value
-                }
-            }).subscribe({
-                next: (result: any) => {
-                    console.log('Notification received:', result);
-                    // Cuando llega una notificación, recargar eventos
-                    console.log('Refreshing events due to notification...');
-                    getEvents();
-                },
-                error: (error: any) => {
-                    console.error('Subscription error:', error);
-                    // Si falla la subscription, no hacer nada (los eventos ya se cargaron)
-                },
-                complete: () => {
-                    console.log('Subscription completed');
-                }
-            });
-
-        } catch (error) {
-            console.error('Error setting up notification subscription:', error);
-            // Si falla, al menos tenemos los eventos cargados inicialmente
+    // Initial fetch if connected
+    watch(connected, (isConnected) => {
+        if (isConnected) {
+            getEvents()
         }
-    }
+    })
 
-    function stopNotificationSubscription() {
-        if (notificationSubscription) {
-            console.log('Stopping notification subscription');
-            notificationSubscription.unsubscribe();
-            notificationSubscription = null;
-        }
-    }
+    // Fetch immediately for public access
+    getEvents()
 
-    function cleanup() {
-        stopNotificationSubscription();
-        // Limpiar lista de eventos
-        allEvents.value = [];
-        // Limpiar Apollo Client para forzar recreación en próxima conexión
-        if (apolloClient) {
-            apolloClient = null;
-        }
-    }
-
-    // Función para inicializar la suscripción si ya está conectado
-    function initialize() {
-        if (connected.value && !notificationSubscription) {
-            console.log('Initializing subscription (already connected)');
-            startNotificationSubscription();
-        }
-    }
-
-    // Limpiar cuando se cierra el navegador o la pestaña
-    function setupBrowserCleanup() {
-        // Cuando se cierra el navegador/pestaña
-        window.addEventListener('beforeunload', () => {
-            console.log('Browser closing, cleaning up subscription');
-            cleanup();
-        });
-        /*
-        // Cuando la pestaña se oculta (cambio de pestaña, minimizar)
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                console.log('Page hidden, cleaning up subscription');
-                cleanup();
-            } else if (connected.value) {
-                console.log('Page visible again, reinitializing subscription');
-                initialize();
-            }
-        });*/
-
-        // Evento adicional para cuando se descarga la página
-        window.addEventListener('pagehide', () => {
-            console.log('Page hiding, cleaning up subscription');
-            cleanup();
-        });
-    }
-
-    watch(connected, async (newVal) => {
-        if (newVal) {
-            // Solo iniciar si no hay suscripción activa
-            if (!notificationSubscription) {
-                startNotificationSubscription();
-            }
-        } else {
-            // Solo limpiar cuando se desconecta
-            cleanup();
-        }
-    }, { immediate: true })
-
-    // Configurar listeners del navegador
-    setupBrowserCleanup();
-
-    // Inicializar inmediatamente si ya está conectado
-    initialize();
+    // No internal Cleanup needed for this store's subscription logic anymore since it delegates to webSubscription
 
     // Pagination functions - now only update state
     function nextPage() {
@@ -309,9 +210,8 @@ export const eventsStore = defineStore('events', () => {
         nextPage,
         previousPage,
         setFilters,
-        startNotificationSubscription,
-        stopNotificationSubscription,
-        initialize,
-        cleanup
+        cleanup: () => {
+            allEvents.value = []
+        }
     }
 })

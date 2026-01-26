@@ -1,5 +1,8 @@
 <template>
-  <div class="max-w-4xl mx-auto">
+  <!-- Wallet Guard -->
+  <ConnectWalletPrompt v-if="!connected" />
+
+  <div v-else class="max-w-4xl mx-auto">
     <!-- Header -->
     <div class="mb-8 text-center">
       <h1 class="text-4xl font-bold text-secondary mb-2">Welcome Bonus</h1>
@@ -140,8 +143,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useApp } from '@/composables/useApp'
+import { useWallet } from '@/composables/useWallet'
+import ConnectWalletPrompt from '@/components/ConnectWalletPrompt.vue'
 
 const { walletBalance, mintTokens, checkBonusClaimed, isBackendReady } = useApp()
+const { connected } = useWallet()
 
 const BONUS_AMOUNT = 100
 const claiming = ref(false)

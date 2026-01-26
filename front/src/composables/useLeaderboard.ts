@@ -1,11 +1,8 @@
-import { ref, computed } from 'vue'
-import type { LeaderboardData, LeaderboardRanking } from '@/types/leaderboard'
-import { generateMockLeaderboardData } from '@/types/leaderboard'
-import { useApp } from '@/composables/useApp'
 import gql from 'graphql-tag'
-
-// Toggle between mock and real data
-const MOCK_MODE = false
+import { useWebSubscriptionStore } from '@/stores/webSubscription'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import type { LeaderboardData, LeaderboardRanking } from '@/types/leaderboard'
+import { useApp } from '@/composables/useApp'
 
 // GraphQL Query
 const LEADERBOARD_QUERY = gql`
@@ -36,10 +33,16 @@ export function useLeaderboard() {
     // Helper: Calculate current week period
     function getCurrentWeekPeriod() {
         const now = new Date()
+
+        // Start of week (Sunday 00:00:00)
         const startOfWeek = new Date(now)
         startOfWeek.setDate(now.getDate() - now.getDay())
+        startOfWeek.setHours(0, 0, 0, 0)
+
+        // End of week (Saturday 23:59:59.999)
         const endOfWeek = new Date(startOfWeek)
         endOfWeek.setDate(startOfWeek.getDate() + 6)
+        endOfWeek.setHours(23, 59, 59, 999)
 
         return {
             startDate: startOfWeek.toISOString(),
@@ -119,51 +122,49 @@ export function useLeaderboard() {
     }
 
     // Fetch leaderboard data
-    async function fetchLeaderboard() {
-        isLoading.value = true
+    async function fetchLeaderboard(silent = false) {
+        if (!silent) {
+            isLoading.value = true
+        }
         error.value = null
 
         try {
-            if (MOCK_MODE) {
-                // Simulate API delay
-                await new Promise(resolve => setTimeout(resolve, 500))
-                leaderboardData.value = generateMockLeaderboardData()
+            const response = await fetch(AppChainUrl.value, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    query: LEADERBOARD_QUERY.loc?.source.body || '',
+                    variables: {}
+                }),
+            })
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`)
+            }
+
+            const data = await response.json()
+            // console.log('Leaderboard response:', data)
+
+            if (data.errors) {
+                console.error('GraphQL errors:', data.errors)
+                throw new Error(data.errors[0]?.message || 'GraphQL error')
+            }
+
+            const backendData = data.data?.leaderboard
+            if (backendData) {
+                leaderboardData.value = transformLeaderboardData(backendData)
             } else {
-                const response = await fetch(AppChainUrl.value, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        query: LEADERBOARD_QUERY.loc?.source.body || '',
-                        variables: {}
-                    }),
-                })
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`)
-                }
-
-                const data = await response.json()
-                console.log('Leaderboard response:', data)
-
-                if (data.errors) {
-                    console.error('GraphQL errors:', data.errors)
-                    throw new Error(data.errors[0]?.message || 'GraphQL error')
-                }
-
-                const backendData = data.data?.leaderboard
-                if (backendData) {
-                    leaderboardData.value = transformLeaderboardData(backendData)
-                } else {
-                    leaderboardData.value = null
-                }
+                leaderboardData.value = null
             }
         } catch (err) {
             error.value = err instanceof Error ? err.message : 'Failed to fetch leaderboard'
             console.error('Error fetching leaderboard:', err)
         } finally {
-            isLoading.value = false
+            if (!silent) {
+                isLoading.value = false
+            }
         }
     }
 
@@ -232,12 +233,32 @@ export function useLeaderboard() {
         return leaderboardData.value?.prizePool || '0'
     })
 
+    // Timer for reactive countdown
+    const now = ref(new Date())
+    let timer: ReturnType<typeof setInterval> | null = null
+
+    // Start timer when composable is used (mounted)
+    onMounted(() => {
+        now.value = new Date() // Sync immediately
+        timer = setInterval(() => {
+            now.value = new Date()
+        }, 1000)
+    })
+
+    onUnmounted(() => {
+        if (timer) {
+            clearInterval(timer)
+            timer = null
+        }
+    })
+
     // Calculate time remaining until end of week
     const timeRemaining = computed(() => {
         if (!period.value) return 0
         const endDate = new Date(period.value.endDate)
-        const now = new Date()
-        return endDate.getTime() - now.getTime()
+        // Use reactive 'now'
+        const remaining = endDate.getTime() - now.value.getTime()
+        return Math.max(0, remaining)
     })
 
     const winners = computed(() => {
@@ -248,6 +269,14 @@ export function useLeaderboard() {
         if (!leaderboardData.value) return null
         return leaderboardData.value.rankings.find(r => r.userId === userAddress) || null
     }
+
+    const webSubscription = useWebSubscriptionStore()
+
+    // Register listener for real-time updates
+    webSubscription.registerListener(() => {
+        console.log('Leaderboard: Notification received, refreshing data...')
+        fetchLeaderboard(true)
+    })
 
     return {
         leaderboardData,

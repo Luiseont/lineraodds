@@ -1,103 +1,114 @@
 <template>
-  <div class="card p-4 sm:p-6">
-    <ul>
-      <li v-for="fixture in props.fixtures" :key="fixture.id" class="border-b last:border-b-0 py-2 sm:py-3 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-        <div class="flex-1">
-          <p class="font-semibold flex items-center justify-center sm:justify-start gap-2 flex-wrap">
-            <!-- Home Team Logo -->
-            <img 
-              :src="getTeamLogoUrl(fixture.teams.home)"
-              :alt="fixture.teams.home"
-              class="w-5 h-5 sm:w-6 sm:h-6 object-contain"
-            />
-            <span class="text-sm sm:text-base">{{ fixture.teams.home }}</span>
-            
-            <span class="text-gray-400">vs</span>
-            
-            <!-- Away Team Logo -->
-            <img 
-              :src="getTeamLogoUrl(fixture.teams.away)"
-              :alt="fixture.teams.away"
-              class="w-5 h-5 sm:w-6 sm:h-6 object-contain"
-            />
-            <span class="text-sm sm:text-base">{{ fixture.teams.away }}</span>
-          </p>
-          <p class="text-xs sm:text-sm text-gray-500 mt-1 flex items-center gap-2">
-            <!-- League Logo -->
-            <img 
-              :src="getLeagueLogoUrlByName(fixture.league)"
-              :alt="fixture.league"
-              class="w-4 h-4 object-contain"
-            />
-            {{ fixture.league }} - {{ formatDate(fixture.startTime) }}
-          </p>
-        </div>
-        <div class="flex gap-2 w-full sm:w-auto">
-          <template v-if="fixture.status.toLowerCase() === 'scheduled'">
-            <button 
-              class="btn-odds btn-odds-primary flex-1 sm:flex-none"
-              @click="openBetModal(fixture, 'Home', fixture.odds.home)"
-            >
-              {{ formatOdds(fixture.odds.home) }}
-            </button>
-            <button 
-              class="btn-odds btn-odds-primary flex-1 sm:flex-none"
-              @click="openBetModal(fixture, 'Tie', fixture.odds.tie)"
-            >
-              {{ formatOdds(fixture.odds.tie) }}
-            </button>
-            <button 
-              class="btn-odds btn-odds-primary flex-1 sm:flex-none"
-              @click="openBetModal(fixture, 'Away', fixture.odds.away)"
-            >
-              {{ formatOdds(fixture.odds.away) }}
-            </button>
-          </template>
-          <div 
-            v-else-if="fixture.status.toLowerCase() === 'finished'"
-            class="flex items-center justify-center w-full font-bold text-lg sm:text-xl text-secondary bg-gray-50 rounded-lg py-2"
-          >
-            {{ fixture.result.homeScore }} - {{ fixture.result.awayScore }}
-          </div>
-          <div 
-            v-else-if="fixture.status.toLowerCase() === 'live'"
-            class="flex items-center justify-evenly gap-4 w-full bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg py-2 px-3 border border-green-200"
-          >
-            <!-- Live indicator with minute -->
-            <div class="flex items-center gap-2">
-              <div class="flex items-center gap-1">
-                <div class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
-                <span class="text-xs font-semibold text-green-700">LIVE</span>
+  <div class="space-y-4">
+    <div v-if="fixtures.length > 0" class="grid gap-3">
+      <div 
+        v-for="fixture in props.fixtures" 
+        :key="fixture.id" 
+        class="bg-white rounded-xl p-3 shadow-sm border border-gray-100 hover:shadow-md hover:border-primary/30 transition-all duration-300 relative group"
+      >
+        <!-- Status Indicator Strip -->
+        <div 
+          class="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl transition-colors"
+          :class="getStatusColorClass(fixture.status)"
+        ></div>
+
+        <div class="flex flex-col sm:flex-row sm:items-center gap-2 pl-3">
+          <!-- Match Info & Teams -->
+          <div class="flex-1">
+            <!-- League & Date Header -->
+            <div class="flex items-center gap-2 mb-1.5 text-xs text-gray-500">
+              <img 
+                :src="getLeagueLogoUrlByName(fixture.league)"
+                :alt="fixture.league"
+                class="w-3.5 h-3.5 object-contain opacity-80"
+              />
+              <span class="font-medium text-gray-400 uppercase tracking-wide text-[10px] sm:text-xs">{{ fixture.league }}</span>
+              <span class="w-0.5 h-0.5 bg-gray-300 rounded-full"></span>
+              <span class="text-[10px] sm:text-xs">{{ formatDate(fixture.startTime) }}</span>
+            </div>
+
+            <!-- Teams Row -->
+            <div class="flex items-center gap-4">
+              <!-- Home -->
+              <div class="flex items-center gap-2 flex-1 justify-end">
+                <span class="font-bold text-gray-900 text-right text-sm sm:text-base leading-tight">{{ fixture.teams.home }}</span>
+                <img 
+                  :src="getTeamLogoUrl(fixture.teams.home)"
+                  :alt="fixture.teams.home"
+                  class="w-6 h-6 sm:w-8 sm:h-8 object-contain drop-shadow-sm"
+                />
               </div>
-              <span v-if="fixture.currentMinute" class="text-xs font-bold text-gray-700">{{ fixture.currentMinute }}'</span>
+
+              <!-- VS / Score -->
+              <div class="w-12 text-center flex-shrink-0">
+                <div v-if="['live', 'finished'].includes(fixture.status.toLowerCase())" class="font-black text-lg sm:text-xl text-secondary tracking-tight">
+                  {{ formatScore(fixture.liveScore?.home || fixture.result.homeScore) }}
+                  <span class="text-gray-300 mx-px">-</span>
+                  {{ formatScore(fixture.liveScore?.away || fixture.result.awayScore) }}
+                </div>
+                <div v-else class="text-[10px] font-bold text-gray-300 bg-gray-50 py-0.5 px-1.5 rounded inline-block">
+                  VS
+                </div>
+                <div v-if="fixture.status.toLowerCase() === 'live'" class="mt-0.5 text-[9px] font-bold text-green-600 animate-pulse">
+                  {{ fixture.currentMinute }}'
+                </div>
+              </div>
+
+              <!-- Away -->
+              <div class="flex items-center gap-2 flex-1 justify-start">
+                <img 
+                  :src="getTeamLogoUrl(fixture.teams.away)"
+                  :alt="fixture.teams.away"
+                  class="w-6 h-6 sm:w-8 sm:h-8 object-contain drop-shadow-sm"
+                />
+                <span class="font-bold text-gray-900 text-left text-sm sm:text-base leading-tight">{{ fixture.teams.away }}</span>
+              </div>
             </div>
+          </div>
+
+          <!-- Actions Column -->
+          <div class="flex items-center justify-end gap-2 w-full sm:w-auto mt-2 sm:mt-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100 sm:border-l sm:pl-3">
+            <template v-if="fixture.status.toLowerCase() === 'scheduled'">
+              <div class="grid grid-cols-3 sm:flex gap-1.5 w-full">
+                <button 
+                  class="btn-odds flex flex-col items-center justify-center py-1.5 px-2 min-w-[60px]"
+                  @click="openBetModal(fixture, 'Home', fixture.odds.home)"
+                >
+                  <span class="text-[9px] text-gray-400 font-medium mb-px">1</span>
+                  <span class="text-primary font-bold text-sm">{{ formatOdds(fixture.odds.home) }}</span>
+                </button>
+                <button 
+                  class="btn-odds flex flex-col items-center justify-center py-1.5 px-2 min-w-[60px]"
+                  @click="openBetModal(fixture, 'Tie', fixture.odds.tie)"
+                >
+                  <span class="text-[9px] text-gray-400 font-medium mb-px">X</span>
+                  <span class="text-primary font-bold text-sm">{{ formatOdds(fixture.odds.tie) }}</span>
+                </button>
+                <button 
+                  class="btn-odds flex flex-col items-center justify-center py-1.5 px-2 min-w-[60px]"
+                  @click="openBetModal(fixture, 'Away', fixture.odds.away)"
+                >
+                  <span class="text-[9px] text-gray-400 font-medium mb-px">2</span>
+                  <span class="text-primary font-bold text-sm">{{ formatOdds(fixture.odds.away) }}</span>
+                </button>
+              </div>
+            </template>
             
-            <!-- Score -->
-            <div class="flex items-center gap-2">
-              <span class="text-lg font-bold text-gray-900">{{ formatScore(fixture.liveScore?.home) }}</span>
-              <span class="text-sm text-gray-400">-</span>
-              <span class="text-lg font-bold text-gray-900">{{ formatScore(fixture.liveScore?.away) }}</span>
-            </div>
-            
-            <!-- View details button -->
             <button 
-              class="px-3 py-1 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700 transition-colors"
+              v-else
+              class="w-full sm:w-auto px-3 py-1.5 bg-gray-50 hover-bg-primary text-gray-600 text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-1.5 group/btn"
               @click="$router.push(`/event/${fixture.id}`)"
             >
-              Details
+              <span>Details</span>
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
             </button>
           </div>
-          <button 
-            v-else-if="!['postponed', 'cancelled'].includes(fixture.status.toLowerCase())"
-            class="px-3 sm:px-4 py-2 bg-secondary text-white text-sm font-medium rounded-lg hover:bg-secondary-dark transition-colors w-full"
-            @click="$router.push(`/event/${fixture.id}`)"
-          >
-            View Event
-          </button>
         </div>
-      </li>
-    </ul>
-
+      </div>
+    </div>
+    
     <BetModal
       ref="betModalRef"
       :is-open="isModalOpen"
@@ -107,13 +118,21 @@
       @close="isModalOpen = false"
       @confirm-bet="handlePlaceBet"
     />
+    
+    <WalletSelectorModal 
+      :is-open="showWalletModal" 
+      @close="showWalletModal = false" 
+    />
   </div>
 </template>
 
 <script setup lang="ts">
+// ... imports
 import { ref } from 'vue';
 import { useApp } from '@/composables/useApp';
+import { useWallet } from '@/composables/useWallet';
 import BetModal from './BetModal.vue';
+import WalletSelectorModal from './WalletSelectorModal.vue';
 import { getTeamLogoUrl } from '@/utils/teamLogos';
 import { getLeagueLogoUrlByName } from '@/utils/leagueLogos';
 
@@ -136,13 +155,19 @@ const props = withDefaults(defineProps<{
 });
 
 const { walletBalance, placeBet } = useApp();
+const { connected } = useWallet();
 
 const isModalOpen = ref(false);
+const showWalletModal = ref(false);
 const selectedEvent = ref<any>(null);
 const selectedSelection = ref<{ type: string; odd: number | string }>({ type: '', odd: 0 });
 const betModalRef = ref<InstanceType<typeof BetModal> | null>(null);
 
 const openBetModal = (event: any, type: string, odd: number | string) => {
+  if (!connected.value) {
+    showWalletModal.value = true;
+    return;
+  }
   selectedEvent.value = event;
   selectedSelection.value = { type, odd };
   isModalOpen.value = true;
@@ -189,7 +214,7 @@ const formatDate = (ts?: number | string) => {
   if (ts == null) return '';
   const n = typeof ts === 'string' ? Number(ts) : ts;
   if (!Number.isFinite(n)) return String(ts);
-  const ms = n > 1e12 ? n : n * 1000; // si viene en segundos, conviértelo a ms
+  const ms = n > 1e12 ? n : n * 1000;
   return new Intl.DateTimeFormat('es-ES', {
     dateStyle: 'medium',
     timeStyle: 'short',
@@ -205,4 +230,20 @@ const formatScore = (score: any) => {
   const numScore = typeof score === 'string' ? Number(score) : score;
   return Number.isFinite(numScore) ? numScore : 0;
 };
+
+const getStatusColorClass = (status: string) => {
+  switch (status.toLowerCase()) {
+    case 'live':
+      return 'bg-green-500 shadow-[2px_0_8px_rgba(34,197,94,0.3)]'
+    case 'finished':
+      return 'bg-gray-300'
+    case 'postponed':
+      return 'bg-yellow-400'
+    case 'cancelled':
+      return 'bg-red-400'
+    case 'scheduled':
+    default:
+      return 'bg-primary'
+  }
+}
 </script>

@@ -128,7 +128,7 @@
             <!-- Create New Bet Button (only visible during live events) -->
             <button
               v-if="event.status.toLowerCase() === 'live'"
-              @click="showBetModal = true"
+              @click="openCreateBetModal"
               class="w-full bg-primary text-white py-3 rounded-lg font-semibold text-sm hover:bg-opacity-90 transition-all shadow-md mb-4 flex items-center justify-center gap-2"
             >
               <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -414,6 +414,11 @@
         </div>
       </div>
     </div>
+    
+    <WalletSelectorModal 
+      :is-open="showWalletSelector" 
+      @close="showWalletSelector = false" 
+    />
   </div>
 </template>
 
@@ -421,17 +426,21 @@
 import { ref, onMounted, computed, onUnmounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { useEvents } from '@/composables/useEvents';
+import { useWallet } from '@/composables/useWallet';
 import { appStore } from '@/stores/app';
 import { getTeamLogoUrl } from '@/utils/teamLogos';
 import { getLeagueLogoUrlByName } from '@/utils/leagueLogos';
+import WalletSelectorModal from '@/components/WalletSelectorModal.vue';
 
 const route = useRoute();
 const { allEvents, getEvents } = useEvents();
 const { walletBalance } = appStore();
+const { connected } = useWallet();
 
 const isLoading = ref(true);
 const showBetModal = ref(false);
 const showVoteModal = ref(false);
+const showWalletSelector = ref(false);
 const voteData = ref<{ betId: number; isYes: boolean; amount: number }>({ betId: 0, isYes: true, amount: 0 });
 let minuteInterval: any = null;
 
@@ -595,7 +604,20 @@ const createBet = () => {
   console.log('Bet created successfully!');
 };
 
+// Open modal or prompt wallet connection
+const openCreateBetModal = () => {
+  if (!connected.value) {
+    showWalletSelector.value = true
+    return
+  }
+  showBetModal.value = true
+}
+
 const placeBetVote = (betId: number, isYes: boolean) => {
+  if (!connected.value) {
+    showWalletSelector.value = true
+    return
+  }
   // Open modal to enter bet amount
   voteData.value = { betId, isYes, amount: 0 };
   showVoteModal.value = true;
