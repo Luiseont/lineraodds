@@ -10,7 +10,7 @@ use linera_sdk::{
 
 use management::{
     Operation, Message, Bet, Event,
-    state::{ManagementState, LeaderboardWinner, MatchStatus, TeamInfo, Teams, Team, Odds, MatchResult, TypeEvent, UserOdd, UserOdds, Selection, BetStatus, LiveScore, MatchEvent, MatchEventType, UserStats}
+    state::{ManagementState, LeaderboardWinner, MatchStatus, TeamInfo,PredictionType, UserVotes, LivePrediction, Vote, Teams, Team, Odds, MatchResult, TypeEvent, UserOdd, UserOdds, Selection, BetStatus, LiveScore, MatchEvent, MatchEventType, UserStats}
 };
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -75,7 +75,7 @@ impl Contract for ManagementContract {
                 //assert!(self.runtime.chain_id() != self.runtime.application_creator_chain_id());
                 let management_chain_id = self.runtime.application_creator_chain_id();
                 let mut event = self.state.events.get(&event_id).await.expect("Event not found").unwrap();
-
+                
                 let new_status = match status.as_str() {
                     "Scheduled" => MatchStatus::Scheduled,
                     "Live" => MatchStatus::Live,
@@ -89,7 +89,7 @@ impl Contract for ManagementContract {
                 let _ = self.state.events.insert(&event_id, event.clone());
                 
                 self.runtime.prepare_message(
-                    Message::EventUpdated { event_id: event_id.clone(), event: event.clone() }
+                    Message::EventStatusUpdated { event_id: event_id.clone(), status: new_status }
                 ).with_authentication().send_to(management_chain_id);
             },
             Operation::UpdateEventLiveScore { event_id, home_score, away_score } => {
@@ -97,8 +97,8 @@ impl Contract for ManagementContract {
                 let management_chain_id = self.runtime.application_creator_chain_id();
                 let mut event = self.state.events.get(&event_id).await.expect("Event not found").unwrap();
                 let live_score = LiveScore {
-                    home: home_score,
-                    away: away_score,
+                    home: home_score.clone(),
+                    away: away_score.clone(),
                     updated_at: self.runtime.system_time(),
                 };
                 event.live_score = live_score;
@@ -106,7 +106,7 @@ impl Contract for ManagementContract {
                 let _ = self.state.events.insert(&event_id, event.clone());
                 
                 self.runtime.prepare_message(
-                    Message::EventUpdated { event_id: event_id.clone(), event: event.clone() }
+                    Message::EventScoreUpdated { event_id: event_id.clone(), home_score, away_score }
                 ).with_authentication().send_to(management_chain_id);
             },
             Operation::UpdateCurrentMinute { event_id, current_minute } => {
@@ -117,7 +117,7 @@ impl Contract for ManagementContract {
                 let _ = self.state.events.insert(&event_id, event.clone());
                 
                 self.runtime.prepare_message(
-                    Message::EventUpdated { event_id: event_id.clone(), event: event.clone() }
+                    Message::EventMinuteUpdated { event_id: event_id.clone(), minute: current_minute }
                 ).with_authentication().send_to(management_chain_id);
             },
             Operation::AddMatchEvent { event_id, event_type, time, team, player, detail, timestamp } => {
@@ -137,25 +137,33 @@ impl Contract for ManagementContract {
                 };
                 
                 // Construct MatchEvent from individual parameters
-                let match_event = MatchEvent {
+                let match_event_local = MatchEvent {
                     event_type: event_type_enum,
-                    time: time,
+                    time: time.clone(),
+                    team: team.clone(),
+                    player: player.clone(),
+                    detail: detail.clone(),
+                    timestamp,
+                };
+                
+                event.match_events.push(match_event_local);
+                let _ = self.state.events.insert(&event_id, event);
+
+                // Actually, the message takes the whole struct.
+                let match_event_msg = MatchEvent {
+                    event_type: event_type_enum,
+                    time,
                     team,
                     player,
                     detail,
                     timestamp,
                 };
                 
-                event.match_events.push(match_event);
-                let updated_event = event.clone();
-                let _ = self.state.events.insert(&event_id, event);  
-                
                 self.runtime.prepare_message(
-                    Message::EventUpdated { event_id: event_id.clone(), event: updated_event }
+                    Message::EventMatchEventAdded { event_id: event_id.clone(), match_event: match_event_msg }
                 ).with_authentication().send_to(management_chain_id);
             },
             Operation::CreateEvent { id, type_event, league, home_id, away_id, start_time } => {
-
                 //assert_eq!(self.runtime.chain_id(), self.runtime.application_creator_chain_id());
                 let management_chain_id = self.runtime.application_creator_chain_id();
                 let type_eventE = match type_event.as_str() {
@@ -194,6 +202,7 @@ impl Contract for ManagementContract {
                     match_events: Vec::new(),
                     last_updated: self.runtime.system_time(),
                     current_minute: Some(0),
+                    predictions: Vec::new(),
                 };
 
                 let _ = self.state.events.insert(&id.clone(), event.clone());
@@ -201,25 +210,44 @@ impl Contract for ManagementContract {
                  self.runtime.prepare_message(
                     Message::NewEventCreated { event_id: id.clone(), event: event.clone() }
                 ).with_authentication().send_to(management_chain_id);
-
             },
             Operation::ResolveEvent { event_id, winner, home_score, away_score } => {
                 let management_chain_id = self.runtime.application_creator_chain_id();
-                let mut event = self.state.events.get(&event_id).await.expect("Event not found").unwrap();
-                let victory = match winner.as_str() {
-                        "Home" => Selection::Home,
-                        "Away" => Selection::Away,
-                        "Tie" => Selection::Tie,
-                        _ => Selection::Home,
-                    };
+                //assert_eq!(self.runtime.chain_id(), management_chain_id);
 
-                event.result = MatchResult { winner: victory, home_score: home_score.clone(), away_score: away_score.clone() };
+                let mut event = self.state.events.get(&event_id).await.expect("Event not found").unwrap();
+                let winner_enum = match winner.as_str() {
+                    "Home" => Selection::Home,
+                    "Away" => Selection::Away,
+                    _ => Selection::Tie,
+                };
+                let result = MatchResult {
+                    winner: winner_enum,
+                    home_score: home_score.clone(),
+                    away_score: away_score.clone(),
+                };
+
+                event.result = result;
                 event.status = MatchStatus::Finished;
-                event.last_updated = self.runtime.system_time();
-                let _ = self.state.events.insert(&event_id, event.clone());
-                
+
+                // Resolve TotalGoalsUnder predictions
+                let h_score = home_score.parse::<u8>().unwrap_or(0);
+                let a_score = away_score.parse::<u8>().unwrap_or(0);
+                let total_goals = h_score + a_score;
+
+                for prediction in event.predictions.iter_mut().filter(|p| !p.resolved) {
+                    if let PredictionType::TotalGoalsUnder(threshold) = prediction.prediction_type {
+                         let outcome = total_goals < threshold;
+                         prediction.resolved = true;
+                         prediction.outcome = Some(outcome);
+                    }
+                }
+
+                let updated_event = event.clone();
+                let _ = self.state.events.insert(&event_id, event);
+
                 self.runtime.prepare_message(
-                    Message::EventUpdated { event_id: event_id.clone(), event: event.clone() }
+                    Message::EventOutcomeResolved { event_id: event_id.clone(), winner: winner_enum, home_score, away_score }
                 ).with_authentication().send_to(management_chain_id);
             },
             //leaderboad operations.
@@ -297,6 +325,70 @@ impl Contract for ManagementContract {
                     Message::NewBetPlaced { home: home_id, away: away_id, league, start_time, odd, selection, bid, status: "Placed".to_string(), event_id  }
                 ).with_authentication().send_to(management_chain_id);
             },
+            Operation::CreatePrediction { prediction_id, event_id, prediction_type, question, init_vote, amount } => {
+                let management_chain_id = self.runtime.application_creator_chain_id();
+                let user_balance = self.state.user_balance.get().clone();
+
+                if amount > user_balance {
+                    panic!("No tokens enough");
+                }
+
+                let new_balance = user_balance.saturating_sub(amount);
+                self.state.user_balance.set(new_balance);
+                //let prediction_type = PredictionType::from_str(prediction_type.as_str()).unwrap();
+                let userVotes = UserVotes {
+                    id: prediction_id.clone(),
+                    event_id: event_id.clone(),
+                    prediction_type: prediction_type.clone(),
+                    amount: amount.clone(),
+                    choice: init_vote.clone(),
+                    claimed: false,
+                };
+                
+                let mut user_votes_vec = self.state.user_votes.get().clone();
+                user_votes_vec.push(userVotes);
+                self.state.user_votes.set(user_votes_vec);
+                
+                self.runtime.prepare_message(
+                    Message::NewPredictionCreated { prediction_id: prediction_id.clone(), event_id: event_id.clone(), prediction_type: prediction_type.clone(), question: question.clone(), init_vote: init_vote.clone(), amount: amount.clone() }
+                ).with_authentication().send_to(management_chain_id);
+            },
+            Operation::PlaceVote{ event_id, prediction_id, vote, amount, prediction_type } => {
+                let chain_id = self.runtime.application_creator_chain_id();
+                let user_balance = self.state.user_balance.get().clone();
+
+                if amount > user_balance {
+                    panic!("No tokens enough");
+                }
+
+                // Check for duplicate vote
+                let current_votes = self.state.user_votes.get();
+                if current_votes.iter().any(|v| v.id == prediction_id) {
+                    panic!("User has already voted on this prediction");
+                }
+
+                let new_balance = user_balance.saturating_sub(amount);
+                self.state.user_balance.set(new_balance);
+
+                //let prediction_type_enum = PredictionType::from_str(&prediction_type).unwrap();
+
+                let user_vote = UserVotes {
+                    id: prediction_id.clone(),
+                    event_id: event_id.clone(),
+                    prediction_type: prediction_type,
+                    amount: amount.clone(),
+                    choice: vote.clone(),
+                    claimed: false,
+                };
+
+                let mut user_votes_vec = current_votes.clone();
+                user_votes_vec.push(user_vote);
+                self.state.user_votes.set(user_votes_vec);
+                
+                self.runtime.prepare_message(
+                    Message::NewVotePlaced { event_id: event_id.clone(), prediction_id: prediction_id.clone(), vote: vote.clone(), amount: amount.clone() }
+                ).with_authentication().send_to(chain_id);
+            },  
             Operation::ClaimReward{ event_id } => {
                 let chain_id = self.runtime.application_creator_chain_id();
                 self.runtime.prepare_message(
@@ -313,6 +405,24 @@ impl Contract for ManagementContract {
                 self.runtime.prepare_message(
                     Message::MintTokens { amount: amount.clone() }
                 ).with_authentication().send_to(chain_id);  
+            },
+            Operation::ClaimPredictionReward{ prediction_id, event_id } => {
+                let chain_id = self.runtime.application_creator_chain_id();
+                //get in local chain with the prediction and event and get the user votes
+                //iterate over the user votes and check if the user has already claimed the reward
+                let mut user_votes = self.state.user_votes.get().clone();
+                for user_vote in user_votes.iter_mut() {
+                    if user_vote.id == prediction_id && user_vote.event_id == event_id && !user_vote.claimed {
+                        //update the user vote
+                        user_vote.claimed = true;
+                        self.runtime.prepare_message(
+                            Message::SendPredictionReward { prediction_id: prediction_id.clone(), event_id: event_id.clone() }
+                        ).with_authentication().send_to(chain_id);  
+                    }else{
+                        //do nothing
+                    }
+                }
+                self.state.user_votes.set(user_votes);
             },
         }
     }
@@ -404,7 +514,109 @@ impl Contract for ManagementContract {
                 let _ = leaderboard_data.user_stats.insert(user_id.to_string(), user_stats);
                 let _ = self.state.leaderboard.set(leaderboard_data);
             },
+            Message::NewVotePlaced { event_id, prediction_id, vote, amount } => {
+                let user_id = self.runtime.message_origin_chain_id().unwrap();
+                let mut event = match self.state.events.get(&event_id).await {
+                    Ok(Some(e)) => e,
+                    _ => {
+                        self.runtime.prepare_message(
+                            Message::Receive { amount: amount.clone() }
+                        ).with_authentication().send_to(user_id);
+                        return;
+                    }
+                };
 
+                if event.status != MatchStatus::Live {
+                    self.runtime.prepare_message(
+                        Message::Receive { amount: amount.clone() }
+                    ).with_authentication().send_to(user_id);
+                    return;
+                }
+
+                if let Some(prediction) = event.predictions.iter_mut().find(|p| p.id == prediction_id) {
+                    if prediction.resolved {
+                        self.runtime.prepare_message(
+                            Message::Receive { amount: amount.clone() }
+                        ).with_authentication().send_to(user_id);
+                        return;
+                    }
+
+                    // Check if user already voted
+                    if prediction.votes.iter().any(|v| v.user == user_id.to_string()) {
+                        self.runtime.prepare_message(
+                            Message::Receive { amount: amount.clone() }
+                        ).with_authentication().send_to(user_id);
+                        return; 
+                    }
+
+                    // Update pools
+                    if vote {
+                        prediction.pool_yes = prediction.pool_yes.saturating_add(amount);
+                    } else {
+                        prediction.pool_no = prediction.pool_no.saturating_add(amount);
+                    }
+
+                    let new_vote = Vote{
+                        user: user_id.to_string(),
+                        choice: vote.clone(),
+                        amount: amount.clone(),
+                        claimed: false,
+                    };
+
+                    prediction.votes.push(new_vote);
+                } else {
+                    // Prediction not found
+                    self.runtime.prepare_message(
+                        Message::Receive { amount: amount.clone() }
+                    ).with_authentication().send_to(user_id);
+                    return;
+                }
+
+                let _ =  self.state.events.insert(&event_id, event);
+            },
+            Message::NewPredictionCreated { prediction_id, event_id, prediction_type, question, init_vote, amount } => {
+                let user_id = self.runtime.message_origin_chain_id().unwrap();
+                let mut event = match self.state.events.get(&event_id).await {
+                    Ok(Some(e)) => e,
+                    _ => {
+                        self.runtime.prepare_message(
+                            Message::Receive { amount: amount.clone() }
+                        ).with_authentication().send_to(user_id);
+                        return;
+                    }
+                };
+
+                if event.status != MatchStatus::Live {
+                    self.runtime.prepare_message(
+                        Message::Receive { amount: amount.clone() }
+                    ).with_authentication().send_to(user_id);
+                    return;
+                }
+
+                let new_vote = Vote{
+                    user: user_id.to_string(),
+                    choice: init_vote.clone(),
+                    amount: amount.clone(),
+                    claimed: false,
+                };
+
+
+                let new_prediction = LivePrediction {
+                    id: prediction_id,         
+                    creator: user_id.to_string(),       
+                    prediction_type: prediction_type.clone(), 
+                    question: question.clone(),       
+                    pool_yes: if init_vote { amount } else { Amount::ZERO },         
+                    pool_no: if !init_vote { amount } else { Amount::ZERO },          
+                    resolved: false,         
+                    outcome: None,  
+                    created_at: self.runtime.system_time(),
+                    votes: vec![new_vote]
+                };
+
+                event.predictions.push(new_prediction);
+                let _ =  self.state.events.insert(&event_id, event);
+            },
             Message::RevertUserBet { event_id } => {
                 let mut user_odds_vec = self.state.user_odds.get().clone(); 
                 for user_odd in &mut user_odds_vec {
@@ -528,9 +740,228 @@ impl Contract for ManagementContract {
             Message::NewEventCreated { event_id, event } =>{
                 let _ = self.state.events.insert(&event_id.clone(), event.clone());
             },
-            Message::EventUpdated { event_id, event } => {
-                let _ = self.state.events.insert(&event_id.clone(), event.clone());
-            }
+            Message::EventStatusUpdated { event_id, status } => {
+                if let Some(mut event) = self.state.events.get(&event_id).await.expect("Event not found") {
+                    event.status = status;
+                    event.last_updated = self.runtime.system_time();
+                    let _ = self.state.events.insert(&event_id, event);
+                }
+            },
+            Message::EventScoreUpdated { event_id, home_score, away_score } => {
+                if let Some(mut event) = self.state.events.get(&event_id).await.expect("Event not found") {
+                     let live_score = LiveScore {
+                        home: home_score,
+                        away: away_score,
+                        updated_at: self.runtime.system_time(),
+                    };
+                    event.live_score = live_score;
+                    event.last_updated = self.runtime.system_time();
+                    let _ = self.state.events.insert(&event_id, event);
+                }
+            },
+            Message::EventMinuteUpdated { event_id, minute } => {
+                if let Some(mut event) = self.state.events.get(&event_id).await.expect("Event not found") {
+                    event.current_minute = Some(minute);
+                    event.last_updated = self.runtime.system_time();
+                    let _ = self.state.events.insert(&event_id, event);
+                }
+            },
+            Message::EventMatchEventAdded { event_id, match_event } => {
+                 if let Some(mut event) = self.state.events.get(&event_id).await.expect("Event not found") {
+                     event.match_events.push(match_event.clone());
+                     
+                     // Auto-resolve predictions
+                     let mut resolved_messages = Vec::new();
+                     let match_event_type = match_event.event_type;
+                     let team = match_event.team;
+
+                     for prediction in event.predictions.iter_mut().filter(|p| !p.resolved) {
+                         let mut is_resolved = false;
+                         let mut result = false;
+
+                         match &prediction.prediction_type {
+                             PredictionType::NextGoal(selection) => {
+                                 if match_event_type == MatchEventType::Goal {
+                                     let outcome_selection = if team == event.teams.home.name || team == event.teams.home.id || team == "Home Team".to_string() {
+                                         Selection::Home
+                                     } else if team == event.teams.away.name || team == event.teams.away.id || team == "Away Team".to_string() {
+                                         Selection::Away    
+                                     } else {
+                                         Selection::Tie 
+                                     };
+
+                                     if outcome_selection != Selection::Tie {
+                                         result = *selection == outcome_selection;
+                                         is_resolved = true;
+                                     }
+                                 }
+                             },
+                             PredictionType::RedCard => {
+                                 if match_event_type == MatchEventType::RedCard {
+                                     result = true;
+                                     is_resolved = true;
+                                 }
+                             },
+                             PredictionType::TotalGoalsOver(threshold) => {
+                                 if match_event_type == MatchEventType::Goal {
+                                     let home_goals = event.match_events.iter()
+                                         .filter(|e| e.event_type == MatchEventType::Goal && 
+                                                    (e.team == event.teams.home.name || e.team == event.teams.home.id))
+                                         .count() as u8;
+                                     let away_goals = event.match_events.iter()
+                                         .filter(|e| e.event_type == MatchEventType::Goal && 
+                                                    (e.team == event.teams.away.name || e.team == event.teams.away.id))
+                                         .count() as u8;
+                                     
+                                     if (home_goals + away_goals) > *threshold { 
+                                        result = true;
+                                        is_resolved = true;
+                                     }
+                                 }
+                             },
+                             PredictionType::BTTS => {
+                                 if match_event_type == MatchEventType::Goal {
+                                     let home_goals = event.match_events.iter()
+                                         .filter(|e| e.event_type == MatchEventType::Goal && 
+                                                    (e.team == event.teams.home.name || e.team == event.teams.home.id))
+                                         .count() as u8;
+                                     let away_goals = event.match_events.iter()
+                                         .filter(|e| e.event_type == MatchEventType::Goal && 
+                                                    (e.team == event.teams.away.name || e.team == event.teams.away.id))
+                                         .count() as u8;
+                                     
+                                     if home_goals > 0 && away_goals > 0 {
+                                         result = true;
+                                         is_resolved = true;
+                                     }
+                                 }
+                             },
+                             _ => {}
+                         }
+
+                         if is_resolved {
+                             prediction.resolved = true;
+                             prediction.outcome = Some(result);
+                             resolved_messages.push((prediction.id, result));
+                         }
+                     }
+                     
+                     let _ = self.state.events.insert(&event_id, event);
+                 }
+            },
+            Message::EventOutcomeResolved { event_id, winner, home_score, away_score } => {
+                if let Some(mut event) = self.state.events.get(&event_id).await.expect("Event not found") {
+                    let result = MatchResult {
+                        winner,
+                        home_score: home_score.clone(),
+                        away_score: away_score.clone(),
+                    };
+
+                    event.result = result;
+                    event.status = MatchStatus::Finished;
+
+                    // Resolve TotalGoalsUnder predictions
+                    let h_score = home_score.parse::<u8>().unwrap_or(0);
+                    let a_score = away_score.parse::<u8>().unwrap_or(0);
+                    let total_goals = h_score + a_score;
+
+                    for prediction in event.predictions.iter_mut().filter(|p| !p.resolved) {
+                        let mut resolved = false;
+                        let mut outcome = false;
+
+                        match &prediction.prediction_type {
+                             PredictionType::TotalGoalsUnder(threshold) => {
+                                  outcome = total_goals < *threshold;
+                                  resolved = true;
+                             },
+                             PredictionType::TotalGoalsOver(threshold) => {
+                                  // Check if the final score exceeds the threshold
+                                  outcome = total_goals > *threshold;
+                                  resolved = true;
+                             },
+                             PredictionType::BTTS => {
+                                  // Both teams must have scored at least 1 goal
+                                  outcome = h_score > 0 && a_score > 0;
+                                  resolved = true;
+                             },
+                             PredictionType::NextGoal(_) => {
+                                  // No further goals occurred
+                                  outcome = false;
+                                  resolved = true;
+                             },
+                             PredictionType::RedCard => {
+                                  // No further red cards occurred
+                                  outcome = false;
+                                  resolved = true;
+                             },
+                             PredictionType::GoalInNext10Mins(_) => {
+                                  outcome = false;
+                                  resolved = true;
+                             },
+                             _ => {}
+                        }
+
+                        if resolved {
+                             prediction.resolved = true;
+                             prediction.outcome = Some(outcome);
+                        }
+                    }
+
+                    
+                    let _ = self.state.events.insert(&event_id, event);
+                }
+            },
+
+            Message::SendPredictionReward { prediction_id, event_id } => {
+                let user_id = self.runtime.message_origin_chain_id().unwrap();
+                //get the event with his predictions
+                let mut event = self.state.events.get(&event_id.clone()).await.expect("Event not found").unwrap();
+                
+                //iterate over predictions vec to find the prediction with prediction_id
+                if let Some(prediction) = event.predictions.iter_mut().find(|p| p.id == prediction_id) {
+                    if prediction.resolved && prediction.outcome.is_some() {
+                        let result = prediction.outcome.unwrap();
+                        
+                        //iterate over votes vec to find the vote with user_id
+                        for vote in prediction.votes.iter_mut() {
+                             if vote.user == user_id.to_string() {
+                                if !vote.claimed {
+                                    // Verify if user won
+                                    if vote.choice == result {
+                                        let user_vote_amount = vote.amount;
+                                        
+                                        // Calculate Reward: (UserStake * TotalPool) / WinningPool
+                                        let total_pool = prediction.pool_yes.saturating_add(prediction.pool_no);
+                                        let winning_pool = if result { prediction.pool_yes } else { prediction.pool_no };
+
+                                        // Safety check for div by zero (shouldn't happen if user voted, but good practice)
+                                        if winning_pool > Amount::ZERO {
+                                            // arithmetic logic for rewards must be done in u128
+                                            let user_vote_u128: u128 = user_vote_amount.into();
+                                            let total_pool_u128: u128 = total_pool.into();
+                                            let winning_pool_u128: u128 = winning_pool.into();
+
+                                            let reward_u128 = (user_vote_u128 * total_pool_u128) / winning_pool_u128;
+                                            let reward = Amount::from_attos(reward_u128);
+
+                                            //mark the vote as claimed
+                                            vote.claimed = true;
+
+                                            //send the reward to the user
+                                            self.runtime.prepare_message(
+                                                Message::Receive { amount: reward }
+                                            ).with_authentication().send_to(user_id);
+                                        }
+                                    } else {
+                                        vote.claimed = true;
+                                    }
+                                }
+                             }
+                        }
+                    }
+                }
+                let _ = self.state.events.insert(&event_id, event);
+            },  
             //leaderboard cross-messages
             Message::NewWeekStarted { week, year, prize_pool } => {
                 let mut leaderboard_data = self.state.leaderboard.get().clone();

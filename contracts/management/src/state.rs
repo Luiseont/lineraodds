@@ -19,6 +19,7 @@ pub struct ManagementState {
     pub user_balance: RegisterView<Amount>,
     pub nonce: RegisterView<u64>,
     pub bonus_claimed: RegisterView<bool>,
+    pub user_votes: RegisterView<Vec<UserVotes>>,
 }
 
 
@@ -37,6 +38,7 @@ pub struct Event {
     pub match_events: Vec<MatchEvent>,
     pub last_updated: Timestamp,
     pub current_minute: Option<u32>,
+    pub predictions: Vec<LivePrediction>,
 }
 
 #[derive(Clone, Debug, Copy, Eq, PartialEq, Serialize, Deserialize, Enum, Default)]
@@ -79,6 +81,29 @@ pub enum MatchEventType {
     Corner,
     Penalty,
 }
+
+//#[derive(Clone, Debug, Copy, Eq, PartialEq, Serialize, Deserialize, Default)]
+#[derive(Clone, Debug, Copy, Eq, PartialEq, Serialize, Deserialize)]
+pub enum PredictionType {
+    //#[default] 
+    None,
+    NextGoal(Selection), 
+    RedCard, 
+    TotalGoalsOver(u8),
+    TotalGoalsUnder(u8),
+    BTTS,
+    GoalInNext10Mins(u32), 
+}
+
+impl Default for PredictionType {
+    fn default() -> Self {
+        PredictionType::None
+    }
+}
+
+// Treat this enum as a JSON scalar for GraphQL
+async_graphql::scalar!(PredictionType);
+
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default, SimpleObject)]
 pub struct Teams {
@@ -185,4 +210,36 @@ pub struct TeamInfo {
     pub form: i64,
     pub goal_average: i64,
     pub last_updated: Timestamp,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, SimpleObject, Default)]
+pub struct LivePrediction {
+    pub id: u64,         
+    pub creator: String,       
+    pub prediction_type: PredictionType, 
+    pub question: String,       
+    pub pool_yes: Amount,         
+    pub pool_no: Amount,          
+    pub resolved: bool,         
+    pub outcome: Option<bool>,  
+    pub created_at: Timestamp,
+    pub votes: Vec<Vote>
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, SimpleObject, Default)]
+pub struct Vote {
+    pub user: String,
+    pub amount: Amount,           
+    pub choice: bool,           
+    pub claimed: bool,          
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, SimpleObject, Default)]
+pub struct UserVotes {
+    pub id: u64, //id market
+    pub event_id: String,
+    pub prediction_type: PredictionType,
+    pub amount: Amount,
+    pub choice: bool,
+    pub claimed: bool,
 }

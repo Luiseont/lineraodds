@@ -83,7 +83,7 @@
             <div class="flex items-center justify-between sm:justify-end gap-4 pt-2 border-t sm:border-t-0">
               <div class="text-left sm:text-right">
                 <div class="text-xs text-gray-500">Stake</div>
-                <div class="font-semibold text-secondary text-sm sm:text-base">{{ formatCurrency(b.bid) }} USDL</div>
+                <div class="font-semibold text-secondary text-sm sm:text-base">{{ formatCurrency(b.bid) }}</div>
               </div>
               <div class="text-right">
                 <div class="text-xs font-semibold" :class="b.status === 'WON' ? 'text-green-600' : 'text-gray-500'">
@@ -134,7 +134,21 @@ const statusFilters = ['PLACED', 'WON', 'LOST', 'CANCELLED']
 const selectedStatus = ref('PLACED')
 
 function formatCurrency(n: number | string) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(Number(n))
+  const val = Number(n);
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(val)
+}
+
+function formatRawAmount(n: number | string) {
+    // Handle string values that may have decimals
+    let strValue = String(n);
+    // Remove decimal point and everything after it
+    const dotIndex = strValue.indexOf('.');
+    if (dotIndex !== -1) {
+        strValue = strValue.substring(0, dotIndex);
+    }
+    // Convert to BigInt (now guaranteed to be integer string)
+    const val = BigInt(strValue || '0');
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(Number(val) / 1e18)
 }
 
 function formatOdds(v: number | string) {
@@ -154,7 +168,9 @@ function formatDate(ts: number | string) {
 }
 
 function calculatePotential(bid: number | string, odd: number | string) {
-  return Number(bid) * (Number(odd) / 100)
+  const bidValue = Number(bid);
+  const oddMult = Number(odd) / 100;
+  return bidValue * oddMult;
 }
 
 function isClaimable(bet: any) {

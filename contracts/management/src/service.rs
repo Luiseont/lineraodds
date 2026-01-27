@@ -13,7 +13,7 @@ use linera_sdk::{
 };
 use management::Operation;
 
-use self::state::{ManagementState, Event, UserOdd, UserOdds, MatchStatus, TypeEvent, BetStatus, BetsSummary, LeaderboardData, TeamInfo};
+use self::state::{ManagementState,UserVotes, Event, UserOdd, UserOdds, MatchStatus, TypeEvent, BetStatus, BetsSummary, LeaderboardData, TeamInfo};
 
 pub struct ManagementService {
     state: ManagementState,
@@ -102,6 +102,18 @@ impl QueryRoot {
         match ManagementState::load(self.storage_context.clone()).await{
             Ok(state) => {
                 state.user_odds.get().clone()
+            }
+            Err(e) => {
+                eprintln!("Failed to load state: {:?}", e);
+                Vec::new()
+            }
+        }
+    }
+
+    async fn user_votes(&self) -> Vec<UserVotes>{
+        match ManagementState::load(self.storage_context.clone()).await{
+            Ok(state) => {
+                state.user_votes.get().clone()
             }
             Err(e) => {
                 eprintln!("Failed to load state: {:?}", e);

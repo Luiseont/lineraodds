@@ -74,6 +74,23 @@ export const eventsStore = defineStore('events', () => {
             },
             lastUpdated,
             currentMinute
+            predictions {
+                id
+                creator
+                predictionType
+                question
+                poolYes
+                poolNo
+                resolved
+                outcome
+                createdAt
+                votes {
+                    user
+                    amount
+                    choice
+                    claimed
+                }
+            }
           }
         }
     `;

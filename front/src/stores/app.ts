@@ -24,6 +24,7 @@ export const appStore = defineStore('app', () => {
     const MintTokensQuery = '{"query":"mutation{requestMint(amount: \\"$AMOUNT\\")}"}'
     const PlaceBetQuery = '{"query":"mutation{placeBet(homeId: \\"$HOME_ID\\", awayId: \\"$AWAY_ID\\", homeName: \\"$HOME_NAME\\", awayName: \\"$AWAY_NAME\\", league: \\"$LEAGUE\\", startTime: $START_TIME, odd: $ODD, selection: \\"$SELECTION\\", bid: \\"$BID\\", eventId: \\"$EVENT_ID\\")}"}'
     const ClaimRewardQuery = '{"query":"mutation{claimReward(eventId: \\"$EVENT_ID\\")}"}'
+    const ClaimPredictionRewardQuery = '{"query":"mutation{claimPredictionReward(predictionId: $PREDICTION_ID, eventId: \\"$EVENT_ID\\")}"}'
 
     // Composables
     const { connected, provider, address } = useWallet()
@@ -92,31 +93,7 @@ export const appStore = defineStore('app', () => {
         notificationUnsubscribe = provider.value.chain.onNotification(async (notification: any) => {
             console.log('Notificación recibida:', notification)
             scheduleSubscription()
-            /*
-            // Extraer información del bloque
-            const blockInfo = notification.reason.BlockExecuted || notification.reason.NewBlock
 
-            if (blockInfo) {
-                const height = blockInfo.height
-                const hash = blockInfo.hash
-                // Obtener dirección del usuario actual
-                const userAddress = address.value
-                console.log("User address: " + userAddress)
-                if (height !== undefined && userAddress) {
-                    console.log(`Bloque recibido - Height: ${height}, Hash: ${hash?.substring(0, 8)}...`)
-
-                    if (shouldProcessBlock(userAddress, height)) {
-                        setHighestHeight(userAddress, height)
-                        scheduleSubscription()
-                    } else {
-                        const currentHighest = getHighestHeight(userAddress)
-                        console.log(`Ignorando bloque antiguo (height: ${height} <= ${currentHighest})`)
-                    }
-                } else {
-                    scheduleSubscription()
-                }
-            }
-            */
             if (notification.reason.NewIncomingBundle) {
                 getUserBalance()
             }
@@ -183,6 +160,7 @@ export const appStore = defineStore('app', () => {
             const result = await backend.value.query(UserBalanceQuery)
             const response = JSON.parse(result)
             console.log("Balance obtenido:", response.data?.balance)
+            // User requested raw display (likely attos shown as '100')
             walletBalance.value = response.data?.balance || 0
         } catch (error) {
             console.error('Error al obtener balance:', error)
@@ -268,6 +246,107 @@ export const appStore = defineStore('app', () => {
         }
     }
 
+    async function claimPredictionReward(eventId: string, predictionId: number) {
+        isTransactionPending.value = true
+        try {
+            console.log(`Claiming prediction reward for event ${eventId}, prediction ${predictionId}`)
+            const query = ClaimPredictionRewardQuery
+                .replace('$PREDICTION_ID', predictionId.toString())
+                .replace('$EVENT_ID', eventId)
+
+            const result = await backend.value.query(query)
+            const response = JSON.parse(result)
+            console.log("Prediction reward claimed successfully:", response)
+
+            // Refresh user balance after successful claim
+            await getUserBalance()
+        } catch (error) {
+            console.error('Error claiming prediction reward:', error)
+            throw error
+        } finally {
+            isTransactionPending.value = false
+        }
+    }
+
+    async function createPrediction(predictionId: number, eventId: string, predictionType: any, question: string, initVote: boolean, amount: string) {
+        isTransactionPending.value = true
+        try {
+            console.log(`Creating prediction ${predictionId} for event ${eventId}`)
+
+            const mutation = `
+                mutation CreatePrediction($predictionId: Int!, $eventId: String!, $predictionType: PredictionType!, $question: String!, $initVote: Boolean!, $amount: Amount!) {
+                    createPrediction(predictionId: $predictionId, eventId: $eventId, predictionType: $predictionType, question: $question, initVote: $initVote, amount: $amount)
+                }
+            `
+            const payload = {
+                query: mutation,
+                variables: {
+                    predictionId,
+                    eventId,
+                    predictionType,
+                    question,
+                    initVote,
+                    amount
+                }
+            }
+
+            const result = await backend.value.query(JSON.stringify(payload))
+            const response = JSON.parse(result)
+            console.log("Prediction created successfully:", response)
+
+            if (response.errors) {
+                throw new Error(JSON.stringify(response.errors));
+            }
+
+            // Refresh data
+            await getUserBalance()
+            await betsStore().fetchAllBets() // Although promises are in events, refreshing bets connects state
+        } catch (error) {
+            console.error('Error creating prediction:', error)
+            throw error
+        } finally {
+            isTransactionPending.value = false
+        }
+    }
+
+    async function placeVote(eventId: string, predictionId: number, vote: boolean, amount: string, predictionType: any) {
+        isTransactionPending.value = true
+        try {
+            console.log(`Placing vote on prediction ${predictionId}`)
+
+            const mutation = `
+                mutation PlaceVote($eventId: String!, $predictionId: Int!, $vote: Boolean!, $amount: Amount!, $predictionType: PredictionType!) {
+                    placeVote(eventId: $eventId, predictionId: $predictionId, vote: $vote, amount: $amount, predictionType: $predictionType)
+                }
+            `
+            const payload = {
+                query: mutation,
+                variables: {
+                    eventId,
+                    predictionId,
+                    vote,
+                    amount,
+                    predictionType
+                }
+            }
+
+            const result = await backend.value.query(JSON.stringify(payload))
+            const response = JSON.parse(result)
+            console.log("Vote placed successfully:", response)
+
+            if (response.errors) {
+                throw new Error(JSON.stringify(response.errors));
+            }
+
+            await getUserBalance()
+        } catch (error) {
+            console.error('Error placing vote:', error)
+            throw error
+        } finally {
+            isTransactionPending.value = false
+        }
+    }
+
     async function checkBonusClaimed(): Promise<boolean> {
         try {
             const result = await backend.value.query(BonusClaimedQuery)
@@ -321,6 +400,9 @@ export const appStore = defineStore('app', () => {
         mintTokens,
         placeBet,
         claimReward,
-        checkBonusClaimed
+        claimPredictionReward,
+        checkBonusClaimed,
+        createPrediction,
+        placeVote
     }
 })

@@ -142,7 +142,7 @@
               <h4 class="font-semibold text-xs text-gray-700 mb-2">Active Bets</h4>
               
               <div 
-                v-for="bet in peerBets" 
+                v-for="bet in formattedPredictions" 
                 :key="bet.id"
                 class="border border-gray-200 rounded-lg p-2 hover:shadow-md transition-shadow"
               >
@@ -151,6 +151,31 @@
                   <div class="flex items-center justify-between mt-1">
                     <span class="text-xs text-gray-500">{{ bet.totalPool }} USDL</span>
                     <span class="text-xs text-gray-500">{{ bet.totalVotes }} votes</span>
+                  </div>
+                  
+                  <!-- User Vote Display -->
+                  <div v-if="bet.userVote" class="mt-1.5 mb-1.5 p-2 rounded-lg text-xs shadow-sm border" 
+                       :class="bet.userVote.choice === 'Yes' ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200' : 'bg-gradient-to-br from-red-50 to-rose-50 border-red-200'">
+                    <div class="flex justify-between items-center mb-1.5">
+                        <span class="font-bold text-gray-700 text-[10px] uppercase tracking-wide">Your Position</span>
+                        <span class="px-2 py-0.5 rounded-full font-bold text-[10px]" 
+                              :class="bet.userVote.choice === 'Yes' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'">
+                          {{ bet.userVote.choice }}
+                        </span>
+                    </div>
+                    <div class="space-y-1">
+                      <div class="flex justify-between items-center">
+                          <span class="text-gray-600 font-medium text-[10px]">Wagered</span>
+                          <span class="font-bold text-gray-900 text-[10px]">{{ bet.userVote.amount }} USDL</span>
+                      </div>
+                      <div class="flex justify-between items-center pt-0.5 border-t border-gray-200">
+                          <span class="text-gray-600 font-medium text-[10px]">Potential Win</span>
+                          <span class="font-bold text-green-600 flex items-center gap-0.5 text-[10px]">
+                            <span class="text-[9px]">↗</span>
+                            <span>+{{ bet.userVote.potentialWin }} USDL</span>
+                          </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -172,31 +197,85 @@
                   </div>
                 </div>
 
-                <!-- Vote Buttons (only visible during live events) -->
-                <div v-if="event.status.toLowerCase() === 'live'" class="flex gap-1">
-                  <button 
-                    @click="placeBetVote(bet.id, true)"
-                    class="flex-1 bg-green-500 text-white py-1 rounded text-xs font-semibold hover:bg-green-600 transition-colors"
-                  >
-                    Yes
-                  </button>
-                  <button 
-                    @click="placeBetVote(bet.id, false)"
-                    class="flex-1 bg-red-500 text-white py-1 rounded text-xs font-semibold hover:bg-red-600 transition-colors"
-                  >
-                    No
-                  </button>
-                </div>
-              </div>
+                <!-- Actions: Claim / Outcome / Vote -->
+                 <div v-if="bet.resolved">
+                    <!-- Claim Button if User Voted & Not Claimed -->
+                    <div v-if="bet.userVote && !bet.userVote.claimed" class="mt-1.5">
+                         <button 
+                             @click="handleClaimReward(event.id, bet.id)" 
+                             :disabled="claimingPredictions.get(bet.id)"
+                             class="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 text-white py-1.5 rounded-lg text-[10px] font-bold hover:from-yellow-500 hover:to-yellow-600 transition-all shadow-sm hover:shadow-md transform hover:scale-[1.01] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                         >
+                             {{ claimingPredictions.get(bet.id) ? '⏳ Claiming...' : '🎁 Claim Reward' }}
+                         </button>
+                    </div>
+                    <!-- Outcome Display if Claimed or Didn't Vote -->
+                    <div v-else class="mt-1.5">
+                        <!-- User participated and claimed -->
+                        <div v-if="bet.userVote && bet.userVote.claimed">
+                            <!-- Check if user won or lost -->
+                            <div v-if="(bet.outcome && bet.userVote.choice === 'Yes') || (!bet.outcome && bet.userVote.choice === 'No')" 
+                                 class="p-2 bg-gradient-to-br from-green-50 to-emerald-50 border border-green-300 rounded-lg">
+                                <div class="flex items-center justify-center gap-1.5 mb-0.5">
+                                    <span class="text-lg">🎉</span>
+                                    <span class="text-[11px] font-bold text-green-700">YOU WON!</span>
+                                    <span class="text-lg">🎉</span>
+                                </div>
+                                <div class="text-center text-[10px] text-green-600 font-semibold">
+                                    Outcome: {{ bet.outcome ? 'YES' : 'NO' }}
+                                </div>
+                                <div class="text-center text-[9px] text-green-500 mt-0.5">
+                                    Reward claimed ✓
+                                </div>
+                            </div>
+                            <!-- User lost -->
+                            <div v-else class="p-2 bg-gradient-to-br from-red-50 to-rose-50 border border-red-300 rounded-lg">
+                                <div class="flex items-center justify-center gap-1.5 mb-0.5">
+                                    <span class="text-lg">😔</span>
+                                    <span class="text-[11px] font-bold text-red-700">YOU LOST</span>
+                                </div>
+                                <div class="text-center text-[10px] text-red-600 font-semibold">
+                                    Outcome: {{ bet.outcome ? 'YES' : 'NO' }}
+                                </div>
+                                <div class="text-center text-[9px] text-red-500 mt-0.5">
+                                    Better luck next time!
+                                </div>
+                            </div>
+                        </div>
+                        <!-- User didn't participate -->
+                        <div v-else class="p-2 bg-gray-100 border border-gray-300 rounded-lg">
+                            <div class="text-center text-[10px] font-bold text-gray-700">
+                                 Outcome: {{ bet.outcome ? 'YES' : 'NO' }}
+                            </div>
+                        </div>
+                    </div>
+                 </div>
 
-              <!-- Empty State -->
-              <div v-if="peerBets.length === 0" class="text-center py-6 text-gray-400">
-                <p class="text-xs">No active bets</p>
-                <p class="text-xs mt-1">Create one!</p>
-              </div>
-            </div>
-          </div>
-        </div>
+                 <!-- Vote Buttons (only visible during live events if not voted) -->
+                 <div v-else-if="event.status.toLowerCase() === 'live' && !bet.userVote" class="flex gap-1">
+                   <button 
+                     @click="placeBetVote(bet.id, true, bet.predictionType)"
+                     class="flex-1 bg-green-500 text-white py-1 rounded text-xs font-semibold hover:bg-green-600 transition-colors"
+                   >
+                     Yes
+                   </button>
+                   <button 
+                     @click="placeBetVote(bet.id, false, bet.predictionType)"
+                     class="flex-1 bg-red-500 text-white py-1 rounded text-xs font-semibold hover:bg-red-600 transition-colors"
+                   >
+                     No
+                   </button>
+                 </div>
+               </div>
+ 
+               <!-- Empty State -->
+               <div v-if="formattedPredictions.length === 0" class="text-center py-6 text-gray-400">
+                 <p class="text-xs">No active bets</p>
+                 <p class="text-xs mt-1">Create one!</p>
+               </div>
+             </div>
+           </div>
+         </div>
 
         <!-- Match Events Timeline (Right Column - 2/3 width) -->
         <div class="lg:col-span-2">
@@ -279,74 +358,122 @@
       </div>
     </template>
 
-    <!-- Create Bet Modal -->
-    <div 
-      v-if="showBetModal" 
-      class="fixed inset-0 bg-black/70 backdrop-blur-xs flex items-center justify-center z-50 p-4"
-      @click.self="showBetModal = false"
-    >
-      <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-xl font-bold text-gray-900">New Prediction</h3>
-          <button 
-            @click="showBetModal = false"
-            class="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+     <div 
+       v-if="showBetModal" 
+       class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity"
+       @click.self="showBetModal = false"
+     >
+       <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 transform transition-all scale-100">
+         <div class="flex items-center justify-between mb-6">
+           <h3 class="text-2xl font-bold text-gray-900">New Prediction</h3>
+           <button 
+             @click="showBetModal = false"
+             class="p-2 -mr-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+           >
+             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+             </svg>
+           </button>
+         </div>
 
-        <div class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Prediction</label>
-            <select 
-              v-model="newBet.prediction" 
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
-            >
-              <option value="">Select a prediction...</option>
-              <option :value="`Next goal by ${event.teams.home.name}`">Next goal by {{ event.teams.home.name }}</option>
-              <option :value="`Next goal by ${event.teams.away.name}`">Next goal by {{ event.teams.away.name }}</option>
-              <option value="Total goals over 2.5">Total goals over 2.5</option>
-              <option value="Total corners over 10">Total corners over 10</option>
-              <option value="Red card in match">Red card in match</option>
-              <option value="Penalty awarded">Penalty awarded</option>
-              <option :value="`${event.teams.home.name} wins`">{{ event.teams.home.name }} wins</option>
-              <option :value="`${event.teams.away.name} wins`">{{ event.teams.away.name }} wins</option>
-            </select>
-          </div>
+         <div class="space-y-5">
+           <!-- Prediction Select -->
+           <div>
+             <label class="block text-sm font-semibold text-gray-700 mb-2">What is your prediction?</label>
+             <div class="relative">
+                <select 
+                   v-model="newBet.prediction" 
+                   class="w-full pl-4 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 text-sm appearance-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none cursor-pointer"
+                >
+                   <option value="" disabled>Select a prediction...</option>
+                   <optgroup label="Next Goal" v-if="availablePredictionOptions.nextGoal.length > 0">
+                     <option v-for="opt in availablePredictionOptions.nextGoal" :key="opt" :value="opt">{{ opt }}</option>
+                   </optgroup>
+                   <optgroup label="Total Goals Over" v-if="availablePredictionOptions.over.length > 0">
+                     <option v-for="opt in availablePredictionOptions.over" :key="opt" :value="opt">{{ opt }}</option>
+                   </optgroup>
+                   <optgroup label="Total Goals Under" v-if="availablePredictionOptions.under.length > 0">
+                     <option v-for="opt in availablePredictionOptions.under" :key="opt" :value="opt">{{ opt }}</option>
+                   </optgroup>
+                   <!-- <optgroup label="Other">
+                     <option value="Both Teams To Score">Both Teams To Score (BTTS)</option>
+                     <option value="Red card in match">Red card in match</option>
+                     <option value="Goal in next 10 mins">Goal in next 10 mins</option>
+                   </optgroup> -->
+                </select>
+                <!-- Custom arrow icon absolute positioned -->
+                <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+             </div>
+           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Amount (USDL)</label>
-            <input 
-              v-model.number="newBet.amount" 
-              type="number" 
-              min="1" 
-              step="1"
-              placeholder="Enter amount to bet"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
-            />
-          </div>
+           <!-- Amount Input -->
+           <div>
+             <div class="flex justify-between mb-2">
+                <label class="block text-sm font-semibold text-gray-700">Wager Amount</label>
+                <span class="text-xs text-gray-500 font-medium">Balance: {{ walletBalance }} USDL</span>
+             </div>
+             <div class="relative">
+                <input 
+                  v-model.number="newBet.amount" 
+                  type="number" 
+                  min="1" 
+                  placeholder="0"
+                  class="w-full pl-4 pr-16 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
+                  :class="{ 'border-red-500 focus:border-red-500 focus:ring-red-200': newBet.amount > walletBalance }"
+                />
+                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-xs font-bold tracking-wider pointer-events-none">USDL</span>
+             </div>
+             <p v-if="newBet.amount > walletBalance" class="text-xs text-red-500 mt-1 font-medium">
+               Insufficient balance
+             </p>
+           </div>
 
-          <div class="flex gap-3 pt-4">
-            <button 
-              @click="showBetModal = false"
-              class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button 
-              @click="createBet"
-              :disabled="!newBet.prediction || !newBet.amount"
-              class="flex-1 px-4 py-2 bg-primary text-white rounded-lg font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Create Bet
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+           <!-- Initial Vote Segmented Control -->
+           <div>
+             <label class="block text-sm font-semibold text-gray-700 mb-3">Your Position</label>
+             <div class="grid grid-cols-2 gap-1 p-1 bg-gray-100 rounded-xl">
+               <button 
+                 @click="newBet.initialVote = true"
+                 :class="[
+                   'flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200',
+                   newBet.initialVote ? 'bg-white text-green-600 shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+                 ]"
+               >
+                 <span class="text-lg leading-none">👍</span> Yes
+               </button>
+               <button 
+                 @click="newBet.initialVote = false"
+                 :class="[
+                   'flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200',
+                   !newBet.initialVote ? 'bg-white text-red-600 shadow-sm ring-1 ring-black/5' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-200/50'
+                 ]"
+               >
+                 <span class="text-lg leading-none">👎</span> No
+               </button>
+             </div>
+           </div>
+
+           <!-- Actions -->
+           <div class="flex gap-3 pt-2">
+             <button 
+               @click="showBetModal = false"
+               class="flex-1 px-4 py-3 border border-gray-200 text-gray-600 rounded-xl font-semibold hover:bg-gray-50 hover:border-gray-300 transition-all text-sm"
+             >
+               Cancel
+             </button>
+              <button 
+                @click="createBet"
+                :disabled="!newBet.prediction || !newBet.amount || newBet.amount > walletBalance || isCreatingPrediction"
+                class="flex-1 px-4 py-3 bg-primary text-white rounded-xl font-bold hover:opacity-90 hover:shadow-lg hover:-translate-y-0.5 transition-all text-sm disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none disabled:cursor-not-allowed"
+              >
+                {{ isCreatingPrediction ? 'Creating...' : 'Create Prediction' }}
+              </button>
+           </div>
+         </div>
+       </div>
+     </div>
 
     <!-- Vote Amount Modal -->
     <div 
@@ -402,13 +529,13 @@
             </button>
             <button 
               @click="confirmVote"
-              :disabled="!voteData.amount || voteData.amount <= 0"
+              :disabled="!voteData.amount || voteData.amount <= 0 || isConfirmingVote"
               :class="[
                 'flex-1 px-4 py-2 rounded-lg font-semibold transition-opacity disabled:opacity-50 disabled:cursor-not-allowed text-white',
                 voteData.isYes ? 'bg-green-500 hover:opacity-90' : 'bg-red-500 hover:opacity-90'
               ]"
             >
-              Confirm Vote
+              {{ isConfirmingVote ? 'Confirming...' : 'Confirm Vote' }}
             </button>
           </div>
         </div>
@@ -423,10 +550,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, onUnmounted } from 'vue';
+import { ref, onMounted, computed, onUnmounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
+import { storeToRefs } from 'pinia';
 import { useEvents } from '@/composables/useEvents';
 import { useWallet } from '@/composables/useWallet';
+import { useApp } from '@/composables/useApp';
 import { appStore } from '@/stores/app';
 import { getTeamLogoUrl } from '@/utils/teamLogos';
 import { getLeagueLogoUrlByName } from '@/utils/leagueLogos';
@@ -434,69 +563,111 @@ import WalletSelectorModal from '@/components/WalletSelectorModal.vue';
 
 const route = useRoute();
 const { allEvents, getEvents } = useEvents();
-const { walletBalance } = appStore();
-const { connected } = useWallet();
+const { walletBalance } = storeToRefs(appStore());
+const { connected, chainId } = useWallet();
+const WsUrl = import.meta.env.VITE_APP_SERVICE == '' ? 'http://localhost:8081' : import.meta.env.VITE_APP_SERVICE;
 
 const isLoading = ref(true);
+const claimingPredictions = ref<Map<number, boolean>>(new Map());
 const showBetModal = ref(false);
+const isCreatingPrediction = ref(false);
+const isConfirmingVote = ref(false);
 const showVoteModal = ref(false);
 const showWalletSelector = ref(false);
-const voteData = ref<{ betId: number; isYes: boolean; amount: number }>({ betId: 0, isYes: true, amount: 0 });
+const voteData = ref<{ betId: number; isYes: boolean; amount: number; predictionType: any }>({ betId: 0, isYes: true, amount: 0, predictionType: null });
 let minuteInterval: any = null;
 
 // Peer betting state
 const newBet = ref({
   prediction: '',
-  amount: 0
+  amount: 0,
+  initialVote: true
 });
-
-const peerBets = ref([
-  {
-    id: 1,
-    prediction: 'Next goal by Manchester City',
-    totalPool: 150,
-    totalVotes: 12,
-    yesVotes: 8,
-    noVotes: 4,
-    yesPercentage: 67,
-    noPercentage: 33
-  },
-  {
-    id: 2,
-    prediction: 'Total goals over 2.5',
-    totalPool: 200,
-    totalVotes: 15,
-    yesVotes: 10,
-    noVotes: 5,
-    yesPercentage: 67,
-    noPercentage: 33
-  },
-  {
-    id: 3,
-    prediction: 'Total corners over 10',
-    totalPool: 80,
-    totalVotes: 8,
-    yesVotes: 3,
-    noVotes: 5,
-    yesPercentage: 38,
-    noPercentage: 62
-  },
-  {
-    id: 4,
-    prediction: 'Red card in match',
-    totalPool: 50,
-    totalVotes: 6,
-    yesVotes: 2,
-    noVotes: 4,
-    yesPercentage: 33,
-    noPercentage: 67
-  }
-]);
 
 const eventId = computed(() => route.params.id);
 
 const event = computed(() => {
   return allEvents.value.find((e: any) => e.id.toString() === eventId.value);
+});
+
+const formattedPredictions = computed(() => {
+    if (!event.value || !event.value.predictions) return [];
+
+    return event.value.predictions.map((prediction: any) => {
+        // Ensure values are treated as strings and remove decimals if any
+        const safePoolYes = String(prediction.poolYes || 0).split('.')[0] ?? '0';
+        const safePoolNo = String(prediction.poolNo || 0).split('.')[0] ?? '0';
+       
+        const poolYes = BigInt(safePoolYes);
+        const poolNo = BigInt(safePoolNo);
+        const totalPool = poolYes + poolNo;
+
+        const totalVotes = prediction.votes.length;
+        
+        // Count votes for Yes and No
+        const yesVotes = prediction.votes.filter((v: any) => v.choice === true).length;
+        const noVotes = prediction.votes.filter((v: any) => v.choice === false).length;
+        
+        let yesPercentage = 0;
+        let noPercentage = 0;
+
+        if (totalVotes > 0) {
+            // Calculate percentages based on number of votes, not amounts
+            yesPercentage = Math.round((yesVotes / totalVotes) * 100);
+            noPercentage = Math.round((noVotes / totalVotes) * 100);
+        }
+
+        // Check for user's vote
+        let userVote = null;
+        
+        if (connected.value && chainId.value && prediction.votes) {
+            // Use ChainID since that's what the contract stores in Vote.user
+            const userChainId = chainId.value.toLowerCase();
+            const vote = prediction.votes.find((v: any) => v.user.toLowerCase() === userChainId);
+            
+            if (vote) {
+                // Safeguard against decimals/scientific notation
+                const safeVoteAmount = String(vote.amount || 0).split('.')[0] ?? '0';
+                const voteAmount = BigInt(safeVoteAmount);
+                let potentialWin = 0n;
+                
+                // Potential Win Calculation:
+                if (vote.choice) { // Yes
+                     if (poolYes > 0n) {
+                         potentialWin = (voteAmount * totalPool) / poolYes;
+                     }
+                } else { // No
+                     if (poolNo > 0n) {
+                         potentialWin = (voteAmount * totalPool) / poolNo;
+                     }
+                }
+                
+                userVote = {
+                    choice: vote.choice ? 'Yes' : 'No',
+                    amount: vote.amount,
+                    potentialWin: potentialWin.toString(),
+                    claimed: vote.claimed
+                };
+            }
+        }
+
+        return {
+            id: prediction.id,
+            prediction: prediction.question,
+            totalPool: totalPool.toString(),
+            totalVotes: totalVotes,
+            yesVotes: prediction.votes.filter((v: any) => v.choice).length,
+            noVotes: prediction.votes.filter((v: any) => !v.choice).length,
+            yesPercentage: yesPercentage,
+            noPercentage: noPercentage,
+            userVote: userVote,
+            poolYes: prediction.poolYes,
+            poolNo: prediction.poolNo,
+            resolved: prediction.resolved,
+            outcome: prediction.outcome,
+            predictionType: prediction.predictionType
+        };
+    });
 });
 
 const sortedMatchEvents = computed(() => {
@@ -514,6 +685,54 @@ const displayMinute = computed(() => {
   if (!event.value) return 0;
   return event.value.currentMinute || 0;
 });
+
+// Filter available predictions based on current match state and existing predictions
+const availablePredictionOptions = computed(() => {
+  if (!event.value) return {
+    nextGoal: [],
+    over: [],
+    under: []
+  };
+
+  const predictions = event.value.predictions || [];
+  const homeTeam = event.value.teams?.home?.name || 'Home Team';
+  const awayTeam = event.value.teams?.away?.name || 'Away Team';
+
+  // Next Goal options (can always repeat)
+  const nextGoalOptions = [
+    `Next goal by ${homeTeam}`,
+    `Next goal by ${awayTeam}`
+  ];
+
+  // Over options
+  const overOptions = [
+    'Total goals over 0.5 (1+)',
+    'Total goals over 1.5 (2+)',
+    'Total goals over 2.5 (3+)',
+    'Total goals over 3.5 (4+)'
+  ].filter(opt => {
+    return !isPredictionAlreadyTrue(opt, event.value) && 
+           !isPredictionTypeExists(opt, predictions);
+  });
+
+  // Under options
+  const underOptions = [
+    'Total goals under 1.5 (0-1)',
+    'Total goals under 2.5 (0-2)',
+    'Total goals under 3.5 (0-3)',
+    'Total goals under 4.5 (0-4)'
+  ].filter(opt => {
+    return !isPredictionAlreadyTrue(opt, event.value) && 
+           !isPredictionTypeExists(opt, predictions);
+  });
+
+  return {
+    nextGoal: nextGoalOptions,
+    over: overOptions,
+    under: underOptions
+  };
+});
+
 
 const startMinuteCounter = () => {
   if (event.value?.status.toLowerCase() === 'live') {
@@ -580,29 +799,179 @@ const formatScore = (score: any) => {
   return Number.isFinite(numScore) ? numScore : 0;
 };
 
-const createBet = () => {
-  if (!newBet.value.prediction || !newBet.value.amount) return;
+// Helper function to check if a prediction is already true based on current match state
+const isPredictionAlreadyTrue = (predictionText: string, currentEvent: any): boolean => {
+  if (!currentEvent || !currentEvent.liveScore) return false;
   
-  const newBetData = {
-    id: peerBets.value.length + 1,
-    prediction: newBet.value.prediction,
-    totalPool: newBet.value.amount,
-    totalVotes: 1,
-    yesVotes: 1,
-    noVotes: 0,
-    yesPercentage: 100,
-    noPercentage: 0
-  };
+  const homeGoals = formatScore(currentEvent.liveScore.home);
+  const awayGoals = formatScore(currentEvent.liveScore.away);
+  const totalGoals = homeGoals + awayGoals;
   
-  peerBets.value.unshift(newBetData);
+  // Check "Over" predictions
+  if (predictionText.includes('Over') || predictionText.includes('over')) {
+    const match = predictionText.match(/(\d+\.?\d*)/);
+    if (match) {
+      const threshold = parseFloat(match[0]);
+      return totalGoals > threshold;
+    }
+  }
   
-  newBet.value = {
-    prediction: '',
-    amount: 0
-  };
+  // Check "Under" predictions
+  if (predictionText.includes('Under') || predictionText.includes('under')) {
+    const match = predictionText.match(/(\d+\.?\d*)/);
+    if (match) {
+      const threshold = parseFloat(match[0]);
+      return totalGoals >= threshold;
+    }
+  }
   
-  console.log('Bet created successfully!');
+  // Check "Both Teams To Score"
+  if (predictionText === 'Both Teams To Score') {
+    return homeGoals > 0 && awayGoals > 0;
+  }
+  
+  // Check "Red card"
+  if (predictionText === 'Red card in match') {
+    return currentEvent.match_events?.some((e: any) => e.event_type === 'RedCard') || false;
+  }
+  
+  return false;
 };
+
+// Helper function to get prediction type key for uniqueness check
+const getPredictionTypeKey = (predictionText: string): string => {
+  // NextGoal predictions can repeat, so return unique key each time
+  if (predictionText.startsWith('Next goal by')) {
+    return `NextGoal_${Date.now()}_${Math.random()}`;
+  }
+  
+  // For other predictions, normalize to a comparable key
+  if (predictionText.includes('Over')) {
+    const match = predictionText.match(/(\d+\.?\d*)/);
+    return match ? `TotalGoalsOver_${match[0]}` : predictionText;
+  }
+  
+  if (predictionText.includes('Under')) {
+    const match = predictionText.match(/(\d+\.?\d*)/);
+    return match ? `TotalGoalsUnder_${match[0]}` : predictionText;
+  }
+  
+  return predictionText;
+};
+
+// Check if prediction type already exists
+const isPredictionTypeExists = (predictionText: string, predictions: any[]): boolean => {
+  if (!predictions || predictions.length === 0) return false;
+  
+  const typeKey = getPredictionTypeKey(predictionText);
+  
+  // NextGoal always returns unique key, so will never exist
+  if (typeKey.startsWith('NextGoal_')) return false;
+  
+  return predictions.some(pred => {
+    const existingKey = getPredictionTypeKey(pred.description || '');
+    return existingKey === typeKey;
+  });
+};
+
+
+
+// Format amount from 1e18 to human readable
+const formatAmount = (amount: any) => {
+  if (!amount) return '0';
+  const val = BigInt(amount);
+  return (Number(val) / 1000000000000000000).toLocaleString('en-US', { maximumFractionDigits: 2 });
+};
+
+const createBet = async () => {
+   if (!newBet.value.prediction || !newBet.value.amount || isCreatingPrediction.value) return;
+   
+   // Validate prediction is not already true and doesn't already exist
+   if (isPredictionAlreadyTrue(newBet.value.prediction, event.value)) {
+       alert('This prediction is already resolved based on the current match state.');
+       return;
+   }
+   
+   if (isPredictionTypeExists(newBet.value.prediction, event.value.predictions || [])) {
+       alert('A prediction of this type already exists for this event.');
+       return;
+   }
+   
+   isCreatingPrediction.value = true;
+   
+   let predictionType: any = null;
+   const pred = newBet.value.prediction;
+
+    if (pred.startsWith("Next goal by")) {
+      const teamName = pred.replace("Next goal by ", "");
+      const selection = teamName === event.value.teams.home.name ? "Home" : "Away";
+      predictionType = { "NextGoal": selection };
+    } else if (pred.startsWith("Total goals over")) {
+      if (pred.includes("0.5")) predictionType = { "TotalGoalsOver": 0 };
+      else if (pred.includes("1.5")) predictionType = { "TotalGoalsOver": 1 };
+      else if (pred.includes("2.5")) predictionType = { "TotalGoalsOver": 2 };
+      else if (pred.includes("3.5")) predictionType = { "TotalGoalsOver": 3 };
+    } else if (pred.startsWith("Total goals under")) {
+      if (pred.includes("1.5")) predictionType = { "TotalGoalsUnder": 2 };
+      else if (pred.includes("2.5")) predictionType = { "TotalGoalsUnder": 3 };
+      else if (pred.includes("3.5")) predictionType = { "TotalGoalsUnder": 4 };
+      else if (pred.includes("4.5")) predictionType = { "TotalGoalsUnder": 5 };
+    } else if (pred === "Both Teams To Score") {
+      predictionType = "BTTS";
+    } else if (pred === "Red card in match") {
+      predictionType = "RedCard";
+    } else if (pred === "Goal in next 10 mins") {
+      predictionType = { "GoalInNext10Mins": displayMinute.value };
+    } else {
+        return; // unsupported
+    }
+ 
+   try {
+       // Convert amount to attos (tokens * 10^18)
+       const amountInTokens = BigInt(Math.floor(newBet.value.amount));
+       const amountInAttos = amountInTokens * 1_000_000_000_000_000_000n;
+
+
+       await appStore().createPrediction(
+           Date.now(),
+           event.value.id,
+           predictionType,
+           newBet.value.prediction,
+           newBet.value.initialVote,
+           newBet.value.amount.toString()
+       );
+       
+        console.log("Prediction created");
+        newBet.value = { prediction: '', amount: 0, initialVote: true };
+        showBetModal.value = false;
+
+       
+       // Wait for cross-chain propagation
+       setTimeout(() => {
+           getEvents(); 
+       }, 2000);
+   } catch (e) {
+       console.error(e);
+   } finally {
+       isCreatingPrediction.value = false;
+   }
+ };
+
+ const handleClaimReward = async (evtId: string, predictionId: number) => {
+    if (claimingPredictions.value.get(predictionId)) return; // Already claiming
+    
+    claimingPredictions.value.set(predictionId, true);
+    try {
+        await appStore().claimPredictionReward(evtId, predictionId);
+        getEvents(); // Refresh data
+    } catch (e) {
+        console.error("Failed to claim reward:", e);
+    } finally {
+        claimingPredictions.value.set(predictionId, false);
+    }
+ };
+
+// ...
 
 // Open modal or prompt wallet connection
 const openCreateBetModal = () => {
@@ -613,53 +982,43 @@ const openCreateBetModal = () => {
   showBetModal.value = true
 }
 
-const placeBetVote = (betId: number, isYes: boolean) => {
+const placeBetVote = (betId: number, isYes: boolean, predictionType: any) => {
   if (!connected.value) {
     showWalletSelector.value = true
     return
   }
   // Open modal to enter bet amount
-  voteData.value = { betId, isYes, amount: 0 };
+  voteData.value = { betId, isYes, amount: 0, predictionType: predictionType };
   showVoteModal.value = true;
 };
 
-const confirmVote = () => {
-  const { betId, isYes, amount } = voteData.value;
+const confirmVote = async () => {
+  const { betId, isYes, amount, predictionType } = voteData.value;
   
-  if (!amount || amount <= 0) {
-    console.error('Invalid bet amount');
-    return;
+  if (!amount || amount <= 0 || isConfirmingVote.value) return;
+  
+  isConfirmingVote.value = true;
+  try {
+      // Convert amount to attos (tokens * 10^18)
+      const amountInTokens = BigInt(Math.floor(amount));
+      const amountInAttos = amountInTokens * 1_000_000_000_000_000_000n;
+
+      await appStore().placeVote(
+          event.value.id,
+          betId,
+          isYes,
+          amount.toString(),
+          predictionType
+      );
+
+      console.log("Vote placed");
+      showVoteModal.value = false;
+      getEvents();
+  } catch(e) {
+      console.error(e);
+  } finally {
+      isConfirmingVote.value = false;
   }
-  
-  // Validate balance
-  if (amount > walletBalance) {
-    console.error(`Insufficient balance. Available: ${walletBalance}, Required: ${amount}`);
-    return;
-  }
-  
-  const bet = peerBets.value.find(b => b.id === betId);
-  if (!bet) return;
-  
-  // Update vote counts
-  if (isYes) {
-    bet.yesVotes++;
-  } else {
-    bet.noVotes++;
-  }
-  bet.totalVotes++;
-  
-  // Recalculate percentages
-  bet.yesPercentage = Math.round((bet.yesVotes / bet.totalVotes) * 100);
-  bet.noPercentage = Math.round((bet.noVotes / bet.totalVotes) * 100);
-  
-  // Add to pool
-  bet.totalPool += amount;
-  
-  // Close modal and reset
-  showVoteModal.value = false;
-  voteData.value = { betId: 0, isYes: true, amount: 0 };
-  
-  console.log(`Voted ${isYes ? 'Yes' : 'No'} with ${amount} USDL on bet: ${bet.prediction}`);
 };
 
 onMounted(async () => {
@@ -671,6 +1030,29 @@ onMounted(async () => {
   
   isLoading.value = false;
   startMinuteCounter();
+});
+
+
+// Reset forms when modals close
+watch(showBetModal, (newVal) => {
+  if (!newVal) {
+    newBet.value = {
+      prediction: '',
+      amount: 0,
+      initialVote: true
+    };
+  }
+});
+
+watch(showVoteModal, (newVal) => {
+  if (!newVal) {
+    voteData.value = {
+      betId: 0,
+      isYes: true,
+      amount: 0,
+      predictionType: null
+    };
+  }
 });
 
 onUnmounted(() => {

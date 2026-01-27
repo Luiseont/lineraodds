@@ -8,7 +8,7 @@ use linera_sdk::{
 };
 use serde::{Deserialize, Serialize};
 
-pub use self::state::{Event, UserOdd};
+pub use self::state::{Event, UserOdd, PredictionType};
 pub struct ManagementAbi;
 
 impl ContractAbi for ManagementAbi {
@@ -46,16 +46,22 @@ pub enum Operation {
     StartNewWeek { week: u64, year: u64, prize_pool: Amount },
     EndCurrentWeek { week: u64, year: u64 },
     //userChain
+    CreatePrediction { prediction_id: u64, event_id: String, prediction_type: PredictionType, question: String, init_vote: bool, amount: Amount },
+    PlaceVote { event_id: String, prediction_id: u64, vote: bool, amount: Amount, prediction_type: PredictionType },
     PlaceBet{ home_id: String, away_id: String, home_name: String, away_name: String, league: String, start_time: Timestamp, odd: u64, selection: String, bid: Amount, event_id: String},
     ClaimReward { event_id: String },
+    ClaimPredictionReward { prediction_id: u64, event_id: String },
     RequestMint { amount: Amount },
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub enum Message {
    NewBetPlaced { home: String, away: String, league: String, start_time: Timestamp, odd: u64, selection: String, bid: Amount, status: String, event_id: String },
+   NewPredictionCreated { prediction_id: u64, event_id: String, prediction_type: PredictionType, question: String, init_vote: bool, amount: Amount },
+   NewVotePlaced { event_id: String, prediction_id: u64, vote: bool, amount: Amount },
    RevertUserBet { event_id: String },
    UserClaimReward { event_id: String },
+   SendPredictionReward { prediction_id: u64, event_id: String },
    ClaimResult { event_id: String, result: String},
    MintTokens { amount: Amount },
    Receive { amount: Amount },
@@ -63,7 +69,12 @@ pub enum Message {
    UpdateTeamPower { team_id: String, name: String, power: u64, form: i64, goal_average: i64 },
    //toAppChain
    NewEventCreated{event_id: String, event: Event},
-   EventUpdated{event_id: String, event: Event},
+   //Delta messages
+   EventStatusUpdated { event_id: String, status: state::MatchStatus },
+   EventScoreUpdated { event_id: String, home_score: String, away_score: String },
+   EventMinuteUpdated { event_id: String, minute: u32 },
+   EventMatchEventAdded { event_id: String, match_event: state::MatchEvent },
+   EventOutcomeResolved { event_id: String, winner: state::Selection, home_score: String, away_score: String },
    //leaderboard cross-messages
    NewWeekStarted { week: u64, year: u64, prize_pool: Amount },
    CurrentWeekEnded { week: u64, year: u64},
