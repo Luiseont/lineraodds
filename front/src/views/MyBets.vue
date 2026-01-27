@@ -1,27 +1,63 @@
 <template>
   <div class="space-y-4 sm:space-y-6">
-    <header class="card p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-      <div>
-        <h1 class="text-xl sm:text-2xl font-bold text-secondary">My Bets</h1>
-        <p class="text-sm text-gray-500">Summary of your active bets</p>
+    <!-- View Type Tabs (Bets / Predictions) -->
+    <div class="card p-3 sm:p-4">
+      <div class="flex gap-2 mb-3">
+        <button
+          @click="viewType = 'bets'"
+          class="flex-1 px-4 py-2.5 rounded-lg text-sm sm:text-base font-semibold transition-all"
+          :class="viewType === 'bets' 
+            ? 'bg-primary text-white shadow-md' 
+            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+        >
+          Bets
+        </button>
+        <button
+          @click="viewType = 'predictions'"
+          class="flex-1 px-4 py-2.5 rounded-lg text-sm sm:text-base font-semibold transition-all"
+          :class="viewType === 'predictions' 
+            ? 'bg-primary text-white shadow-md' 
+            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+        >
+          Predictions
+        </button>
       </div>
-      <div class="text-left sm:text-right w-full sm:w-auto">
-        <div class="flex items-center justify-between sm:block">
-          <div>
-            <div class="text-xs sm:text-sm text-gray-500">Total staked</div>
-            <div class="text-lg sm:text-xl font-semibold text-secondary">{{ formatCurrency(totalStaked) }}</div>
+
+      <!-- Bets Statistics (only shown in Bets tab) -->
+      <div v-if="viewType === 'bets'" class="grid grid-cols-2 gap-4 py-4 mb-4 border-b border-gray-100">
+        <div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 p-4 border border-blue-100">
+          <div class="relative z-10">
+            <div class="flex items-center gap-2 mb-2">
+              <div class="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <span class="text-xs font-medium text-blue-600 uppercase tracking-wide">Total Staked</span>
+            </div>
+            <div class="text-2xl font-bold text-blue-900">{{ formatCurrency(totalStaked) }}</div>
           </div>
-          <div class="sm:mt-2">
-            <div class="text-xs sm:text-sm text-gray-500">Potential winnings</div>
-            <div class="text-lg sm:text-xl font-semibold text-primary">{{ formatCurrency(potentialWinnings) }}</div>
+          <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-blue-200 rounded-full opacity-20"></div>
+        </div>
+        
+        <div class="relative overflow-hidden rounded-xl bg-gradient-to-br from-emerald-50 to-green-50 p-4 border border-emerald-100">
+          <div class="relative z-10">
+            <div class="flex items-center gap-2 mb-2">
+              <div class="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+              </div>
+              <span class="text-xs font-medium text-emerald-600 uppercase tracking-wide">Potential Win</span>
+            </div>
+            <div class="text-2xl font-bold text-emerald-900">{{ formatCurrency(potentialWinnings) }}</div>
           </div>
+          <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-emerald-200 rounded-full opacity-20"></div>
         </div>
       </div>
-    </header>
 
-    <!-- Status Filter Tabs -->
-    <div class="card p-3 sm:p-4">
-      <div class="flex gap-1.5 sm:gap-2 flex-wrap">
+      <!-- Status Filter Tabs -->
+      <div class="flex gap-1.5 sm:gap-2 flex-wrap" v-if="viewType === 'bets'">
         <button
           v-for="status in statusFilters"
           :key="status"
@@ -34,16 +70,31 @@
           {{ status }}
         </button>
       </div>
+
+      <!-- Prediction Status Filters -->
+      <div class="flex gap-1.5 sm:gap-2 flex-wrap" v-else>
+        <button
+          v-for="status in predictionStatusFilters"
+          :key="status"
+          @click="selectedPredictionStatus = status"
+          class="px-2 py-1 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-base font-medium transition-all relative"
+          :class="selectedPredictionStatus === status 
+            ? 'bg-primary text-white shadow-md' 
+            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+        >
+          {{ status }}
+        </button>
+      </div>
     </div>
 
     <!-- Loading state -->
     <div v-if="isLoading" class="card p-12 text-center">
       <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-      <p class="mt-4 text-gray-600">Loading bets...</p>
+      <p class="mt-4 text-gray-600">Loading {{ viewType }}...</p>
     </div>
 
     <!-- Bets List -->
-    <template v-else>
+    <template v-else-if="viewType === 'bets'">
       <div class="card overflow-hidden">
         <div v-if="userBets.length === 0" class="p-8 text-center text-gray-500">
           No bets placed yet.
@@ -105,6 +156,175 @@
         @previous="previousBetsPage"
       />
     </template>
+
+    <!-- Predictions List -->
+    <template v-else-if="viewType === 'predictions'">
+      <div v-if="filteredPredictions.length === 0" class="card p-8 text-center text-gray-500">
+        No predictions found.
+      </div>
+      <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+        <div
+          v-for="pred in filteredPredictions"
+          :key="pred.id"
+          class="card p-3 hover:shadow-lg transition-all relative overflow-hidden"
+          :class="{
+            'ring-2 ring-yellow-400 bg-yellow-50/40 shadow-xl animate-pulse-slow': pred.resolved && !pred.claimed,
+            'opacity-90': pred.resolved && pred.claimed
+          }"
+        >
+          <!-- Resolved Unclaimed Badge - ATTENTION GRABBER -->
+          <div v-if="pred.resolved && !pred.claimed" class="absolute top-2 right-2 z-10">
+            <div class="px-2 py-0.5 rounded-full text-xs font-bold shadow-lg bg-yellow-500 text-white animate-bounce">
+              🎁 CLAIM NOW!
+            </div>
+          </div>
+
+          <!-- Event Info Header -->
+          <div class="mb-2 pb-2 border-b border-gray-100">
+            <div class="flex items-center gap-1 mb-1">
+              <span class="text-xs text-gray-400">{{ pred.eventInfo?.league || 'Unknown' }}</span>
+            </div>
+            
+            <!-- Teams with Logos -->
+            <div class="flex items-center justify-between gap-2 mb-2">
+              <div class="flex items-center gap-1 flex-1 min-w-0">
+                <img 
+                  :src="`https://media.api-sports.io/football/teams/${pred.eventInfo?.teams?.home?.id}.png`" 
+                  :alt="pred.eventInfo?.teams?.home?.name"
+                  class="w-5 h-5 object-contain flex-shrink-0"
+                  @error="(e) => (e.target as HTMLImageElement).style.display = 'none'"
+                />
+                <span class="text-xs font-semibold text-gray-700 truncate">
+                  {{ pred.eventInfo?.teams?.home?.name || 'Team 1' }}
+                </span>
+              </div>
+              <span class="text-xs text-gray-400 flex-shrink-0">vs</span>
+              <div class="flex items-center gap-1 flex-1 min-w-0 justify-end">
+                <span class="text-xs font-semibold text-gray-700 truncate">
+                  {{ pred.eventInfo?.teams?.away?.name || 'Team 2' }}
+                </span>
+                <img 
+                  :src="`https://media.api-sports.io/football/teams/${pred.eventInfo?.teams?.away?.id}.png`" 
+                  :alt="pred.eventInfo?.teams?.away?.name"
+                  class="w-5 h-5 object-contain flex-shrink-0"
+                  @error="(e) => (e.target as HTMLImageElement).style.display = 'none'"
+                />
+              </div>
+            </div>
+            
+            <div class="text-xs text-gray-400">
+              <!--{{ new Date(pred.eventInfo?.startTime).toLocaleDateString() }}-->
+            </div>
+          </div>
+
+          <!-- Prediction Question -->
+          <div class="mb-2">
+            <div class="text-xs text-gray-500 mb-1">Prediction</div>
+            <div class="text-xs font-medium text-gray-800 line-clamp-2 min-h-[2rem]">
+              {{ pred.question }}
+            </div>
+          </div>
+
+          <!-- User Choice -->
+          <div class="mb-2 flex items-center justify-between">
+            <span class="text-xs text-gray-500">Your Choice</span>
+            <span 
+              class="px-2 py-0.5 rounded text-xs font-bold"
+              :class="pred.choice ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'"
+            >
+              {{ pred.choice ? 'YES' : 'NO' }}
+            </span>
+          </div>
+
+          <!-- Wagered Amount -->
+          <div class="mb-2 flex items-center justify-between">
+            <span class="text-xs text-gray-500">Wagered</span>
+            <span class="text-xs font-bold text-secondary">{{ formatCurrency(Number(pred.amount)) }}</span>
+          </div>
+
+          <!-- Potential/Actual Winnings -->
+          <div class="mb-3 flex items-center justify-between">
+            <span class="text-xs text-gray-500">{{ pred.claimed ? 'Result' : 'Potential' }}</span>
+            <span 
+              class="text-xs font-bold"
+              :class="pred.claimed 
+                ? (pred.isWinner ? 'text-green-600' : 'text-red-600') 
+                : 'text-primary'"
+            >
+              {{ pred.claimed 
+                ? (pred.isWinner ? '+' + formatCurrency(pred.potentialWinnings - (Number(pred.amount))) : formatCurrency(-(Number(pred.amount))))
+                : formatCurrency(pred.potentialWinnings) 
+              }}
+            </span>
+          </div>
+
+          <!-- Status and Actions -->
+          <div class="pt-2 border-t border-gray-100">
+            <!-- Resolved - Not Claimed (Show only Claim Button) -->
+            <div v-if="pred.resolved && !pred.claimed">
+              <button
+                @click="handleClaimPrediction(pred)"
+                :disabled="loadingPredictionClaims[pred.id]"
+                class="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 text-white py-1.5 rounded text-xs font-bold hover:from-yellow-500 hover:to-yellow-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {{ loadingPredictionClaims[pred.id] ? '⏳ Claiming...' : '🎁 Claim' }}
+              </button>
+            </div>
+
+            <!-- Resolved - Already Claimed -->
+            <div v-else-if="pred.resolved && pred.claimed">
+              <!-- Winner Claimed -->
+              <div v-if="pred.isWinner" class="p-2 bg-gradient-to-br from-green-100 to-emerald-100 border border-green-400 rounded">
+                <div class="flex items-center justify-center gap-1 mb-1">
+                  <span class="text-sm">🎉</span>
+                  <span class="text-xs font-bold text-green-800">YOU WON!</span>
+                </div>
+                <div class="text-center text-xs text-green-700 mb-1">
+                  {{ pred.outcome ? 'YES' : 'NO' }}
+                </div>
+                <div class="text-center pb-1 border-b border-green-300">
+                  <div class="text-xs font-bold text-green-700">
+                    +{{ formatCurrency(pred.potentialWinnings - (Number(pred.amount))) }}
+                  </div>
+                </div>
+                <div class="text-center text-xs text-green-600 mt-1">
+                  ✓ Claimed
+                </div>
+              </div>
+              <!-- Loser Claimed -->
+              <div v-else class="p-2 bg-gradient-to-br from-red-100 to-rose-100 border border-red-400 rounded">
+                <div class="flex items-center justify-center gap-1 mb-1">
+                  <span class="text-sm">😔</span>
+                  <span class="text-xs font-bold text-red-800">YOU LOST</span>
+                </div>
+                <div class="text-center text-xs text-red-700 mb-1">
+                  {{ pred.outcome ? 'YES' : 'NO' }}
+                </div>
+                <div class="text-center pb-1 border-b border-red-300">
+                  <div class="text-xs font-bold text-red-700">
+                    {{ formatCurrency(-(Number(pred.amount))) }}
+                  </div>
+                </div>
+                <div class="text-center text-xs text-red-600 mt-1">
+                  ✓ Claimed
+                </div>
+              </div>
+            </div>
+
+            <!-- Active (Not Resolved) -->
+            <div v-else class="p-2 bg-blue-50 border border-blue-200 rounded">
+              <div class="flex items-center justify-center gap-1">
+                <div class="animate-pulse w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                <span class="text-xs font-semibold text-blue-700">ACTIVE</span>
+              </div>
+              <div class="text-center text-xs text-blue-600 mt-0.5">
+                Waiting...
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -115,23 +335,37 @@ import { useBets } from '@/composables/useBets'
 import { useEvents } from '@/composables/useEvents'
 import Pagination from '@/components/Pagination.vue'
 
-const { claimReward } = useApp()
+const { claimReward, claimPredictionReward } = useApp()
 const { 
   userBets, 
+  allUserPredictions,
   currentBetsPage,
   nextBetsPage,
   previousBetsPage,
   setBetFilters,
   totalStaked,
   potentialWinnings,
-  resetBets
+  resetBets,
+  fetchAllBets,
+  fetchUserPredictions
 } = useBets()
 const { allEvents } = useEvents()
 const loadingClaims = ref<Record<string, boolean>>({})
+const loadingPredictionClaims = ref<Record<number, boolean>>({})
 const isLoading = ref(false)
 
+// View type state
+const viewType = ref<'bets' | 'predictions'>('bets')
+
+// Bets filters
 const statusFilters = ['PLACED', 'WON', 'LOST', 'CANCELLED']
 const selectedStatus = ref('PLACED')
+
+// Predictions filters
+const predictionStatusFilters = ['ALL', 'ACTIVE', 'RESOLVED', 'CLAIMABLE']
+const selectedPredictionStatus = ref('ALL')
+
+
 
 function formatCurrency(n: number | string) {
   const val = Number(n);
@@ -173,6 +407,72 @@ function calculatePotential(bid: number | string, odd: number | string) {
   return bidValue * oddMult;
 }
 
+// Computed property for filtered predictions
+const filteredPredictions = computed(() => {
+  console.log("Raw allUserPredictions:", allUserPredictions.value)
+  console.log("All events:", allEvents.value)
+  
+  if (!allUserPredictions.value || allUserPredictions.value.length === 0) return []
+
+  // Enrich predictions with event data
+  const enrichedPredictions = allUserPredictions.value.map((pred: any) => {
+    const event = allEvents.value.find((e: any) => e.id === pred.eventId)
+    const prediction = event?.predictions?.find((p: any) => p.id === pred.id)
+
+    console.log(`Prediction ${pred.id}:`, { pred, event, prediction })
+
+    // Determine if user won
+    let isWinner = false
+    if (prediction && prediction.resolved && prediction.outcome !== null) {
+      isWinner = (pred.choice && prediction.outcome) || (!pred.choice && !prediction.outcome)
+    }
+
+    // Calculate potential winnings
+    let potentialWinnings = 0
+    if (prediction) {
+      const userAmount = Number(pred.amount) 
+      const yesPool = Number(prediction.yesPool || 0) 
+      const noPool = Number(prediction.noPool || 0)
+      const totalPool = yesPool + noPool
+
+      if (totalPool > 0) {
+        if (pred.choice) {
+          // User bet YES - potential winnings is their share of total pool
+          potentialWinnings = yesPool > 0 ? (userAmount / yesPool) * totalPool : userAmount
+        } else {
+          // User bet NO - potential winnings is their share of total pool
+          potentialWinnings = noPool > 0 ? (userAmount / noPool) * totalPool : userAmount
+        }
+      } else {
+        potentialWinnings = userAmount
+      }
+    }
+
+    return {
+      ...pred,
+      eventInfo: event,
+      question: prediction?.question || 'Unknown prediction',
+      resolved: prediction?.resolved || false,
+      outcome: prediction?.outcome,
+      potentialWinnings,
+      isWinner
+    }
+  })
+
+  console.log("Enriched predictions:", enrichedPredictions)
+
+  // Apply filters
+  if (selectedPredictionStatus.value === 'ACTIVE') {
+    return enrichedPredictions.filter((p: any) => !p.resolved)
+  } else if (selectedPredictionStatus.value === 'RESOLVED') {
+    return enrichedPredictions.filter((p: any) => p.resolved)
+  } else if (selectedPredictionStatus.value === 'CLAIMABLE') {
+    return enrichedPredictions.filter((p: any) => p.resolved && !p.claimed && p.isWinner)
+  }
+
+  return enrichedPredictions
+})
+
 function isClaimable(bet: any) {
   if (bet.status !== 'PLACED') return false
   const event = allEvents.value.find((e: any) => e.id === bet.eventId)
@@ -193,6 +493,22 @@ async function handleClaim(bet: any) {
   }
 }
 
+async function handleClaimPrediction(pred: any) {
+  if (loadingPredictionClaims.value[pred.id]) return
+
+  loadingPredictionClaims.value[pred.id] = true
+  try {
+    await claimPredictionReward(pred.eventId, pred.id)
+    // Refresh predictions after claim
+    await fetchUserPredictions()
+  } catch (error) {
+    console.error('Failed to claim prediction reward:', error)
+    alert('Failed to claim prediction reward. Please try again.')
+  } finally {
+    loadingPredictionClaims.value[pred.id] = false
+  }
+}
+
 async function handleStatusFilter(status: string) {
   selectedStatus.value = status
   isLoading.value = true
@@ -200,15 +516,15 @@ async function handleStatusFilter(status: string) {
   isLoading.value = false
 }
 
-// Load initial bets
+// Load initial data
 onMounted(async () => {
   isLoading.value = true
   // Force data refresh if backend is ready
   const { isBackendReady } = useApp()
-  const { fetchAllBets } = useBets()
   
   if (isBackendReady.value) {
       await fetchAllBets()
+      await fetchUserPredictions()
   }
   
   await setBetFilters(selectedStatus.value)

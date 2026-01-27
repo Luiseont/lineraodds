@@ -21,6 +21,7 @@ export const appStore = defineStore('app', () => {
     // Queries GraphQL
     const UserBalanceQuery = '{"query":"query{balance}"}'
     const BonusClaimedQuery = '{"query":"query{bonusClaimed}"}'
+    const UserVotesQuery = '{"query":"query{userVotes{id eventId predictionType amount choice claimed}}"}'
     const MintTokensQuery = '{"query":"mutation{requestMint(amount: \\"$AMOUNT\\")}"}'
     const PlaceBetQuery = '{"query":"mutation{placeBet(homeId: \\"$HOME_ID\\", awayId: \\"$AWAY_ID\\", homeName: \\"$HOME_NAME\\", awayName: \\"$AWAY_NAME\\", league: \\"$LEAGUE\\", startTime: $START_TIME, odd: $ODD, selection: \\"$SELECTION\\", bid: \\"$BID\\", eventId: \\"$EVENT_ID\\")}"}'
     const ClaimRewardQuery = '{"query":"mutation{claimReward(eventId: \\"$EVENT_ID\\")}"}'
@@ -358,6 +359,7 @@ export const appStore = defineStore('app', () => {
             return false
         }
     }
+
 
 
     // Watchers

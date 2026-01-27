@@ -21,6 +21,7 @@ contracts/management/target/
 contracts/management/Cargo.lock
 contracts/usdl/target/
 contracts/usdl/Cargo.lock
+front/.env
 
 oracle/.pnpm-store
 oracle/node_modules

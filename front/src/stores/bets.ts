@@ -18,6 +18,9 @@ export const betsStore = defineStore('bets', () => {
     const totalStaked = ref('0')
     const potentialWinnings = ref('0')
 
+    // User predictions state
+    const allUserPredictions = ref<Array<any>>([]) // All user predictions/votes
+
     // Computed: Apply status filter to all bets
     const filteredBets = computed(() => {
         let filtered = allUserBets.value
@@ -103,6 +106,26 @@ export const betsStore = defineStore('bets', () => {
         }
     }
 
+    async function fetchUserPredictions() {
+        try {
+            // Fetch ALL user predictions/votes
+            const query = JSON.stringify({
+                query: 'query { userVotes { id, eventId, predictionType, amount, choice, claimed } }'
+            })
+
+            console.log('Fetching all user predictions')
+
+            const result = await backend.value.query(query)
+            console.log("User predictions result:", result)
+            const response = JSON.parse(result)
+            console.log("User predictions data:", response.data?.userVotes)
+            allUserPredictions.value = response.data?.userVotes || []
+        } catch (error) {
+            console.error('Error fetching user predictions:', error)
+            allUserPredictions.value = []
+        }
+    }
+
     // Pagination functions - now only update state
     function nextBetsPage() {
         if (hasNextBetsPage.value) {
@@ -123,6 +146,7 @@ export const betsStore = defineStore('bets', () => {
 
     function resetBets() {
         allUserBets.value = []
+        allUserPredictions.value = []
         currentBetsPage.value = 1
         selectedBetStatus.value = undefined
         totalStaked.value = '0'
@@ -133,6 +157,7 @@ export const betsStore = defineStore('bets', () => {
         // State
         userBets,
         allUserBets,
+        allUserPredictions,
         filteredBets,
         currentBetsPage,
         betsPageSize,
@@ -145,6 +170,7 @@ export const betsStore = defineStore('bets', () => {
 
         // Functions
         fetchAllBets,
+        fetchUserPredictions,
         getBetsSummary,
         nextBetsPage,
         previousBetsPage,

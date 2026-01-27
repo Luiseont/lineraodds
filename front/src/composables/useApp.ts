@@ -28,6 +28,9 @@ export function useApp() {
         mintTokens: store.mintTokens,
         placeBet: store.placeBet,
         claimReward: store.claimReward,
+        claimPredictionReward: store.claimPredictionReward,
+        createPrediction: store.createPrediction,
+        placeVote: store.placeVote,
         checkBonusClaimed: store.checkBonusClaimed
     }
 }
