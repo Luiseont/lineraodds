@@ -21,7 +21,6 @@ export const appStore = defineStore('app', () => {
     // Queries GraphQL
     const UserBalanceQuery = '{"query":"query{balance}"}'
     const BonusClaimedQuery = '{"query":"query{bonusClaimed}"}'
-    const UserVotesQuery = '{"query":"query{userVotes{id eventId predictionType amount choice claimed}}"}'
     const MintTokensQuery = '{"query":"mutation{requestMint(amount: \\"$AMOUNT\\")}"}'
     const PlaceBetQuery = '{"query":"mutation{placeBet(homeId: \\"$HOME_ID\\", awayId: \\"$AWAY_ID\\", homeName: \\"$HOME_NAME\\", awayName: \\"$AWAY_NAME\\", league: \\"$LEAGUE\\", startTime: $START_TIME, odd: $ODD, selection: \\"$SELECTION\\", bid: \\"$BID\\", eventId: \\"$EVENT_ID\\")}"}'
     const ClaimRewardQuery = '{"query":"mutation{claimReward(eventId: \\"$EVENT_ID\\")}"}'
@@ -32,6 +31,11 @@ export const appStore = defineStore('app', () => {
 
     // Computed
     const isBackendReady = computed(() => backendReady.value)
+    const formattedWalletBalance = computed(() => {
+        // Truncate to 2 decimals without rounding
+        const value = Number(walletBalance.value)
+        return (Math.floor(value * 100) / 100).toFixed(2)
+    })
 
     // Helper functions for block height tracking
     function getBlockHeights(): Record<string, { highestHeight: number; lastUpdated: string }> {
@@ -391,6 +395,7 @@ export const appStore = defineStore('app', () => {
         backendReady,
         isBackendReady,
         walletBalance,
+        formattedWalletBalance,
         events,
         AppID,
         ChainID,

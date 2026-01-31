@@ -102,7 +102,7 @@
               <!-- Balance & Error -->
               <div class="flex justify-between items-center mt-2">
                 <span class="text-xs text-gray-500">
-                  Balance: <span class="font-medium text-gray-700">{{ walletBalance }} USDL</span>
+                  Balance: <span class="font-medium text-gray-700">{{ Number(walletBalance).toFixed(2) }} USDL</span>
                 </span>
                 <span v-if="error" class="text-xs text-red-500 font-medium">{{ error }}</span>
               </div>

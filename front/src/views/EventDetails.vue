@@ -412,7 +412,7 @@
            <div>
              <div class="flex justify-between mb-2">
                 <label class="block text-sm font-semibold text-gray-700">Wager Amount</label>
-                <span class="text-xs text-gray-500 font-medium">Balance: {{ walletBalance }} USDL</span>
+                <span class="text-xs text-gray-500 font-medium">Balance: {{ formattedWalletBalance }} USDL</span>
              </div>
              <div class="relative">
                 <input 
@@ -500,7 +500,7 @@
           <!-- Available Balance -->
           <div class="bg-gray-50 p-3 rounded-lg">
             <p class="text-xs text-gray-600">Available Balance</p>
-            <p class="text-lg font-bold text-gray-900">{{ walletBalance }} USDL</p>
+            <p class="text-lg font-bold text-gray-900">{{ formattedWalletBalance }} USDL</p>
           </div>
 
           <div>
@@ -516,7 +516,7 @@
               autofocus
             />
             <p v-if="voteData.amount > walletBalance" class="text-xs text-red-500 mt-1">
-              Insufficient balance. Maximum: {{ walletBalance }} USDL
+              Insufficient balance. Maximum: {{ formattedWalletBalance }} USDL
             </p>
           </div>
 
@@ -563,7 +563,7 @@ import WalletSelectorModal from '@/components/WalletSelectorModal.vue';
 
 const route = useRoute();
 const { allEvents, getEvents } = useEvents();
-const { walletBalance } = storeToRefs(appStore());
+const { walletBalance, formattedWalletBalance } = storeToRefs(appStore());
 const { connected, chainId } = useWallet();
 const WsUrl = import.meta.env.VITE_APP_SERVICE == '' ? 'http://localhost:8081' : import.meta.env.VITE_APP_SERVICE;
 

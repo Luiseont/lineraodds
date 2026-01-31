@@ -8,6 +8,7 @@ export function useApp() {
         backendReady,
         isBackendReady,
         walletBalance,
+        formattedWalletBalance,
         events,
         AppID,
         ChainID
@@ -19,6 +20,7 @@ export function useApp() {
         backendReady,
         isBackendReady,
         walletBalance,
+        formattedWalletBalance,
         events,
         AppID,
         ChainID,
