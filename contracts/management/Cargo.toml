@@ -7,14 +7,14 @@ edition = "2021"
 async-graphql = { version = "=7.0.17", default-features = false }
 async-graphql-value = "=7.0.17"
 async-graphql-derive = { version = "=7.0.17", default-features = false }
-linera-sdk = "0.15.7"
+linera-sdk = "0.15.11"
 futures = { version = "0.3 "}
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
 usdl = { path = "../usdl" }
 
 [dev-dependencies]
-linera-sdk = { version = "0.15.7", features = ["test", "wasmer"] }
+linera-sdk = { version = "0.15.11", features = ["test", "wasmer"] }
 tokio = { version = "1.40", features = ["rt", "sync"] }
 
 [[bin]]
