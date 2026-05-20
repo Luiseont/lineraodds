@@ -1,4 +1,0 @@
-'use client'
-var version = "4.48.2";
-
-export { version };

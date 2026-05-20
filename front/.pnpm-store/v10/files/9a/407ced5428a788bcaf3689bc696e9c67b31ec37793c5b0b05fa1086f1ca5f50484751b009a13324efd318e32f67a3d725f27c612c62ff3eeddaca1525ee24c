@@ -1,8 +1,0 @@
-import { type DynamicClient } from '@dynamic-labs-sdk/client';
-import type { WaasEvmWalletProvider } from '../../WaasEvmWalletProvider.types';
-type CreateWalletProviderForWaasEvmParams = {
-    dynamicClient: DynamicClient;
-};
-export declare const createWalletProviderForWaasEvm: ({ dynamicClient, }: CreateWalletProviderForWaasEvmParams) => WaasEvmWalletProvider;
-export {};
-//# sourceMappingURL=createWalletProviderForWaasEvm.d.ts.map

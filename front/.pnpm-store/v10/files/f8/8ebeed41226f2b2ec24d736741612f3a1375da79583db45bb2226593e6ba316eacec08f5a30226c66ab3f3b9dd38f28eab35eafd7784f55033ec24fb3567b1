@@ -1,3 +1,0 @@
-export declare const WAAS_EVM_EXTENSION_KEY = "waasEvm";
-export declare const addWaasEvmExtension: (client?: any) => void;
-//# sourceMappingURL=addWaasEvmExtension.d.ts.map

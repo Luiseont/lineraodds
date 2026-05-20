@@ -1,4 +1,0 @@
-import type { WaasWalletProvider } from '@dynamic-labs-sdk/client/waas/core';
-import type { EvmWalletProvider } from '../EvmWalletProvider';
-export type WaasEvmWalletProvider = WaasWalletProvider & EvmWalletProvider;
-//# sourceMappingURL=WaasEvmWalletProvider.types.d.ts.map

@@ -1,2 +1,0 @@
-export { default as Signer } from './signer';
-//# sourceMappingURL=index.d.ts.map

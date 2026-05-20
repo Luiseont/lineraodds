@@ -1,7 +1,0 @@
-import type { Chain } from '../../chain';
-type CreateWaasWalletAccountParams = {
-    chain: Chain;
-};
-export declare const createWaasWalletAccount: ({ chain }: CreateWaasWalletAccountParams, client?: import("../../../exports").DynamicClient) => Promise<void>;
-export {};
-//# sourceMappingURL=createWaasWalletAccount.d.ts.map

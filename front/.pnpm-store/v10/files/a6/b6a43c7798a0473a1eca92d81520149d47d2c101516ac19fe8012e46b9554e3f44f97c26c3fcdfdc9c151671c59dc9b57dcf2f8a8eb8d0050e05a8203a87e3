@@ -1,1 +1,0 @@
-{"version":3,"file":"WaasEvmWalletProvider.types.d.ts","sourceRoot":"","sources":["../../../../../packages/evm/src/waas/WaasEvmWalletProvider.types.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,kBAAkB,EAAE,MAAM,oCAAoC,CAAC;AAE7E,OAAO,KAAK,EAAE,iBAAiB,EAAE,MAAM,sBAAsB,CAAC;AAE9D,MAAM,MAAM,qBAAqB,GAAG,kBAAkB,GAAG,iBAAiB,CAAC"}

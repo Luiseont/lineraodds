@@ -1,8 +1,0 @@
-import type { WalletAccount } from '../../walletAccount';
-type SwitchActiveNetworkParams = {
-    networkId: string;
-    walletAccount: WalletAccount;
-};
-export declare const switchActiveNetwork: ({ networkId, walletAccount }: SwitchActiveNetworkParams, client?: import("../../../../exports").DynamicClient) => Promise<void>;
-export {};
-//# sourceMappingURL=switchActiveNetwork.d.ts.map

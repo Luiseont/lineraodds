@@ -1,2 +1,0 @@
-export declare const networkRegistrySchema: import("../../../../../services/storage/storage.types").StorageKeySchema<Record<string, string>>;
-//# sourceMappingURL=schema.d.ts.map

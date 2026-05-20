@@ -1,9 +1,0 @@
-/**
- * Expiration time of the project settings in milliseconds.
- */
-export declare const PROJECT_SETTINGS_EXPIRATION_TIME: number;
-/**
- * Updates the project settings in the core state to the latest values.
- */
-export declare const fetchProjectSettings: (client?: import("../../../exports").DynamicClient) => Promise<import("@dynamic-labs/sdk-api-core").ProjectSettings | null>;
-//# sourceMappingURL=fetchProjectSettings.d.ts.map

@@ -1,8 +1,0 @@
-import type { WalletAccount } from '../../wallets/walletAccount';
-type RefreshWaasWalletAccountSharesParams = {
-    password?: string;
-    walletAccount: WalletAccount;
-};
-export declare const refreshWaasWalletAccountShares: ({ walletAccount, password }: RefreshWaasWalletAccountSharesParams, client?: import("../../../exports").DynamicClient) => Promise<void>;
-export {};
-//# sourceMappingURL=refreshWaasWalletAccountShares.d.ts.map

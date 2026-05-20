@@ -1,2 +1,0 @@
-export declare const isDynamicWaasEnabled: (client?: import("../../../exports").DynamicClient) => boolean;
-//# sourceMappingURL=isDynamicWaasEnabled.d.ts.map

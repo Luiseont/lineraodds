@@ -1,7 +1,0 @@
-import type { WalletAccount } from '../../wallets/walletAccount';
-type IsWaasWalletAccountParams = {
-    walletAccount: WalletAccount;
-};
-export declare const isWaasWalletAccount: ({ walletAccount, }: IsWaasWalletAccountParams) => boolean;
-export {};
-//# sourceMappingURL=isWaasWalletAccount.d.ts.map

@@ -1,8 +1,0 @@
-import type { BaseWalletAccount } from '@dynamic-labs-sdk/client/core';
-export type EvmWalletAccount = BaseWalletAccount<'EVM'>;
-declare global {
-    interface WalletAccountMap {
-        EVM: EvmWalletAccount;
-    }
-}
-//# sourceMappingURL=EvmWalletAccount.types.d.ts.map

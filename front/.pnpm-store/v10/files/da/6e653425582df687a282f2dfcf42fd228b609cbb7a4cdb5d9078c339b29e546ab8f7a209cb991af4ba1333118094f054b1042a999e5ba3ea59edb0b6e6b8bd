@@ -1,8 +1,0 @@
-import type { OTPVerification } from '../../otp/otp.types';
-import type { UpdateUserFields } from '../user.types';
-type UpdateUserParams = {
-    userFields: UpdateUserFields;
-};
-export declare const updateUser: ({ userFields }: UpdateUserParams, client?: import("../../../exports").DynamicClient) => Promise<OTPVerification | undefined>;
-export {};
-//# sourceMappingURL=updateUser.d.ts.map

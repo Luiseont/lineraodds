@@ -1,3 +1,0 @@
-import type { EIP6963ProviderDetail } from '../../eip6963.types';
-export declare const listenForEIP6963ProviderAnnouncement: (onProvider: (providerDetail: EIP6963ProviderDetail) => void, globalWindow?: Window & typeof globalThis) => VoidFunction;
-//# sourceMappingURL=listenForEIP6963ProviderAnnouncement.d.ts.map

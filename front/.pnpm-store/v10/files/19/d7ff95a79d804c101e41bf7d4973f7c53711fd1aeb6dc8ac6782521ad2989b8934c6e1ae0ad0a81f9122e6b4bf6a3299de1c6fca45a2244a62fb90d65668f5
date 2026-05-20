@@ -1,2 +1,0 @@
-export declare const registerPasskey: (client?: import("../../../../exports").DynamicClient) => Promise<import("@dynamic-labs/sdk-api-core").VerifyResponse>;
-//# sourceMappingURL=registerPasskey.d.ts.map

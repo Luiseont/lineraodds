@@ -1,5 +1,0 @@
-/**
- * Creates new MFA recovery codes for the user.
- */
-export declare const createNewMfaRecoveryCodes: (client?: import("../../../exports").DynamicClient) => Promise<import("@dynamic-labs/sdk-api-core").MFARegenRecoveryCodesResponse>;
-//# sourceMappingURL=createNewMfaRecoveryCodes.d.ts.map

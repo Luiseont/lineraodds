@@ -1,2 +1,0 @@
-export { createEvmNetworkProvider } from './createEvmNetworkProvider';
-//# sourceMappingURL=index.d.ts.map

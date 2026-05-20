@@ -1,2 +1,0 @@
-export declare const registerTotpMfaDevice: (client?: import("../../../exports").DynamicClient) => Promise<import("@dynamic-labs/sdk-api-core").MFARegisterTotpDeviceGetResponse>;
-//# sourceMappingURL=registerTotpMfaDevice.d.ts.map

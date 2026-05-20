@@ -1,1 +1,0 @@
-{"version":3,"file":"mapNetworkProviderToChain.d.ts","sourceRoot":"","sources":["../../../../../../../packages/evm/src/viem/utils/mapNetworkProviderToChain/mapNetworkProviderToChain.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,eAAe,EAAE,MAAM,0BAA0B,CAAC;AAChE,OAAO,KAAK,EAAE,KAAK,EAAE,MAAM,MAAM,CAAC;AAElC;;GAEG;AACH,eAAO,MAAM,yBAAyB,oBACnB,eAAe,KAC/B,KAeD,CAAC"}

@@ -1,1 +1,0 @@
-{"version":3,"file":"registerEvmNetworkProviderBuilder.d.ts","sourceRoot":"","sources":["../../../../../packages/evm/src/registerEvmNetworkProviderBuilder/registerEvmNetworkProviderBuilder.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,KAAK,aAAa,EAAE,MAAM,0BAA0B,CAAC;AAK9D,eAAO,MAAM,iCAAiC,WACpC,aAAa,KACpB,IAeF,CAAC"}

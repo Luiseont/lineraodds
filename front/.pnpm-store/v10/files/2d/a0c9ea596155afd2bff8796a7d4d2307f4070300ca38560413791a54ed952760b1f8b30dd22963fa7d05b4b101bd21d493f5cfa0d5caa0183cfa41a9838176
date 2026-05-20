@@ -1,9 +1,0 @@
-import type { WalletAccount } from '../walletAccount';
-/**
- * Retrieves all wallet accounts associated with the current user from the Dynamic client.
- *
- * @param client - The Dynamic client instance
- * @returns An array of wallet accounts
- */
-export declare const getWalletAccounts: (client?: import("../../../exports").DynamicClient) => WalletAccount[];
-//# sourceMappingURL=getWalletAccounts.d.ts.map

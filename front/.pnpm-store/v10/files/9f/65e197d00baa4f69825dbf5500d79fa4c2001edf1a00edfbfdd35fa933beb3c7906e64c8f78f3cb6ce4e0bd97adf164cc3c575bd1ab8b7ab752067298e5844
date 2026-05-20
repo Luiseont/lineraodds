@@ -1,2 +1,0 @@
-export { fetchEvmBalance } from './fetchEvmBalance';
-//# sourceMappingURL=index.d.ts.map

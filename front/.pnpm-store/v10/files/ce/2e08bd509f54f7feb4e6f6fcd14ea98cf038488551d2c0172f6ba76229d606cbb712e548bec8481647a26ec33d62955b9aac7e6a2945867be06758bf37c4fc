@@ -1,8 +1,0 @@
-import type { BaseNetworkProvider } from '@dynamic-labs-sdk/client/core';
-export type EvmNetworkProvider = BaseNetworkProvider<'EVM'>;
-declare global {
-    interface NetworkProviderMap {
-        EVM: EvmNetworkProvider;
-    }
-}
-//# sourceMappingURL=EvmNetworkProvider.d.ts.map

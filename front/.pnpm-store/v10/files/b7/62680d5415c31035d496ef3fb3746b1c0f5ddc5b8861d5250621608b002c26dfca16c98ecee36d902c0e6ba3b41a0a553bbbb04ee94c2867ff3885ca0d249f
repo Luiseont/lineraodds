@@ -1,9 +1,0 @@
-import type { WalletAccount } from '../../walletAccount';
-type GetBalanceParams = {
-    walletAccount: WalletAccount;
-};
-export declare const getBalance: ({ walletAccount }: GetBalanceParams, client?: import("../../../../exports").DynamicClient) => Promise<{
-    balance: string | null;
-}>;
-export {};
-//# sourceMappingURL=getBalance.d.ts.map

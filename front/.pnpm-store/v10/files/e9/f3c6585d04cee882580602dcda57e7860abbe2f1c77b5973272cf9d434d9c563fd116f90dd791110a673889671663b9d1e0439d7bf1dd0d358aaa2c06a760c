@@ -1,8 +1,0 @@
-import type { Logger } from '@dynamic-labs-sdk/client/core';
-import type { WaasEvmWalletProvider } from '../../../WaasEvmWalletProvider.types';
-type GetActiveNetworkId = (args: {
-    logger: Logger;
-}) => ReturnType<WaasEvmWalletProvider['getActiveNetworkId']>;
-export declare const getActiveNetworkId: GetActiveNetworkId;
-export {};
-//# sourceMappingURL=getActiveNetworkId.d.ts.map

@@ -1,3 +1,0 @@
-export type { StorageKeySchema } from '../storage.types';
-export { createWebStorage } from './createWebStorage';
-//# sourceMappingURL=index.d.ts.map

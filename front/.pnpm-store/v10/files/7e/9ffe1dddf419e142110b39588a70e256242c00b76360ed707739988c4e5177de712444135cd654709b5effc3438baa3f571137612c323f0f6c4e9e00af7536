@@ -1,8 +1,0 @@
-import type { WalletAccount } from '../../wallets/walletAccount';
-type DelegateWaasKeySharesParams = {
-    password?: string;
-    walletAccount: WalletAccount;
-};
-export declare const delegateWaasKeyShares: ({ password, walletAccount }: DelegateWaasKeySharesParams, client?: import("../../../exports").DynamicClient) => Promise<void>;
-export {};
-//# sourceMappingURL=delegateWaasKeyShares.d.ts.map

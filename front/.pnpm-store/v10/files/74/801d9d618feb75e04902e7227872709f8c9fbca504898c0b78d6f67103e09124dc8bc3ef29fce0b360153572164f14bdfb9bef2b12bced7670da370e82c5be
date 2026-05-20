@@ -1,2 +1,0 @@
-export { addEIP6963Extension } from './addEIP6963Extension';
-//# sourceMappingURL=index.d.ts.map

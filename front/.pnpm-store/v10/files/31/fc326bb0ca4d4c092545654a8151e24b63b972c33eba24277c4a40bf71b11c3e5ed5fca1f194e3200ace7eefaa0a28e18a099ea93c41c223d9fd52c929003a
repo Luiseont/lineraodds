@@ -1,4 +1,0 @@
-import type { DynamicClient } from '../../../client/types/DynamicClient';
-import type { Chain } from '../../chain/chain.types';
-export declare const getChainsMissingAutoCreatedWallet: (client: DynamicClient) => Chain[];
-//# sourceMappingURL=getChainsMissingAutoCreatedWallet.d.ts.map

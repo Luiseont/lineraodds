@@ -1,1 +1,0 @@
-{"version":3,"file":"getChainIdForAccountVerification.d.ts","sourceRoot":"","sources":["../../../../../../../../packages/client/src/modules/wallets/utils/getChainIdForAccountVerification/getChainIdForAccountVerification.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,cAAc,EAAE,MAAM,sDAAsD,CAAC;AAE3F,eAAO,MAAM,gCAAgC,wBAE1C;IACD,cAAc,EAAE,cAAc,CAAC;CAChC,oBAyBA,CAAC"}

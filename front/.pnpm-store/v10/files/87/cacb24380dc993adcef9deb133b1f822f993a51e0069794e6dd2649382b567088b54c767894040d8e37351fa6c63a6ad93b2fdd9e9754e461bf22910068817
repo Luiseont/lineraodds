@@ -1,9 +1,0 @@
-import type { WalletAccount } from '../../wallets/walletAccount';
-type ExportWaasPrivateKeyParams = {
-    displayContainer: HTMLIFrameElement;
-    password?: string;
-    walletAccount: WalletAccount;
-};
-export declare const exportWaasPrivateKey: ({ displayContainer, password, walletAccount }: ExportWaasPrivateKeyParams, client?: import("../../../exports").DynamicClient) => Promise<void>;
-export {};
-//# sourceMappingURL=exportWaasPrivateKey.d.ts.map

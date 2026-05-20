@@ -1,9 +1,0 @@
-import type { WalletAccount } from '../../wallets/walletAccount';
-type UpdateWaasPasswordParams = {
-    currentPassword: string;
-    newPassword: string;
-    walletAccount: WalletAccount;
-};
-export declare const updateWaasPassword: ({ currentPassword, newPassword, walletAccount }: UpdateWaasPasswordParams, client?: import("../../../exports").DynamicClient) => Promise<void>;
-export {};
-//# sourceMappingURL=updateWaasPassword.d.ts.map

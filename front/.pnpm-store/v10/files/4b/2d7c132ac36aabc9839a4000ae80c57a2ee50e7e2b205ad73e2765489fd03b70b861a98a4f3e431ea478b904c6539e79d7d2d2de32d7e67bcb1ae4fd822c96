@@ -1,8 +1,0 @@
-import type { User } from '../../../../user/user.types';
-type CompleteSocialRedirectSignInParams = {
-    url: URL;
-};
-/** Completes the social redirect sign in flow. */
-export declare const completeSocialRedirectSignIn: ({ url }: CompleteSocialRedirectSignInParams, client?: import("../../../../../exports").DynamicClient) => Promise<User | null>;
-export {};
-//# sourceMappingURL=completeSocialRedirectSignIn.d.ts.map

@@ -1,1 +1,0 @@
-{"version":3,"file":"listenForEIP6963ProviderAnnouncement.d.ts","sourceRoot":"","sources":["../../../../../../../packages/evm/src/eip6963/utils/listenForEIP6963ProviderAnnouncement/listenForEIP6963ProviderAnnouncement.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,qBAAqB,EAAE,MAAM,qBAAqB,CAAC;AAGjE,eAAO,MAAM,oCAAoC,eACnC,CAAC,cAAc,EAAE,qBAAqB,KAAK,IAAI,gDAS1D,YAcF,CAAC"}
