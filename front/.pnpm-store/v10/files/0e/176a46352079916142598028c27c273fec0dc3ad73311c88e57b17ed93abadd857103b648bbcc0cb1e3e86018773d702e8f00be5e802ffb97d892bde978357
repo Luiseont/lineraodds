@@ -1,0 +1,130 @@
+import { assertPackageVersion } from '@dynamic-labs-sdk/assert-package-version';
+import { g as getCore, C as CHAINS_INFO_MAP, a as assertDefined, n as name, v as version } from './constants.esm.js';
+import { a as DEFAULT_WAAS_BASE_MPC_RELAY_API_URL, b as DEFAULT_WAAS_BASE_API_URL } from './constants.esm2.js';
+export { D as DYNAMIC_WAAS_METADATA } from './constants.esm2.js';
+import { DynamicWalletClient, ThresholdSignatureScheme } from '@dynamic-labs-wallet/browser-wallet-client';
+import { i as isCookieEnabled } from './bufferToHex.esm.js';
+import { M as MethodNotImplementedError, g as getSignedSessionId } from './getSignedSessionId.esm.js';
+import '@dynamic-labs/sdk-api-core';
+import 'buffer';
+
+const createWaasClient = ({ chainName }, client)=>{
+    var _client_projectSettings_sdk_waas, _client_projectSettings;
+    const core = getCore(client);
+    return new DynamicWalletClient({
+        authMode: isCookieEnabled(client) ? 'cookie' : 'header',
+        authToken: client.token || '',
+        baseApiUrl: (core.apiBaseUrl || DEFAULT_WAAS_BASE_API_URL).replace('/api/v0', ''),
+        baseMPCRelayApiUrl: ((_client_projectSettings = client.projectSettings) == null ? void 0 : (_client_projectSettings_sdk_waas = _client_projectSettings.sdk.waas) == null ? void 0 : _client_projectSettings_sdk_waas.relayUrl) || DEFAULT_WAAS_BASE_MPC_RELAY_API_URL,
+        chainName,
+        environmentId: core.environmentId
+    });
+};
+
+const getWaasChainNameFromChain = (chain)=>{
+    return CHAINS_INFO_MAP[chain].waasChainNameOverride || chain;
+};
+
+const createWaasProvider = ({ sdkClient, chain })=>{
+    const logger = getCore(sdkClient).logger;
+    let _waasClient;
+    // because the waas client needs the authToken to be set, we can only create it
+    // the first time it's needed, which is after the user has logged in
+    const getWaasClient = async ()=>{
+        if (!_waasClient) {
+            _waasClient = createWaasClient({
+                chainName: getWaasChainNameFromChain(chain)
+            }, sdkClient);
+            await _waasClient.initialize();
+        }
+        return _waasClient;
+    };
+    const backupKeySharesToGoogleDrive = async (args)=>{
+        logger.warn('backupKeySharesToGoogleDrive is not implemented', {
+            args
+        });
+        throw new MethodNotImplementedError('backupKeySharesToGoogleDrive');
+    };
+    const createWalletAccount = async (args = {
+        thresholdSignatureScheme: ThresholdSignatureScheme.TWO_OF_TWO
+    })=>{
+        logger.debug('[createWaasProvider] createWalletAccount', {
+            args
+        });
+        const { signature: signedSessionId } = await getSignedSessionId(sdkClient);
+        assertDefined(signedSessionId, 'Signed session ID is required');
+        const waasClient = await getWaasClient();
+        var _sdkClient_token;
+        const waasWallet = await waasClient.createWalletAccount({
+            authToken: (_sdkClient_token = sdkClient.token) != null ? _sdkClient_token : undefined,
+            signedSessionId,
+            thresholdSignatureScheme: args.thresholdSignatureScheme
+        });
+        return waasWallet;
+    };
+    const delegateKeyShares = async (args)=>{
+        logger.warn('delegateKeyShares is not implemented', {
+            args
+        });
+        throw new MethodNotImplementedError('delegateKeyShares');
+    };
+    const exportClientKeyshares = async (args)=>{
+        logger.warn('exportClientKeyshares is not implemented', {
+            args
+        });
+        throw new MethodNotImplementedError('exportClientKeyshares');
+    };
+    const exportPrivateKey = async (args)=>{
+        logger.warn('exportPrivateKey is not implemented', {
+            args
+        });
+        throw new MethodNotImplementedError('exportPrivateKey');
+    };
+    const importPrivateKey = async (args)=>{
+        logger.warn('importPrivateKey is not implemented', {
+            args
+        });
+        throw new MethodNotImplementedError('importPrivateKey');
+    };
+    const refreshWalletAccountShares = async (args)=>{
+        logger.warn('refreshWalletAccountShares is not implemented', {
+            args
+        });
+        throw new MethodNotImplementedError('refreshWalletAccountShares');
+    };
+    const signMessageWithContext = async (args)=>{
+        logger.warn('signMessageWithContext is not implemented', {
+            args
+        });
+        throw new MethodNotImplementedError('signMessageWithContext');
+    };
+    const signRawMessage = async (args)=>{
+        logger.warn('signRawMessage is not implemented', {
+            args
+        });
+        throw new MethodNotImplementedError('signRawMessage');
+    };
+    const updatePassword = async (args)=>{
+        logger.warn('updatePassword is not implemented', {
+            args
+        });
+        throw new MethodNotImplementedError('updatePassword');
+    };
+    return {
+        backupKeySharesToGoogleDrive,
+        createWalletAccount,
+        delegateKeyShares,
+        exportClientKeyshares,
+        exportPrivateKey,
+        getWaasClient,
+        importPrivateKey,
+        refreshWalletAccountShares,
+        signMessageWithContext,
+        signRawMessage,
+        updatePassword
+    };
+};
+
+assertPackageVersion(name, version);
+
+export { createWaasClient, createWaasProvider, getWaasChainNameFromChain };

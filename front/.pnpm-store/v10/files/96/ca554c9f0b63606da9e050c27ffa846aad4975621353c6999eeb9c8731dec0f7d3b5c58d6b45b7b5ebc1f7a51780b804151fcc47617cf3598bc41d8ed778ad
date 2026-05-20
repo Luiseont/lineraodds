@@ -1,0 +1,2 @@
+export { createWalletProviderForWaasEvm } from './createWalletProviderForWaasEvm';
+//# sourceMappingURL=index.d.ts.map

@@ -1,0 +1,38 @@
+'use strict';
+
+var assertPackageVersion = require('@dynamic-labs-sdk/assert-package-version');
+var _extends = require('./_extends.cjs.js');
+var viem = require('viem');
+
+/**
+ * Created a viem Chain object from a NetworkProvider object.
+ */ const mapNetworkProviderToChain = (networkProvider)=>{
+    var _networkProvider_blockExplorerUrls;
+    return {
+        blockExplorers: ((_networkProvider_blockExplorerUrls = networkProvider.blockExplorerUrls) == null ? void 0 : _networkProvider_blockExplorerUrls[0]) ? {
+            default: {
+                name: networkProvider.blockExplorerUrls[0],
+                url: networkProvider.blockExplorerUrls[0]
+            }
+        } : undefined,
+        id: Number(networkProvider.networkId),
+        name: networkProvider.displayName,
+        nativeCurrency: networkProvider.nativeCurrency,
+        rpcUrls: {
+            default: {
+                http: networkProvider.rpcUrls.http
+            }
+        }
+    };
+};
+
+/**
+ * Creates a viem PublicClient from a NetworkProvider object.
+ */ const createPublicClientFromNetworkProvider = ({ networkProvider, publicClientConfig = {}, httpTransportConfig = {} })=>viem.createPublicClient(_extends._extends({
+        chain: mapNetworkProviderToChain(networkProvider),
+        transport: viem.http(networkProvider.rpcUrls.http[0], httpTransportConfig)
+    }, publicClientConfig));
+
+assertPackageVersion.assertPackageVersion(_extends.name, _extends.version);
+
+exports.createPublicClientFromNetworkProvider = createPublicClientFromNetworkProvider;

@@ -2,8 +2,8 @@
 
 set -eu
 
-# Si necesitas resetear la wallet, elimina manualmente: rm -rf /root/.config/linera
-
+# Cargar funciones comunes
+source /common/init.bash
 
 # Configuración para usar Linera Testnet
 export VITE_LINERA_FAUCET_URL=https://faucet.testnet-conway.linera.net
@@ -15,49 +15,11 @@ if [[ ! -d "$LINERA_TMP_DIR" ]]; then
   exit 1
 fi
 
-# Build and publish your backend
+# Inicializar wallet de Linera si es necesario
+init_linera_wallet "$VITE_LINERA_FAUCET_URL"
 
-# Verificar y generar wallet de Linera si es necesario
-LINERA_CONFIG_DIR="$HOME/.config/linera"
-WALLET_FILE="$LINERA_CONFIG_DIR/wallet.json"
-
-echo "Verificando configuración de Linera en: $LINERA_CONFIG_DIR"
-
-# Verificar si el directorio existe y contiene archivos
-if [[ -d "$LINERA_CONFIG_DIR" ]] && [[ -n "$(ls -A "$LINERA_CONFIG_DIR" 2>/dev/null)" ]]; then
-  echo "Wallet de Linera ya existe, reutilizando configuración existente"
-  
-  # Verificar que el archivo wallet.json existe
-  if [[ -f "$WALLET_FILE" ]]; then
-    echo "Archivo wallet.json encontrado"
-  else
-    echo "Advertencia: directorio existe pero falta wallet.json"
-  fi
-else
-  echo "Directorio vacío o inexistente, inicializando nueva wallet de Linera..."
-  
-  # Crear directorio si no existe
-  mkdir -p "$LINERA_CONFIG_DIR"
-  
-  # Inicializar wallet con el faucet
-  linera wallet init --faucet "$VITE_LINERA_FAUCET_URL"
-  linera wallet request-chain --faucet "$VITE_LINERA_FAUCET_URL"
-  
-  if [[ $? -eq 0 ]]; then
-    echo "Wallet de Linera inicializada exitosamente"
-  else
-    echo "Error al inicializar wallet de Linera"
-    exit 1
-  fi
-fi
-
-# Obtener el Chain ID principal (primera cadena DEFAULT)
-export VITE_MAIN_CHAIN_ID=$(linera wallet show 2>/dev/null | grep "Chain ID:" | grep "DEFAULT" | head -n 1 | awk '{print $3}')
-
-# Si no se encontró, intentar obtener cualquier Chain ID
-if [[ -z "$VITE_MAIN_CHAIN_ID" ]]; then
-  export VITE_MAIN_CHAIN_ID=$(linera wallet show 2>/dev/null | grep "Chain ID:" | head -n 1 | awk '{print $3}')
-fi
+# Obtener el Chain ID principal
+export VITE_MAIN_CHAIN_ID=$(get_chain_id)
 
 # Obtener el Owner principal
 export VITE_MAIN_OWNER=$(linera wallet show 2>/dev/null | grep "Owner:" | head -n 1 | awk '{print $2}')
@@ -72,8 +34,8 @@ echo "Owner principal: $VITE_MAIN_OWNER"
 cd contracts/management
 
 # Archivo para guardar el APP_ID persistente
-APP_ID_FILE="/root/.config/linera/app_id.txt"
-HASH_FILE="/root/.config/linera/contract_hash.txt"
+APP_ID_FILE="$HOME/.config/linera/app_id.txt"
+HASH_FILE="$HOME/.config/linera/contract_hash.txt"
 
 # Calcular hash del código del contrato
 CURRENT_HASH=$(find src -type f -name "*.rs" -exec sha256sum {} \; | sort | sha256sum | awk '{print $1}')
@@ -166,7 +128,6 @@ cleanup() {
   rm -rf "$LINERA_TMP_DIR"
 }
 trap cleanup INT TERM EXIT
-
 
 while true; do
   if ! wait -n "$PID_MAIN"; then

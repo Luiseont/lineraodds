@@ -1,0 +1,10 @@
+/**
+ * Get the data of all available wallet providers that can be used to connect
+ */
+export declare const getAvailableWalletProvidersData: (client?: import("../../../exports").DynamicClient) => {
+    chain: import("../../chain").Chain;
+    groupKey: string;
+    key: string;
+    metadata: import("../walletProvider").WalletProviderMetadata;
+}[];
+//# sourceMappingURL=getAvailableWalletProvidersData.d.ts.map

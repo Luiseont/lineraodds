@@ -1,0 +1,11 @@
+import type { Chain } from '../../../chain';
+type GetWalletAccountFromAddressParams = {
+    address: string;
+    chain: Chain;
+};
+/**
+ * Returns the wallet account for a given address and chain.
+ */
+export declare const getWalletAccountFromAddress: ({ address, chain }: GetWalletAccountFromAddressParams, client?: import("../../../../exports").DynamicClient) => import("../../walletAccount").BaseWalletAccount<Chain> | undefined;
+export {};
+//# sourceMappingURL=getWalletAccountFromAddress.d.ts.map

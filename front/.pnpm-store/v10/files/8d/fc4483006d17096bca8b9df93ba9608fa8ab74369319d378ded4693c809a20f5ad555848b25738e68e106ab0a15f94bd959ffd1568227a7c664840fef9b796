@@ -1,0 +1,6 @@
+import type { OTPVerification } from '../otp.types';
+export type SendEmailOTPParams = {
+    email: string;
+};
+export declare const sendEmailOTP: ({ email }: SendEmailOTPParams, client?: import("../../../exports").DynamicClient) => Promise<OTPVerification>;
+//# sourceMappingURL=sendEmailOTP.d.ts.map

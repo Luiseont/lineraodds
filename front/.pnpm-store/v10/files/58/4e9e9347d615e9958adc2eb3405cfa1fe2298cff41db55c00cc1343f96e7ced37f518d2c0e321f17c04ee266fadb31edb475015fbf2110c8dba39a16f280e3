@@ -1,0 +1,2 @@
+export { createWalletProviderFromEIP1193Provider } from './createWalletProviderFromEIP1193Provider';
+//# sourceMappingURL=index.d.ts.map

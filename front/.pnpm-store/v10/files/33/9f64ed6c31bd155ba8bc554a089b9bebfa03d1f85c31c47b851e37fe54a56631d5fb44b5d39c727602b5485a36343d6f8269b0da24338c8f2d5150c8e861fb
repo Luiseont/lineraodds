@@ -1,0 +1,8 @@
+import type { WalletAccount } from '../../wallets/walletAccount';
+type BackupWaasKeySharesToGoogleDriveParams = {
+    password?: string;
+    walletAccount: WalletAccount;
+};
+export declare const backupWaasKeySharesToGoogleDrive: ({ password, walletAccount }: BackupWaasKeySharesToGoogleDriveParams, client?: import("../../../exports").DynamicClient) => Promise<void>;
+export {};
+//# sourceMappingURL=backupWaasKeySharesToGoogleDrive.d.ts.map

@@ -1,0 +1,17 @@
+'use strict';
+
+var getChainFromVerifiedCredentialChain = require('./getChainFromVerifiedCredentialChain.cjs.js');
+
+class NotWaasWalletAccountError extends getChainFromVerifiedCredentialChain.BaseError {
+    constructor({ walletAddress }){
+        super({
+            cause: null,
+            code: 'not_waas_wallet_account_error',
+            docsUrl: null,
+            name: 'NotWaasWalletAccountError',
+            shortMessage: `Wallet account ${walletAddress} is not a Dynamic WaaS wallet account`
+        });
+    }
+}
+
+exports.NotWaasWalletAccountError = NotWaasWalletAccountError;

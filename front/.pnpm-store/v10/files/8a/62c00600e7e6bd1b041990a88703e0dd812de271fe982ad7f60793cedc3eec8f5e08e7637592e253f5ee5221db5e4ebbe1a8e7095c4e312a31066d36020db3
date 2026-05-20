@@ -1,0 +1,7 @@
+import type { Chain } from '../../chain';
+type ShouldAutoCreateWalletForChainParams = {
+    chain: Chain;
+};
+export declare const shouldAutoCreateWalletForChain: ({ chain }: ShouldAutoCreateWalletForChainParams, client?: import("../../../exports").DynamicClient) => boolean;
+export {};
+//# sourceMappingURL=shouldAutoCreateWalletForChain.d.ts.map

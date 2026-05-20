@@ -1,0 +1,209 @@
+var name = "@dynamic-labs-sdk/client";
+var version = "0.0.1-alpha.27";
+var dependencies = {
+    "@dynamic-labs/sdk-api-core": "0.0.762"};
+
+const getCore = (client)=>{
+    // @ts-expect-error - this was hidden from the public API
+    return client.__core;
+};
+
+function _extends() {
+    _extends = Object.assign || function assign(target) {
+        for(var i = 1; i < arguments.length; i++){
+            var source = arguments[i];
+            for(var key in source)if (Object.prototype.hasOwnProperty.call(source, key)) target[key] = source[key];
+        }
+        return target;
+    };
+    return _extends.apply(this, arguments);
+}
+
+const getDetails = ({ details, cause })=>{
+    if (cause instanceof BaseError) {
+        return cause.details;
+    }
+    if (cause == null ? void 0 : cause.message) {
+        return cause.message;
+    }
+    return details;
+};
+/**
+ * Formats the error message with all available information
+ */ const formatMessage = ({ shortMessage, details, docsUrl, metaMessages })=>{
+    return [
+        shortMessage,
+        '',
+        ...metaMessages ? [
+            ...metaMessages,
+            ''
+        ] : [],
+        ...docsUrl ? [
+            `Docs: ${docsUrl}`
+        ] : [],
+        ...details ? [
+            `Details: ${details}`
+        ] : [],
+        `Version: ${version}`,
+        `Timestamp: ${new Date().toISOString()}`
+    ].join('\n');
+};
+/**
+ * Base error class that provides structured error handling with detailed information
+ */ class BaseError extends Error {
+    /**
+   * Walks the cause chain of the error and returns the root error
+   */ walk() {
+        const cause = this.cause;
+        if (cause instanceof BaseError) {
+            return cause.walk();
+        }
+        return cause;
+    }
+    toString() {
+        return this.formattedMessage;
+    }
+    constructor(args){
+        const details = getDetails(args);
+        const formattedMessage = formatMessage(_extends({}, args, {
+            details
+        }));
+        var _args_shortMessage;
+        super((_args_shortMessage = args.shortMessage) != null ? _args_shortMessage : formattedMessage, args.cause ? {
+            cause: args.cause
+        } : undefined);
+        this.name = 'BaseError';
+        this.formattedMessage = formattedMessage;
+        this.details = details;
+        var _args_name;
+        this.name = (_args_name = args.name) != null ? _args_name : this.name;
+        var _args_cause;
+        this.cause = (_args_cause = args.cause) != null ? _args_cause : this.cause;
+        this.code = args.code;
+    }
+}
+
+class ClientNotFoundError extends BaseError {
+    constructor(){
+        super({
+            cause: null,
+            code: 'client_not_found_error',
+            docsUrl: null,
+            name: 'ClientNotFoundError',
+            shortMessage: 'No Dynamic client has been created yet. Make sure you have called createDynamicClient() first.'
+        });
+    }
+}
+
+let defaultClient = null;
+let numOfInitializedClients = 0;
+/**
+ * Returns the DynamicClient instance that was initialized with createDynamicClient.
+ *
+ * If more than one instance of DynamicClient was initialized, you should not use this function.
+ * Instead, you should pass the client instance you stored to the function that needs it.
+ */ const getDefaultClient = ()=>{
+    if (!defaultClient) {
+        throw new ClientNotFoundError();
+    }
+    if (numOfInitializedClients > 1) {
+        const core = getCore(defaultClient);
+        core.logger.debug('Multiple instances of DynamicClient found. If you are only using one client (recommended), make sure you are not calling ' + '"createDynamicClient" multiple times. If you are using multiple clients, make sure you are passing which client to use as ' + 'the last param of all Dynamic functions.');
+    }
+    return defaultClient;
+};
+const setDefaultClient = (client)=>{
+    defaultClient = client;
+    numOfInitializedClients++;
+};
+
+class ValueMustBeDefinedError extends BaseError {
+    constructor(message){
+        super({
+            cause: null,
+            code: 'value_must_be_defined_error',
+            docsUrl: null,
+            name: 'ValueMustBeDefined',
+            shortMessage: message
+        });
+    }
+}
+
+/**
+ * Asserts that a value is not null or undefined, throwing an error if it is.
+ * This function acts as a type guard, narrowing the type to exclude null and undefined.
+ *
+ * @template T - The type of the value being checked
+ * @param value - The value to check for null or undefined
+ * @param message - The error message to throw if the value is null or undefined
+ * @throws Throws an error with the provided message if value is null or undefined
+ * @example
+ * ```typescript
+ * const maybeString: string | null = getValue();
+ * assertDefined(maybeString, 'String value is required');
+ * // maybeString is now typed as string (null is excluded)
+ * ```
+ */ function assertDefined(value, message) {
+    if (value === null || value === undefined) {
+        throw new ValueMustBeDefinedError(message);
+    }
+}
+
+const CHAINS_INFO_MAP = {
+    ALGO: {
+        apiChainName: 'algo',
+        blockchainName: 'Algorand',
+        verifiedCredentialChainName: 'algorand'
+    },
+    BTC: {
+        apiChainName: 'btc',
+        blockchainName: 'Bitcoin',
+        verifiedCredentialChainName: 'bip122'
+    },
+    COSMOS: {
+        apiChainName: 'cosmos',
+        blockchainName: 'Cosmos',
+        verifiedCredentialChainName: 'cosmos'
+    },
+    EVM: {
+        apiChainName: 'evm',
+        // eslint-disable-next-line custom-rules/ban-ethereum-eth-terms
+        blockchainName: 'Ethereum',
+        verifiedCredentialChainName: 'eip155'
+    },
+    FLOW: {
+        apiChainName: 'flow',
+        blockchainName: 'Flow',
+        verifiedCredentialChainName: 'flow'
+    },
+    SOL: {
+        apiChainName: 'solana',
+        blockchainName: 'Solana',
+        verifiedCredentialChainName: 'solana',
+        waasChainNameOverride: 'SVM'
+    },
+    SPARK: {
+        apiChainName: 'spark',
+        blockchainName: 'Spark',
+        verifiedCredentialChainName: 'spark'
+    },
+    STARK: {
+        apiChainName: 'starknet',
+        blockchainName: 'Starknet',
+        verifiedCredentialChainName: 'starknet'
+    },
+    SUI: {
+        apiChainName: 'sui',
+        blockchainName: 'Sui',
+        verifiedCredentialChainName: 'sui'
+    }
+};
+
+const getChainFromVerifiedCredentialChain = (verifiedCredentialChain)=>{
+    const chains = Object.keys(CHAINS_INFO_MAP);
+    const chain = chains.find((chain)=>CHAINS_INFO_MAP[chain].verifiedCredentialChainName === verifiedCredentialChain);
+    assertDefined(chain, `Unknown chain: ${verifiedCredentialChain}`);
+    return chain;
+};
+
+export { BaseError as B, CHAINS_INFO_MAP as C, ValueMustBeDefinedError as V, _extends as _, assertDefined as a, getDefaultClient as b, getCore as c, dependencies as d, ClientNotFoundError as e, getChainFromVerifiedCredentialChain as g, name as n, setDefaultClient as s, version as v };

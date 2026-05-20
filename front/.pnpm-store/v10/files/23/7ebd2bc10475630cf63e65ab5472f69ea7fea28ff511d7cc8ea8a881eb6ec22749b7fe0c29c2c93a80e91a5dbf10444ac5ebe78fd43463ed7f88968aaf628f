@@ -1,0 +1,59 @@
+import type { DynamicWalletClient, ThresholdSignatureScheme } from '@dynamic-labs-wallet/browser-wallet-client';
+import type { SignMessageContext } from '@dynamic-labs/sdk-api-core';
+import type { WalletAccount } from '../wallets/walletAccount';
+import type { WalletProvider } from '../wallets/walletProvider';
+export type WaasProvider = {
+    backupKeySharesToGoogleDrive: (args: {
+        password?: string;
+        walletAccount: WalletAccount;
+    }) => Promise<void>;
+    createWalletAccount(args?: {
+        thresholdSignatureScheme: ThresholdSignatureScheme;
+    }): Promise<{
+        accountAddress: string;
+        publicKeyHex: string;
+        rawPublicKey: string | Uint8Array | undefined;
+    }>;
+    delegateKeyShares: (args: {
+        password?: string;
+        walletAccount: WalletAccount;
+    }) => Promise<void>;
+    exportClientKeyshares: (args: {
+        password?: string;
+        walletAccount: WalletAccount;
+    }) => Promise<void>;
+    exportPrivateKey: (args: {
+        displayContainer?: HTMLIFrameElement;
+        walletAccount: WalletAccount;
+    }) => Promise<void>;
+    getWaasClient: () => Promise<DynamicWalletClient>;
+    importPrivateKey(args: {
+        privateKey: string;
+        thresholdSignatureScheme?: string;
+    }): Promise<void>;
+    refreshWalletAccountShares: (args: {
+        password?: string;
+        walletAccount: WalletAccount;
+    }) => Promise<void>;
+    signMessageWithContext: (args: {
+        context: SignMessageContext;
+        message: string;
+        walletAccount: WalletAccount;
+    }) => Promise<{
+        signature: string;
+    }>;
+    signRawMessage: (args: {
+        message: string;
+        password?: string;
+        walletAccount: WalletAccount;
+    }) => Promise<{
+        signature: string;
+    }>;
+    updatePassword: (args: {
+        existingPassword: string;
+        newPassword: string;
+        walletAccount: WalletAccount;
+    }) => Promise<void>;
+};
+export type WaasWalletProvider = WalletProvider & WaasProvider;
+//# sourceMappingURL=waas.types.d.ts.map

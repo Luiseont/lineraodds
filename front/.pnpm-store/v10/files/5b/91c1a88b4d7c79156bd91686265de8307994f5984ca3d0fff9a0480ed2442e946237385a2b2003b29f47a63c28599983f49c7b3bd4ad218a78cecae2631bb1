@@ -1,0 +1,2 @@
+export declare const refreshUser: (client?: import("../../../exports").DynamicClient) => Promise<void>;
+//# sourceMappingURL=refreshUser.d.ts.map

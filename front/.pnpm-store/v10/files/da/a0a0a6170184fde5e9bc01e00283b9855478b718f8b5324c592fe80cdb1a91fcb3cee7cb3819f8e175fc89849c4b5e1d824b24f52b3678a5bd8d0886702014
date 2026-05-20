@@ -1,0 +1,12 @@
+type ConnectWithWalletProviderParams = {
+    walletProviderKey: string;
+};
+/**
+ * Connects to a wallet provider and returns the connected wallet account.
+ *
+ * Throws the NoAddressFoundError error in case the request to connect was successful but no
+ * address is connected to the dapp.
+ */
+export declare const connectWithWalletProvider: ({ walletProviderKey }: ConnectWithWalletProviderParams, client?: import("../../../exports").DynamicClient) => Promise<import("../walletAccount").BaseWalletAccount<import("../../chain").Chain>>;
+export {};
+//# sourceMappingURL=connectWithWalletProvider.d.ts.map

@@ -1,0 +1,18 @@
+services:
+  service:
+    volumes:
+      - .:/build  # Montar todo el repositorio para desarrollo local
+    environment:
+      - FORCE_REDEPLOY=true
+
+  front:
+    ports:
+      - "5173:5173"
+    entrypoint: ["bash", "/front/start.bash"]
+
+  oracle:
+    volumes:
+      - linera-wallet:/home/appuser/.config/linera
+
+volumes:
+  linera-wallet:

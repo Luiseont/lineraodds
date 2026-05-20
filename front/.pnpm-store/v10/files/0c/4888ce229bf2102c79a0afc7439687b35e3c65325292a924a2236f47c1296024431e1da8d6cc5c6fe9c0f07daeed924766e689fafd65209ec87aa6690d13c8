@@ -1,0 +1,84 @@
+import type { WalletProviderEnum } from '@dynamic-labs/sdk-api-core';
+import type { Chain } from '../../chain';
+import type { NetworkData } from '../networks/networkProvider/networkProvider.types';
+import type { WalletAccount } from '../walletAccount';
+export type WalletProviderMetadata = {
+    displayName: string;
+    icon: string;
+};
+/**
+ *
+ * Represents data for a wallet provider that can be used by customers
+ * to identify and interact with different wallet providers across chains.
+ */
+export type WalletProviderData = {
+    /**
+     * The chain the wallet provider works with
+     */
+    chain: Chain;
+    /**
+     * The key to group wallet providers from different chains together
+     */
+    groupKey: string;
+    /**
+     * The key of the wallet provider
+     */
+    key: string;
+    /**
+     * The metadata of the wallet provider like icon and display name
+     */
+    metadata: WalletProviderMetadata;
+};
+export type WalletProvider = WalletProviderData & {
+    /**
+     * Adds a network to the wallet provider that can later be used to switch to.
+     */
+    addNetwork?: (args: {
+        networkData: NetworkData;
+    }) => Promise<void>;
+    /**
+     * Connects the dapp to the wallet provider
+     * This is optional for some wallet providers like Dynamic Waas
+     */
+    connect?: () => Promise<{
+        addresses: string[];
+    }>;
+    /**
+     * Disconnects the dapp from the wallet provider
+     * This is optional for some wallet providers like Dynamic Waas
+     */
+    disconnect?: () => Promise<void>;
+    /**
+     * Gets the network id of the currently active network for the wallet provider
+     */
+    getActiveNetworkId: () => Promise<{
+        networkId: string;
+    }>;
+    /**
+     * Gets the connected addresses from the wallet provider
+     */
+    getConnectedAddresses: () => Promise<{
+        addresses: string[];
+    }>;
+    /**
+     * Gets the wallet provider type
+     */
+    getWalletProviderType: () => WalletProviderEnum;
+    /**
+     * Signs a message with the wallet account
+     * This is optional, as weirdly some providers don't support this
+     */
+    signMessage?: (args: {
+        message: string;
+        walletAccount?: WalletAccount;
+    }) => Promise<{
+        signature: string;
+    }>;
+    /**
+     * Switches the currently active network provider for the wallet provider
+     */
+    switchActiveNetwork?: (props: {
+        networkId: string;
+    }) => Promise<void>;
+};
+//# sourceMappingURL=walletProvider.types.d.ts.map

@@ -1,0 +1,2 @@
+export { createPublicClientFromNetworkProvider } from './createPublicClientFromNetworkProvider';
+//# sourceMappingURL=index.d.ts.map

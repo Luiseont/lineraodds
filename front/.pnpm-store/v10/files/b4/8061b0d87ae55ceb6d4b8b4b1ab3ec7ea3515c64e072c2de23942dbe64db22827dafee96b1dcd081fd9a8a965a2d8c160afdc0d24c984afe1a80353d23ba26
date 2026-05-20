@@ -1,0 +1,1 @@
+{"version":3,"file":"sendEmailOTP.d.ts","sourceRoot":"","sources":["../../../../../../../packages/client/src/modules/otp/sendEmailOTP/sendEmailOTP.ts"],"names":[],"mappings":"AAGA,OAAO,KAAK,EAAE,eAAe,EAAE,MAAM,cAAc,CAAC;AAEpD,MAAM,MAAM,kBAAkB,GAAG;IAC/B,KAAK,EAAE,MAAM,CAAC;CACf,CAAC;AAEF,eAAO,MAAM,YAAY,cACZ,kBAAkB,wDAE5B,OAAO,CAAC,eAAe,CAYzB,CAAC"}

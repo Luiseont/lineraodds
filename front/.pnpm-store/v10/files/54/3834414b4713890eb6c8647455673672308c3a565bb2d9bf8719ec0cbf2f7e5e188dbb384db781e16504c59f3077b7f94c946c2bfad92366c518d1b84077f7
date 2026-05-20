@@ -1,0 +1,2 @@
+export { addEvmExtension } from './addEvmExtension';
+//# sourceMappingURL=index.d.ts.map

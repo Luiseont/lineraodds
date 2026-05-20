@@ -1,0 +1,2 @@
+export { isEip9693Event } from './isEip9693Event';
+//# sourceMappingURL=index.d.ts.map

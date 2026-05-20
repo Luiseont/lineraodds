@@ -1,0 +1,13 @@
+import type { WalletAccount } from '../../walletAccount';
+type GetActiveNetworkDataParams = {
+    walletAccount: WalletAccount;
+};
+/**
+ * Returns the network data associated with the network ID that is currently
+ * active for this wallet account.
+ *
+ * If no wallet data is found for this network ID, will return undefined.
+ */
+export declare const getActiveNetworkData: ({ walletAccount }: GetActiveNetworkDataParams, client?: import("../../../../exports").DynamicClient) => Promise<import("../networkProvider/networkProvider.types").NetworkData | undefined>;
+export {};
+//# sourceMappingURL=getActiveNetworkData.d.ts.map

@@ -1,9 +1,17 @@
 FROM node:20-slim
 
+# Instalar pnpm globalmente
+RUN npm install -g pnpm
+RUN mkdir -p /shared && chown node:node /shared
+
+USER node
 WORKDIR /front
 
-# Exponer puerto
-EXPOSE 5173
+# Copiar package files para cachear pnpm install
+COPY --chown=node:node package.json pnpm-lock.yaml ./
 
-# Comando por defecto - ejecuta el dev server escuchando en todas las interfaces
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+# Instalar dependencias (esta capa se cachea mientras no cambien los package files)
+RUN pnpm install --frozen-lockfile
+
+# Exponer puerto dev
+EXPOSE 5173

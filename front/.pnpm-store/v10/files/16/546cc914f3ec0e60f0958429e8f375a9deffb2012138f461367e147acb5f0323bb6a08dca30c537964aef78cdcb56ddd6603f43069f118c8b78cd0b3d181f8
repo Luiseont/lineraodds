@@ -1,0 +1,202 @@
+'use strict';
+
+var assertPackageVersion = require('@dynamic-labs-sdk/assert-package-version');
+var getChainFromVerifiedCredentialChain = require('./getChainFromVerifiedCredentialChain.cjs.js');
+var constants = require('./constants.cjs.js');
+var browserWalletClient = require('@dynamic-labs-wallet/browser-wallet-client');
+var isMfaRequiredForAction = require('./isMfaRequiredForAction.cjs.js');
+var sdkApiCore = require('@dynamic-labs/sdk-api-core');
+var InvalidParamError = require('./InvalidParamError.cjs.js');
+var getSignedSessionId = require('./getSignedSessionId.cjs.js');
+require('buffer');
+
+const createWaasClient = ({ chainName }, client)=>{
+    var _client_projectSettings_sdk_waas, _client_projectSettings;
+    const core = getChainFromVerifiedCredentialChain.getCore(client);
+    return new browserWalletClient.DynamicWalletClient({
+        authMode: isMfaRequiredForAction.isCookieEnabled(client) ? 'cookie' : 'header',
+        authToken: client.token || '',
+        baseApiUrl: (core.apiBaseUrl || constants.DEFAULT_WAAS_BASE_API_URL).replace('/api/v0', ''),
+        baseMPCRelayApiUrl: ((_client_projectSettings = client.projectSettings) == null ? void 0 : (_client_projectSettings_sdk_waas = _client_projectSettings.sdk.waas) == null ? void 0 : _client_projectSettings_sdk_waas.relayUrl) || constants.DEFAULT_WAAS_BASE_MPC_RELAY_API_URL,
+        chainName,
+        environmentId: core.environmentId
+    });
+};
+
+const getWaasChainNameFromChain = (chain)=>{
+    return getChainFromVerifiedCredentialChain.CHAINS_INFO_MAP[chain].waasChainNameOverride || chain;
+};
+
+const RAW_MESSAGE_MESSAGE_REQUIRED_LENGTH = 64;
+const createWaasProvider = ({ sdkClient, chain })=>{
+    const logger = getChainFromVerifiedCredentialChain.getCore(sdkClient).logger;
+    let _waasClient;
+    // because the waas client needs the authToken to be set, we can only create it
+    // the first time it's needed, which is after the user has logged in
+    const getWaasClient = async ()=>{
+        if (!_waasClient) {
+            _waasClient = createWaasClient({
+                chainName: getWaasChainNameFromChain(chain)
+            }, sdkClient);
+            await _waasClient.initialize();
+        }
+        return _waasClient;
+    };
+    const backupKeySharesToGoogleDrive = async ({ password, walletAccount })=>{
+        const { signature: signedSessionId } = await getSignedSessionId.getSignedSessionId(sdkClient);
+        const waasClient = await getWaasClient();
+        var _sdkClient_token;
+        return waasClient.backupKeySharesToGoogleDrive({
+            accountAddress: walletAccount.address,
+            authToken: (_sdkClient_token = sdkClient.token) != null ? _sdkClient_token : undefined,
+            password,
+            signedSessionId
+        });
+    };
+    const createWalletAccount = async (args = {
+        thresholdSignatureScheme: browserWalletClient.ThresholdSignatureScheme.TWO_OF_TWO
+    })=>{
+        logger.debug('[createWaasProvider] createWalletAccount', {
+            args
+        });
+        const { signature: signedSessionId } = await getSignedSessionId.getSignedSessionId(sdkClient);
+        const waasClient = await getWaasClient();
+        var _sdkClient_token;
+        const waasWallet = await waasClient.createWalletAccount({
+            authToken: (_sdkClient_token = sdkClient.token) != null ? _sdkClient_token : undefined,
+            signedSessionId,
+            thresholdSignatureScheme: args.thresholdSignatureScheme
+        });
+        return waasWallet;
+    };
+    const delegateKeyShares = async ({ walletAccount, password })=>{
+        const { signature: signedSessionId } = await getSignedSessionId.getSignedSessionId(sdkClient);
+        const waasClient = await getWaasClient();
+        var _sdkClient_token;
+        return waasClient.delegateKeyShares({
+            accountAddress: walletAccount.address,
+            authToken: (_sdkClient_token = sdkClient.token) != null ? _sdkClient_token : undefined,
+            password,
+            signedSessionId
+        });
+    };
+    const exportClientKeyshares = async ({ password, walletAccount })=>{
+        const { signature: signedSessionId } = await getSignedSessionId.getSignedSessionId(sdkClient);
+        const waasClient = await getWaasClient();
+        var _sdkClient_token;
+        await waasClient.exportClientKeyshares({
+            accountAddress: walletAccount.address,
+            authToken: (_sdkClient_token = sdkClient.token) != null ? _sdkClient_token : undefined,
+            password,
+            signedSessionId
+        });
+    };
+    const exportPrivateKey = async ({ displayContainer, walletAccount, password })=>{
+        const { signature: signedSessionId } = await getSignedSessionId.getSignedSessionId(sdkClient);
+        const waasClient = await getWaasClient();
+        const mfaToken = await getSignedSessionId.consumeMfaTokenIfRequiredForAction({
+            mfaAction: sdkApiCore.MFAAction.WalletWaasExport
+        }, sdkClient);
+        var _sdkClient_token;
+        await waasClient.exportPrivateKey({
+            accountAddress: walletAccount.address,
+            authToken: (_sdkClient_token = sdkClient.token) != null ? _sdkClient_token : undefined,
+            displayContainer,
+            mfaToken,
+            password,
+            signedSessionId
+        });
+    };
+    const importPrivateKey = async ({ privateKey, thresholdSignatureScheme = browserWalletClient.ThresholdSignatureScheme.TWO_OF_TWO })=>{
+        const { signature: signedSessionId } = await getSignedSessionId.getSignedSessionId(sdkClient);
+        const walletClient = await getWaasClient();
+        var _sdkClient_token;
+        await walletClient.importPrivateKey({
+            authToken: (_sdkClient_token = sdkClient.token) != null ? _sdkClient_token : undefined,
+            privateKey,
+            signedSessionId,
+            thresholdSignatureScheme
+        });
+    };
+    const refreshWalletAccountShares = async ({ password, walletAccount })=>{
+        const { signature: signedSessionId } = await getSignedSessionId.getSignedSessionId(sdkClient);
+        const walletClient = await getWaasClient();
+        const mfaToken = await getSignedSessionId.consumeMfaTokenIfRequiredForAction({
+            mfaAction: sdkApiCore.MFAAction.WalletWaasRefresh
+        }, sdkClient);
+        var _sdkClient_token;
+        return walletClient.refreshWalletAccountShares({
+            accountAddress: walletAccount.address,
+            authToken: (_sdkClient_token = sdkClient.token) != null ? _sdkClient_token : undefined,
+            mfaToken,
+            password,
+            signedSessionId
+        });
+    };
+    const signRawMessage = async ({ message, password, walletAccount })=>{
+        if (message.length !== RAW_MESSAGE_MESSAGE_REQUIRED_LENGTH) {
+            throw new InvalidParamError.InvalidParamError(`Message must be ${RAW_MESSAGE_MESSAGE_REQUIRED_LENGTH} characters long`);
+        }
+        const { signature: signedSessionId } = await getSignedSessionId.getSignedSessionId(sdkClient);
+        const mfaToken = await getSignedSessionId.consumeMfaTokenIfRequiredForAction({
+            mfaAction: sdkApiCore.MFAAction.WalletWaasSign
+        }, sdkClient);
+        const walletClient = await getWaasClient();
+        var _sdkClient_token;
+        const signature = await walletClient.signRawMessage({
+            accountAddress: walletAccount.address,
+            authToken: (_sdkClient_token = sdkClient.token) != null ? _sdkClient_token : undefined,
+            message,
+            mfaToken,
+            password,
+            signedSessionId
+        });
+        return {
+            signature
+        };
+    };
+    const updatePassword = async ({ walletAccount, currentPassword, newPassword })=>{
+        const { signature: signedSessionId } = await getSignedSessionId.getSignedSessionId(sdkClient);
+        const waasClient = await getWaasClient();
+        var _sdkClient_token;
+        return waasClient.updatePassword({
+            accountAddress: walletAccount.address,
+            authToken: (_sdkClient_token = sdkClient.token) != null ? _sdkClient_token : undefined,
+            existingPassword: currentPassword,
+            newPassword,
+            signedSessionId
+        });
+    };
+    return {
+        backupKeySharesToGoogleDrive,
+        createWalletAccount,
+        delegateKeyShares,
+        exportClientKeyshares,
+        exportPrivateKey,
+        getWaasClient,
+        importPrivateKey,
+        refreshWalletAccountShares,
+        signRawMessage,
+        updatePassword
+    };
+};
+
+const getAllUserWaasAddressesForChain = ({ chain }, client)=>{
+    var _client_user;
+    var _client_user_verifiedCredentials_filter;
+    const waasWalletCredentials = (_client_user_verifiedCredentials_filter = (_client_user = client.user) == null ? void 0 : _client_user.verifiedCredentials.filter((credential)=>{
+        var _credential_walletName;
+        return credential.walletProvider === sdkApiCore.WalletProviderEnum.EmbeddedWallet && ((_credential_walletName = credential.walletName) == null ? void 0 : _credential_walletName.toLowerCase().startsWith(constants.DYNAMIC_WAAS_METADATA.key)) && credential.address && credential.chain && getChainFromVerifiedCredentialChain.getChainFromVerifiedCredentialChain(credential.chain) === chain;
+    })) != null ? _client_user_verifiedCredentials_filter : [];
+    const waasAddresses = waasWalletCredentials.map(// casting because we're already filtering out credentials without an address
+    (credential)=>credential.address);
+    return waasAddresses;
+};
+
+assertPackageVersion.assertPackageVersion(getChainFromVerifiedCredentialChain.name, getChainFromVerifiedCredentialChain.version);
+
+exports.DYNAMIC_WAAS_METADATA = constants.DYNAMIC_WAAS_METADATA;
+exports.createWaasClient = createWaasClient;
+exports.createWaasProvider = createWaasProvider;
+exports.getAllUserWaasAddressesForChain = getAllUserWaasAddressesForChain;
+exports.getWaasChainNameFromChain = getWaasChainNameFromChain;

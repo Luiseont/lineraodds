@@ -1,0 +1,2 @@
+export { listenForEIP6963ProviderAnnouncement } from './listenForEIP6963ProviderAnnouncement';
+//# sourceMappingURL=index.d.ts.map

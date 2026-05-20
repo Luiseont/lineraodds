@@ -1,0 +1,2 @@
+export { createPublicClientFromNetworkProvider } from '../viem/createPublicClientFromNetworkProvider';
+//# sourceMappingURL=viem.d.ts.map

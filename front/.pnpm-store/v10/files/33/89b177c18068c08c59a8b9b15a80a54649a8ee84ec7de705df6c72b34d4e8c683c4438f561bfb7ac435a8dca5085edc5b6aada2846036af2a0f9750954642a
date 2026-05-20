@@ -1,0 +1,8 @@
+import type { DynamicClient } from '@dynamic-labs-sdk/client';
+type FetchEvmBalanceParams = {
+    address: string;
+    rpcUrl: string;
+};
+export declare const fetchEvmBalance: ({ address, rpcUrl }: FetchEvmBalanceParams, client: DynamicClient) => Promise<string | null>;
+export {};
+//# sourceMappingURL=fetchEvmBalance.d.ts.map

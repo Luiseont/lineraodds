@@ -1,0 +1,2 @@
+export declare const acknowledgeRecoveryCodes: (client?: import("../../../exports").DynamicClient) => Promise<import("../../otp/otp.types").OTPVerification | undefined>;
+//# sourceMappingURL=acknowledgeRecoveryCodes.d.ts.map

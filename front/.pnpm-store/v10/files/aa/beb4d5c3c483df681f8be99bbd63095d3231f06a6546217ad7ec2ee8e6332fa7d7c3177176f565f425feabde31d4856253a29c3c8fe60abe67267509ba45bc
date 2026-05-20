@@ -1,0 +1,11 @@
+import type { DynamicClient } from '../../../../client/types';
+import type { UnverifiedWalletAccount } from '../unverifiedWalletAccounts.types';
+type AddUnverifiedWalletAccountsParams = {
+    unverifiedWalletAccountsToAdd: UnverifiedWalletAccount[];
+};
+/**
+ * Adds a list of unverified wallet accounts to the client's state.
+ */
+export declare const addUnverifiedWalletAccounts: ({ unverifiedWalletAccountsToAdd }: AddUnverifiedWalletAccountsParams, client: DynamicClient) => void;
+export {};
+//# sourceMappingURL=addUnverifiedWalletAccounts.d.ts.map

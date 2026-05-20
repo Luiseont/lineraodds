@@ -1,0 +1,1 @@
+{"version":3,"file":"createWaasWalletAccount.d.ts","sourceRoot":"","sources":["../../../../../../../packages/client/src/modules/waas/createWaasWalletAccount/createWaasWalletAccount.ts"],"names":[],"mappings":"AAEA,OAAO,KAAK,EAAE,KAAK,EAAE,MAAM,aAAa,CAAC;AAMzC,KAAK,6BAA6B,GAAG;IACnC,KAAK,EAAE,KAAK,CAAC;CACd,CAAC;AAEF,eAAO,MAAM,uBAAuB,cACvB,6BAA6B,wDAEvC,OAAO,CAAC,IAAI,CAiBd,CAAC"}

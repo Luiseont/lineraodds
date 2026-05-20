@@ -1,0 +1,228 @@
+import { B as BaseError, g as getCore, C as CHAINS_INFO_MAP, a as assertDefined } from './constants.esm.js';
+
+class ClientNotFoundError extends BaseError {
+    constructor(){
+        super({
+            cause: null,
+            code: 'client_not_found_error',
+            docsUrl: null,
+            name: 'ClientNotFoundError',
+            shortMessage: 'No Dynamic client has been created yet. Make sure you have called createDynamicClient() first.'
+        });
+    }
+}
+
+let defaultClient = null;
+let numOfInitializedClients = 0;
+/**
+ * Returns the DynamicClient instance that was initialized with createDynamicClient.
+ *
+ * If more than one instance of DynamicClient was initialized, you should not use this function.
+ * Instead, you should pass the client instance you stored to the function that needs it.
+ */ const getDefaultClient = ()=>{
+    if (!defaultClient) {
+        throw new ClientNotFoundError();
+    }
+    if (numOfInitializedClients > 1) {
+        const core = getCore(defaultClient);
+        core.logger.debug('Multiple instances of DynamicClient found. If you are only using one client (recommended), make sure you are not calling ' + '"createDynamicClient" multiple times. If you are using multiple clients, make sure you are passing which client to use as ' + 'the last param of all Dynamic functions.');
+    }
+    return defaultClient;
+};
+const setDefaultClient = (client)=>{
+    defaultClient = client;
+    numOfInitializedClients++;
+};
+
+/**
+ * Listen to an event from the client.
+ *
+ * @returns A function that can be called to remove the listener.
+ */ const onEvent = ({ event, listener }, client = getDefaultClient())=>{
+    const { eventEmitter } = getCore(client);
+    eventEmitter.on(event, listener);
+    return ()=>{
+        eventEmitter.off(event, listener);
+    };
+};
+/**
+ * Remove a listener from an event.
+ */ const offEvent = ({ event, listener }, client = getDefaultClient())=>{
+    const { eventEmitter } = getCore(client);
+    eventEmitter.off(event, listener);
+};
+/**
+ * Listen to an event that will only fire once.
+ *
+ * @returns A function that can be called to remove the listener.
+ */ const onceEvent = ({ event, listener }, client = getDefaultClient())=>{
+    const { eventEmitter } = getCore(client);
+    eventEmitter.once(event, listener);
+    return ()=>{
+        eventEmitter.off(event, listener);
+    };
+};
+/**
+ * Emit an event.
+ */ const emitEvent = ({ event, args }, client)=>{
+    const { eventEmitter } = getCore(client);
+    eventEmitter.emit(event, args);
+};
+
+const getChainFromVerifiedCredentialChain = (verifiedCredentialChain)=>{
+    const chains = Object.keys(CHAINS_INFO_MAP);
+    const chain = chains.find((chain)=>CHAINS_INFO_MAP[chain].verifiedCredentialChainName === verifiedCredentialChain);
+    assertDefined(chain, `Unknown chain: ${verifiedCredentialChain}`);
+    return chain;
+};
+
+/**
+ * Creates a service accessor function that manages service instantiation and caching.
+ * The returned function will either retrieve an existing service from the registry or
+ * create a new one using the provided builder function.
+ *
+ * @template - The type of service to be created/accessed
+ * @param key - Unique identifier for the service in the registry
+ * @param builder - Function that creates the service instance when called with a DynamicClient
+ */ const createRuntimeServiceAccessKey = (key, builder)=>(client)=>{
+        const { runtimeServices } = getCore(client);
+        const currentService = runtimeServices.getByKey(key);
+        if (currentService) {
+            return currentService;
+        }
+        const service = builder(client);
+        runtimeServices.register(key, service);
+        return service;
+    };
+
+/**
+ * Creates a new wallet provider registry that manages wallet providers with priority-based registration.
+ *
+ * @returns The wallet provider registry instance
+ *
+ * @example
+ * ```typescript
+ * const registry = createWalletProviderRegistry();
+ *
+ * registry.register({
+ *   priority: WalletProviderPriority.WALLET_SDK,
+ *   walletProvider: myWalletProvider
+ * });
+ *
+ * const provider = registry.getByKey('my-wallet-key');
+ * const providers = registry.listProviders();
+ * ```
+ */ const createWalletProviderRegistry = (client)=>{
+    const registry = new Map();
+    return {
+        getByKey: (key)=>{
+            var _registry_get;
+            return (_registry_get = registry.get(key)) == null ? void 0 : _registry_get.walletProvider;
+        },
+        listProviders: ()=>Array.from(registry.values()).map((v)=>v.walletProvider),
+        register: (args)=>{
+            const existingEntry = registry.get(args.walletProvider.key);
+            if (existingEntry) {
+                if (existingEntry.priority < args.priority) {
+                    registry.set(args.walletProvider.key, args);
+                    emitEvent({
+                        args: {
+                            walletProviderKey: args.walletProvider.key
+                        },
+                        event: 'walletProviderChanged'
+                    }, client);
+                }
+            } else {
+                registry.set(args.walletProvider.key, args);
+                emitEvent({
+                    args: {
+                        walletProvider: args.walletProvider
+                    },
+                    event: 'walletProviderRegistered'
+                }, client);
+                emitEvent({
+                    args: {
+                        walletProviderKey: args.walletProvider.key
+                    },
+                    event: 'walletProviderChanged'
+                }, client);
+            }
+        }
+    };
+};
+
+/**
+ * This function provides access to a shared instance of the wallet provider registry.
+ *
+ * It ensures that the same registry instance is used throughout the client to maintaining
+ * consistency of registered wallet providers across different parts of the codebase.
+ *
+ * @returns The wallet provider registry instance
+ *
+ * @example
+ * ```typescript
+ * // Get the registry instance
+ * const registry = getWalletProviderRegistry();
+ *
+ * // Register a wallet provider
+ * registry.register({
+ *   priority: WalletProviderPriority.WALLET_SDK,
+ *   walletProvider: myWalletProvider
+ * });
+ *
+ * // Retrieve a specific provider
+ * const provider = registry.getByKey('metamask');
+ * ```
+ */ const getWalletProviderRegistry = createRuntimeServiceAccessKey('walletProviderRegistry', (client)=>createWalletProviderRegistry(client));
+
+var WalletProviderPriority;
+(function(WalletProviderPriority) {
+    /**
+   * Highest priority should be used by wallet providers that implement
+   * the most reliable wallet integration.
+   * example: The SDK provided by the wallet provider.
+   */ WalletProviderPriority[WalletProviderPriority["WALLET_SDK"] = 100] = "WALLET_SDK";
+    /**
+   * Medium priority should be used by wallet providers that implement
+   * a wallet integration via some reliable standard.
+   * example: A wallet provider that uses EIP6963 announcement.
+   */ WalletProviderPriority[WalletProviderPriority["WALLET_SELF_ANNOUNCEMENT_STANDARD"] = 50] = "WALLET_SELF_ANNOUNCEMENT_STANDARD";
+    /**
+   * Low priority should be used by wallet providers that implement
+   * a wallet integration on a less reliable standard.
+   * example: A wallet provider that uses window.ethereum, where the
+   * window key can be overridden by other extensions.
+   */ WalletProviderPriority[WalletProviderPriority["WINDOW_INJECT"] = 20] = "WINDOW_INJECT";
+})(WalletProviderPriority || (WalletProviderPriority = {}));
+
+class NoWalletProviderFoundError extends BaseError {
+    constructor({ walletProviderKey }){
+        super({
+            cause: null,
+            code: 'no_wallet_provider_found_error',
+            docsUrl: null,
+            name: 'NoWalletProviderFoundError',
+            shortMessage: `No wallet provider found with key: ${walletProviderKey}`
+        });
+    }
+}
+
+/**
+ * Get all available wallet providers to interact with internally.
+ */ const getWalletProviders = (client)=>{
+    const walletProviderRegistry = getWalletProviderRegistry(client);
+    return walletProviderRegistry.listProviders();
+};
+
+const getWalletProviderByKey = ({ walletProviderKey }, client)=>{
+    const walletProviders = getWalletProviders(client);
+    const walletProvider = walletProviders.find((walletProvider)=>walletProvider.key === walletProviderKey);
+    if (!walletProvider) {
+        throw new NoWalletProviderFoundError({
+            walletProviderKey
+        });
+    }
+    return walletProvider;
+};
+
+export { ClientNotFoundError as C, NoWalletProviderFoundError as N, WalletProviderPriority as W, getDefaultClient as a, getWalletProviderByKey as b, getWalletProviders as c, onceEvent as d, emitEvent as e, onEvent as f, getChainFromVerifiedCredentialChain as g, createRuntimeServiceAccessKey as h, getWalletProviderRegistry as i, offEvent as o, setDefaultClient as s };

@@ -1,0 +1,16 @@
+# @dynamic-labs-sdk/evm
+
+This package contains the EVM integration for the Dynamic SDK.
+
+## Usage
+
+```ts
+import { addEvmExtension } from '@dynamic-labs-sdk/evm';
+import { createDynamicClient } from '@dynamic-labs-sdk/client';
+
+const dynamicClient = createDynamicClient({
+  environmentId: '123',
+});
+
+addEvmExtension(dynamicClient);
+```

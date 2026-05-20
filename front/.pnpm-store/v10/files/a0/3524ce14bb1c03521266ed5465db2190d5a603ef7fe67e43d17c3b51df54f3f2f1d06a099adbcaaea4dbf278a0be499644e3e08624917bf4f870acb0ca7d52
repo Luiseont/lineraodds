@@ -1,0 +1,6 @@
+import { BaseError, type BaseErrorParameters } from '@dynamic-labs-sdk/client';
+export type RpcErrorParameters = Pick<BaseErrorParameters, 'shortMessage'> & Partial<Omit<BaseErrorParameters, 'shortMessage'>>;
+export declare class RpcError extends BaseError {
+    constructor(args: RpcErrorParameters);
+}
+//# sourceMappingURL=RpcError.d.ts.map

@@ -1,0 +1,94 @@
+'use strict';
+
+var core = require('@dynamic-labs-sdk/client/core');
+var registerEvmNetworkProviderBuilder = require('./registerEvmNetworkProviderBuilder.cjs.js');
+var _extends = require('./_extends.cjs.js');
+var client = require('@dynamic-labs-sdk/client');
+var core$1 = require('@dynamic-labs-sdk/client/waas/core');
+var sdkApiCore = require('@dynamic-labs/sdk-api-core');
+
+const getActiveNetworkId = async ({ logger })=>{
+    logger.warn('getActiveNetworkId is not implemented');
+    throw new core.MethodNotImplementedError('getActiveNetworkId');
+};
+
+const createWalletProviderForWaasEvm = ({ dynamicClient })=>{
+    const chain = 'EVM';
+    const logger = core.getCore(dynamicClient).logger;
+    const waasProvider = core$1.createWaasProvider({
+        chain,
+        sdkClient: dynamicClient
+    });
+    const getConnectedAddresses = async ()=>{
+        logger.warn('getConnectedAddresses is not implemented');
+        throw new core.MethodNotImplementedError('getConnectedAddresses');
+    };
+    const request = async (args)=>{
+        logger.warn('request is not implemented', {
+            args
+        });
+        throw new core.MethodNotImplementedError('request');
+    };
+    const signMessage = async ({ message, walletAccount })=>{
+        core.assertDefined(walletAccount, 'Wallet account is required');
+        const { signature: signedSessionId } = await core.getSignedSessionId(dynamicClient);
+        core.assertDefined(signedSessionId, 'Signed session ID is required');
+        let mfaToken = undefined;
+        if (client.isMfaRequiredForAction({
+            mfaAction: sdkApiCore.MFAAction.WalletWaasSign
+        }, dynamicClient)) {
+            mfaToken = client.consumeMfaToken(dynamicClient);
+        }
+        const waasClient = await waasProvider.getWaasClient();
+        var _dynamicClient_token;
+        const signature = await waasClient.signMessage({
+            accountAddress: walletAccount.address,
+            authToken: (_dynamicClient_token = dynamicClient.token) != null ? _dynamicClient_token : undefined,
+            message,
+            mfaToken,
+            signedSessionId
+        });
+        return {
+            signature
+        };
+    };
+    return _extends._extends({}, waasProvider, {
+        chain,
+        getActiveNetworkId: ()=>getActiveNetworkId({
+                logger
+            }),
+        getConnectedAddresses,
+        getWalletProviderType: ()=>sdkApiCore.WalletProviderEnum.EmbeddedWallet,
+        groupKey: core.formatWalletProviderGroupKey(core$1.DYNAMIC_WAAS_METADATA.name),
+        key: core.formatWalletProviderKey(core$1.DYNAMIC_WAAS_METADATA.name, chain),
+        metadata: {
+            displayName: core$1.DYNAMIC_WAAS_METADATA.name,
+            icon: core$1.DYNAMIC_WAAS_METADATA.icon
+        },
+        request,
+        signMessage
+    });
+};
+
+const WAAS_EVM_EXTENSION_KEY = 'waasEvm';
+const addWaasEvmExtension = (client = core.getDefaultClient())=>{
+    registerEvmNetworkProviderBuilder.registerEvmNetworkProviderBuilder(client);
+    if (core.hasExtension({
+        extensionKey: WAAS_EVM_EXTENSION_KEY
+    }, client)) {
+        return;
+    }
+    core.registerExtension({
+        extensionKey: WAAS_EVM_EXTENSION_KEY
+    }, client);
+    const walletProviderRegistry = core.getWalletProviderRegistry(client);
+    const walletProvider = createWalletProviderForWaasEvm({
+        dynamicClient: client
+    });
+    walletProviderRegistry.register({
+        priority: core.WalletProviderPriority.WALLET_SDK,
+        walletProvider
+    });
+};
+
+exports.addWaasEvmExtension = addWaasEvmExtension;

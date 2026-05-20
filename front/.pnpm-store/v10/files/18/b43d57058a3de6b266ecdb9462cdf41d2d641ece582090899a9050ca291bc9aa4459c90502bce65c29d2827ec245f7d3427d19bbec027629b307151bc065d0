@@ -1,0 +1,8 @@
+import type { WalletAccount } from '../../wallets/walletAccount';
+type ExportWaasClientKeysharesParams = {
+    password?: string;
+    walletAccount: WalletAccount;
+};
+export declare const exportWaasClientKeyshares: ({ password, walletAccount }: ExportWaasClientKeysharesParams, client?: import("../../../exports").DynamicClient) => Promise<void>;
+export {};
+//# sourceMappingURL=exportWaasClientKeyshares.d.ts.map

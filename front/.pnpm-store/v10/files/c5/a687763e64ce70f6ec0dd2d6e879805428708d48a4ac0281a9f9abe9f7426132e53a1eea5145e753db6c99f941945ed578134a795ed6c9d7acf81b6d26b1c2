@@ -1,0 +1,12 @@
+export { backupWaasKeySharesToGoogleDrive } from '../modules/waas/backupWaasKeySharesToGoogleDrive';
+export { createWaasWalletAccount } from '../modules/waas/createWaasWalletAccount';
+export { delegateWaasKeyShares } from '../modules/waas/delegateWaasKeyShares';
+export { exportWaasClientKeyshares } from '../modules/waas/exportWaasClientKeyshares';
+export { exportWaasPrivateKey } from '../modules/waas/exportWaasPrivateKey';
+export { importWaasPrivateKey } from '../modules/waas/importWaasPrivateKey';
+export { isDynamicWaasEnabled } from '../modules/waas/isDynamicWaasEnabled';
+export { isWaasWalletAccount } from '../modules/waas/isWaasWalletAccount';
+export { refreshWaasWalletAccountShares } from '../modules/waas/refreshWaasWalletAccountShares';
+export { shouldAutoCreateWalletForChain } from '../modules/waas/shouldAutoCreateWalletForChain';
+export { updateWaasPassword } from '../modules/waas/updateWaasPassword';
+//# sourceMappingURL=waas.d.ts.map

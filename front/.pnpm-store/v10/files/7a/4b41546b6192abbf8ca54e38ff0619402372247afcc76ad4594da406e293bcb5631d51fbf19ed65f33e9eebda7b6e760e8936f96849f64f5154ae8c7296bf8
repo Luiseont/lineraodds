@@ -1,0 +1,1 @@
+{"version":3,"file":"createEvmNetworkProvider.d.ts","sourceRoot":"","sources":["../../../../../../packages/evm/src/utils/createEvmNetworkProvider/createEvmNetworkProvider.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,KAAK,WAAW,EAAE,MAAM,0BAA0B,CAAC;AAM5D,OAAO,KAAK,EAAE,kBAAkB,EAAE,MAAM,0BAA0B,CAAC;AAGnE,eAAO,MAAM,wBAAwB,gBACtB,WAAW,mBAEvB,kBAYD,CAAC"}

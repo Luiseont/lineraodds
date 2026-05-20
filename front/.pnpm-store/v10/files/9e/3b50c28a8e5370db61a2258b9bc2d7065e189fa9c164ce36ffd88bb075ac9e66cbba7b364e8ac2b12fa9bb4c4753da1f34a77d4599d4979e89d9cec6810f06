@@ -1,0 +1,8 @@
+/**
+ * Format the wallet name and chain to get a wallet provider key.
+ */ const formatWalletProviderKey = (walletName, chain)=>{
+    const sanitizedWalletName = walletName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+    return `${sanitizedWalletName}${chain.toLocaleLowerCase()}`;
+};
+
+export { formatWalletProviderKey as f };

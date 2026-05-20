@@ -1,0 +1,6 @@
+/**
+ * The client is considered to be in a signed in state if a user has
+ * authenticated, or client has at least one wallet connected.
+ */
+export declare const isSignedIn: (client?: import("../../../exports").DynamicClient) => boolean;
+//# sourceMappingURL=isSignedIn.d.ts.map

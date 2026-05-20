@@ -1,0 +1,7 @@
+/**
+ * Adds all ethereum wallets to the client.
+ *
+ * @param client - The client to add the ethereum wallets to.
+ */
+export declare const addEvmExtension: (client?: any) => void;
+//# sourceMappingURL=addEvmExtension.d.ts.map

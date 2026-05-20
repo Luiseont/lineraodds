@@ -1,0 +1,7 @@
+import type { OTPVerification } from '../otp.types';
+export type VerifyOTPParams = {
+    otpVerification: OTPVerification;
+    verificationToken: string;
+};
+export declare const verifyOTP: ({ otpVerification, verificationToken }: VerifyOTPParams, client?: import("../../../exports").DynamicClient) => Promise<import("@dynamic-labs/sdk-api-core").SdkUser>;
+//# sourceMappingURL=verifyOTP.d.ts.map

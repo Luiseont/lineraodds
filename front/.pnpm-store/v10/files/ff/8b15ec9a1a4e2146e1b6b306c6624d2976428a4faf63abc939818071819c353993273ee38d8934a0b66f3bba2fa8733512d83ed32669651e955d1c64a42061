@@ -1,0 +1,1 @@
+{"version":3,"file":"EvmWalletAccount.types.d.ts","sourceRoot":"","sources":["../../../../packages/evm/src/EvmWalletAccount.types.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,iBAAiB,EAAE,MAAM,+BAA+B,CAAC;AAEvE,MAAM,MAAM,gBAAgB,GAAG,iBAAiB,CAAC,KAAK,CAAC,CAAC;AAExD,OAAO,CAAC,MAAM,CAAC;IACb,UAAU,gBAAgB;QACxB,GAAG,EAAE,gBAAgB,CAAC;KACvB;CACF"}

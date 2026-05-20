@@ -1,0 +1,3 @@
+import type { Eip6963AnnounceProviderEvent } from '../../eip6963.types';
+export declare const isEip9693Event: (event: unknown) => event is Eip6963AnnounceProviderEvent;
+//# sourceMappingURL=isEip9693Event.d.ts.map

@@ -1,0 +1,4 @@
+export { createWaasWalletAccount } from '../modules/waas/createWaasWalletAccount';
+export { isDynamicWaasEnabled } from '../modules/waas/isDynamicWaasEnabled';
+export { shouldAutoCreateWalletForChain } from '../modules/waas/shouldAutoCreateWalletForChain';
+//# sourceMappingURL=waas.d.ts.map

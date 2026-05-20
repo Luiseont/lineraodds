@@ -1,0 +1,178 @@
+import { assertPackageVersion } from '@dynamic-labs-sdk/assert-package-version';
+import { b as getDefaultClient, a as assertDefined, g as getChainFromVerifiedCredentialChain, n as name, v as version } from './getChainFromVerifiedCredentialChain.esm.js';
+import { N as NotWaasWalletAccountError } from './NotWaasWalletAccountError.esm.js';
+import { g as getWalletProviderFromWalletAccount, f as formatWalletProviderKey, a as getWalletProviderByKey, N as NoWalletProviderFoundError, b as getWalletProviders } from './getWalletProviderByKey.esm.js';
+import { D as DYNAMIC_WAAS_METADATA } from './constants.esm.js';
+import { EmbeddedWalletVersionEnum, WalletProviderEnum, JwtVerifiedCredentialFormatEnum } from '@dynamic-labs/sdk-api-core';
+
+const isWaasWalletProvider = (walletProvider)=>{
+    return walletProvider.key.includes(DYNAMIC_WAAS_METADATA.key);
+};
+
+const getWaasWalletProviderFromWalletAccount = ({ walletAccount }, client)=>{
+    const walletProvider = getWalletProviderFromWalletAccount({
+        walletAccount
+    }, client);
+    if (!isWaasWalletProvider(walletProvider)) {
+        throw new NotWaasWalletAccountError({
+            walletAddress: walletAccount.address
+        });
+    }
+    return walletProvider;
+};
+
+const backupWaasKeySharesToGoogleDrive = async ({ password, walletAccount }, client = getDefaultClient())=>{
+    const provider = getWaasWalletProviderFromWalletAccount({
+        walletAccount
+    }, client);
+    return provider.backupKeySharesToGoogleDrive({
+        password,
+        walletAccount
+    });
+};
+
+const createWaasWalletAccount = async ({ chain }, client = getDefaultClient())=>{
+    const walletProviderKey = formatWalletProviderKey(DYNAMIC_WAAS_METADATA.name, chain);
+    const waasWalletProvider = getWalletProviderByKey({
+        walletProviderKey
+    }, client);
+    if (!waasWalletProvider || !isWaasWalletProvider(waasWalletProvider)) {
+        throw new NoWalletProviderFoundError({
+            walletProviderKey
+        });
+    }
+    await waasWalletProvider.createWalletAccount();
+};
+
+const delegateWaasKeyShares = async ({ password, walletAccount }, client = getDefaultClient())=>{
+    const provider = getWaasWalletProviderFromWalletAccount({
+        walletAccount
+    }, client);
+    return provider.delegateKeyShares({
+        password,
+        walletAccount
+    });
+};
+
+const exportWaasClientKeyshares = async ({ password, walletAccount }, client = getDefaultClient())=>{
+    const provider = getWaasWalletProviderFromWalletAccount({
+        walletAccount
+    }, client);
+    return provider.exportClientKeyshares({
+        password,
+        walletAccount
+    });
+};
+
+const exportWaasPrivateKey = async ({ displayContainer, password, walletAccount }, client = getDefaultClient())=>{
+    const provider = getWaasWalletProviderFromWalletAccount({
+        walletAccount
+    }, client);
+    return provider.exportPrivateKey({
+        displayContainer,
+        password,
+        walletAccount
+    });
+};
+
+const getWaasWalletProviderByChain = ({ chain }, client)=>{
+    const providers = getWalletProviders(client);
+    const waasProviderKey = formatWalletProviderKey(DYNAMIC_WAAS_METADATA.name, chain);
+    const waasProvider = providers.find((provider)=>provider.key === waasProviderKey && provider.chain === chain);
+    if (!waasProvider || !isWaasWalletProvider(waasProvider)) {
+        throw new NoWalletProviderFoundError({
+            walletProviderKey: waasProviderKey
+        });
+    }
+    return waasProvider;
+};
+
+const importWaasPrivateKey = async ({ chain, privateKey, thresholdSignatureScheme }, client = getDefaultClient())=>{
+    const provider = getWaasWalletProviderByChain({
+        chain
+    }, client);
+    return provider.importPrivateKey({
+        privateKey,
+        thresholdSignatureScheme
+    });
+};
+
+const isDynamicWaasEnabled = (client = getDefaultClient())=>{
+    const projectSettings = client.projectSettings;
+    assertDefined(projectSettings, 'Project settings are not available');
+    const embeddedWalletSettings = projectSettings.sdk.embeddedWallets;
+    const dynamicWaasIsEnabled = (embeddedWalletSettings == null ? void 0 : embeddedWalletSettings.defaultWalletVersion) === EmbeddedWalletVersionEnum.V3;
+    return dynamicWaasIsEnabled;
+};
+
+const isWaasWalletAccount = ({ walletAccount })=>{
+    return walletAccount.walletProviderKey.includes(DYNAMIC_WAAS_METADATA.key);
+};
+
+const refreshWaasWalletAccountShares = async ({ walletAccount, password }, client = getDefaultClient())=>{
+    const provider = getWaasWalletProviderFromWalletAccount({
+        walletAccount
+    }, client);
+    return provider.refreshWalletAccountShares({
+        password,
+        walletAccount
+    });
+};
+
+const userHasEmbeddedWalletForChain = ({ user, chain })=>{
+    const hasEmbeddedWalletForChain = user.verifiedCredentials.some((vc)=>vc.walletProvider === WalletProviderEnum.EmbeddedWallet && vc.chain && getChainFromVerifiedCredentialChain(vc.chain) === chain);
+    return hasEmbeddedWalletForChain;
+};
+
+const userHasExternalWallet = (user)=>{
+    const hasExternalWallet = user == null ? void 0 : user.verifiedCredentials.some((vc)=>vc.format === JwtVerifiedCredentialFormatEnum.Blockchain && vc.walletProvider !== WalletProviderEnum.EmbeddedWallet);
+    return hasExternalWallet;
+};
+
+const getChainsMissingAutoCreatedWallet = (client)=>{
+    var _embeddedWalletSettings_chainConfigurations;
+    const projectSettings = client.projectSettings;
+    assertDefined(projectSettings, 'Project settings are not available');
+    const embeddedWalletSettings = projectSettings.sdk.embeddedWallets;
+    const isWaasEnabled = isDynamicWaasEnabled(client);
+    const automaticEmbeddedWalletCreationEnabled = embeddedWalletSettings == null ? void 0 : embeddedWalletSettings.automaticEmbeddedWalletCreation;
+    const user = client.user;
+    if (!user || !isWaasEnabled || !automaticEmbeddedWalletCreationEnabled) {
+        return [];
+    }
+    const automaticEmbeddedWalletCreationForExternalEnabled = embeddedWalletSettings == null ? void 0 : embeddedWalletSettings.automaticEmbeddedWalletCreationForExternal;
+    // If user has an external wallet (e.g metamask, phantom, etc), should only
+    // create if automaticEmbeddedWalletCreationForExternalEnabled is true
+    const shouldCreateDynamicWaasWallet = !userHasExternalWallet(user) || automaticEmbeddedWalletCreationForExternalEnabled;
+    if (!shouldCreateDynamicWaasWallet) {
+        return [];
+    }
+    var _embeddedWalletSettings_chainConfigurations_filter;
+    const enabledChainForWaas = ((_embeddedWalletSettings_chainConfigurations_filter = embeddedWalletSettings == null ? void 0 : (_embeddedWalletSettings_chainConfigurations = embeddedWalletSettings.chainConfigurations) == null ? void 0 : _embeddedWalletSettings_chainConfigurations.filter((chain)=>chain.enabled)) != null ? _embeddedWalletSettings_chainConfigurations_filter : []).map((chain)=>chain.name);
+    // For each enabled chain, if user does NOT have an embedded wallet, add to missing
+    const chainsMissingAutoCreatedWallet = enabledChainForWaas.filter((chain)=>!userHasEmbeddedWalletForChain({
+            chain,
+            user
+        }));
+    return chainsMissingAutoCreatedWallet;
+};
+
+const shouldAutoCreateWalletForChain = ({ chain }, client = getDefaultClient())=>{
+    const chainsMissingAutoCreatedWallet = getChainsMissingAutoCreatedWallet(client);
+    return chainsMissingAutoCreatedWallet.includes(chain);
+};
+
+const updateWaasPassword = async ({ currentPassword, newPassword, walletAccount }, client = getDefaultClient())=>{
+    const provider = getWaasWalletProviderFromWalletAccount({
+        walletAccount
+    }, client);
+    return provider.updatePassword({
+        currentPassword,
+        newPassword,
+        walletAccount
+    });
+};
+
+assertPackageVersion(name, version);
+
+export { backupWaasKeySharesToGoogleDrive, createWaasWalletAccount, delegateWaasKeyShares, exportWaasClientKeyshares, exportWaasPrivateKey, importWaasPrivateKey, isDynamicWaasEnabled, isWaasWalletAccount, refreshWaasWalletAccountShares, shouldAutoCreateWalletForChain, updateWaasPassword };

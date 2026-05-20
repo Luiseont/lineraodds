@@ -1,0 +1,4 @@
+export declare const deletePasskey: ({ passkeyId }: {
+    passkeyId: string;
+}, client?: import("../../../../exports").DynamicClient) => Promise<void>;
+//# sourceMappingURL=deletePasskey.d.ts.map

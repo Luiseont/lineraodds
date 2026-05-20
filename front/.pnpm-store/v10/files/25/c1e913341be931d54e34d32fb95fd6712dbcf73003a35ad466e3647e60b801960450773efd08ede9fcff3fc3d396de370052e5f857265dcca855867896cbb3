@@ -1,0 +1,282 @@
+import { B as BaseError, b as getDefaultClient, c as getCore, C as CHAINS_INFO_MAP, a as assertDefined } from './getChainFromVerifiedCredentialChain.esm.js';
+import { EventEmitter } from 'eventemitter3';
+import { h as createRuntimeServiceAccessKey } from './getWalletProviderByKey.esm.js';
+
+/**
+ * Shallow compare two objects.
+ *
+ * Source: https://github.com/pmndrs/zustand/blob/main/src/vanilla/shallow.ts
+ */ const isEqualShallow = (objA, objB)=>{
+    if (Object.is(objA, objB)) return true;
+    if (typeof objA !== 'object' || objA === null || typeof objB !== 'object' || objB === null) {
+        return objA === objB;
+    }
+    if (objA instanceof Map && objB instanceof Map) {
+        if (objA.size !== objB.size) return false;
+        for (const [key, value] of objA){
+            if (!Object.is(value, objB.get(key))) return false;
+        }
+        return true;
+    }
+    if (objA instanceof Set && objB instanceof Set) {
+        if (objA.size !== objB.size) return false;
+        for (const value of objA){
+            if (!objB.has(value)) return false;
+        }
+        return true;
+    }
+    const keysA = Object.keys(objA);
+    if (keysA.length !== Object.keys(objB).length) return false;
+    for (const keyA of keysA){
+        if (!Object.prototype.hasOwnProperty.call(objB, keyA) || !Object.is(objA[keyA], objB[keyA])) {
+            return false;
+        }
+    }
+    if (objA.constructor !== objB.constructor) return false;
+    return true;
+};
+
+/**
+ * Allows subscribing to a slice of the state.
+ * The slice is a computation of the states.
+ *
+ * The callback will only be called when the slice has changed.
+ * Change is determined by shallow comparison.
+ *
+ * Returns a function to unsubscribe the callback.
+ */ const subscribeWithSelector = (observable, selector)=>(callback)=>{
+        let lastSlice = selector(observable.get());
+        return observable.subscribe((value)=>{
+            const nextSlice = selector(value);
+            if (isEqualShallow(nextSlice, lastSlice)) return;
+            lastSlice = nextSlice;
+            callback(nextSlice);
+        });
+    };
+
+const createStorageKeySchema = (params)=>{
+    return params;
+};
+
+class InvalidStorageSet extends BaseError {
+    constructor({ key, value }){
+        super({
+            cause: null,
+            code: 'invalid_storage_set',
+            docsUrl: null,
+            metaMessages: [
+                `key: ${key}`,
+                value
+            ],
+            name: 'InvalidStorageSet',
+            shortMessage: 'Tried to store a value that does not match the schema'
+        });
+    }
+}
+
+class CannotTrackError extends BaseError {
+    constructor(){
+        super({
+            cause: null,
+            code: 'cannot_track_error',
+            docsUrl: null,
+            name: 'CannotTrackError',
+            shortMessage: 'All track calls must be performed in the same node tick'
+        });
+    }
+}
+
+/**
+ * Log levels and their corresponding numeric values
+ */ const LOG_LEVELS = {
+    debug: 0,
+    error: 3,
+    info: 1,
+    warn: 2
+};
+// Assign to avoid lint errors
+const defaultConsole = console;
+/**
+ * Creates a logger instance with configurable log level and event emission capabilities.
+ * @returns A logger instance with debug, info, warn, and error methods
+ */ const createLogger = (options = {})=>{
+    const eventEmitter = new EventEmitter();
+    var _options_level;
+    // Default to 'debug' if no level is provided
+    const minLevel = (_options_level = options.level) != null ? _options_level : 'warn';
+    // Helper to decide if we should log based on current log level
+    const shouldLog = (level)=>{
+        return LOG_LEVELS[level] >= LOG_LEVELS[minLevel];
+    };
+    // Helper to format the log message
+    const formatMessage = (level, message)=>{
+        const timestamp = new Date().toISOString();
+        return `[${timestamp}] ${level.toUpperCase()}: ${message}`;
+    };
+    // Unified logger function that checks the level and calls the appropriate console method
+    const log = (level, consoleMethod, message, ...args)=>{
+        eventEmitter.emit('log', level, message, ...args);
+        if (!shouldLog(level)) return;
+        consoleMethod(formatMessage(level, message), ...args);
+    };
+    return {
+        debug: (message, ...args)=>log('debug', defaultConsole.debug, message, ...args),
+        error: (message, ...args)=>log('error', defaultConsole.error, message, ...args),
+        info: (message, ...args)=>log('info', defaultConsole.info, message, ...args),
+        off: eventEmitter.off.bind(eventEmitter),
+        on: eventEmitter.on.bind(eventEmitter),
+        warn: (message, ...args)=>log('warn', defaultConsole.warn, message, ...args)
+    };
+};
+
+class NoNetworkProvidersError extends BaseError {
+    constructor(){
+        super({
+            cause: null,
+            code: 'no_network_providers',
+            docsUrl: null,
+            name: 'NoNetworkProvidersError',
+            shortMessage: 'No networks were registered in the client'
+        });
+    }
+}
+
+/**
+ * Checks if an extension has been applied to the client.
+ */ const hasExtension = ({ extensionKey }, client = getDefaultClient())=>{
+    const core = getCore(client);
+    return core.extensions.has(extensionKey);
+};
+
+/**
+ * Maps the chain name from the API to the SDK chain name
+ */ const getSdkChainFromApiChainName = (chainName)=>{
+    const chains = Object.keys(CHAINS_INFO_MAP);
+    const chain = chains.find((chain)=>CHAINS_INFO_MAP[chain].apiChainName === chainName);
+    return chain || null;
+};
+
+const getNetworksData = (client = getDefaultClient())=>{
+    const { state } = getCore(client);
+    const { projectSettings } = state.get();
+    assertDefined(projectSettings, 'projectSettings not found');
+    const networks = projectSettings.networks;
+    if (!networks) {
+        return [];
+    }
+    const networksData = networks.map((network)=>{
+        var _network_networks;
+        if (!network.chainName) return [];
+        const chain = getSdkChainFromApiChainName(network.chainName);
+        if (!(network == null ? void 0 : (_network_networks = network.networks) == null ? void 0 : _network_networks.length) || !chain) return [];
+        return network.networks.map((networkConfiguration)=>{
+            var _networkConfiguration_privateCustomerRpcUrls, _networkConfiguration_rpcUrls, _networkConfiguration_isTestnet;
+            return {
+                blockExplorerUrls: networkConfiguration.blockExplorerUrls,
+                chain,
+                cluster: networkConfiguration.cluster,
+                displayName: networkConfiguration.vanityName || networkConfiguration.name,
+                genesisHash: networkConfiguration.genesisHash,
+                iconUrl: networkConfiguration.iconUrls[0],
+                nativeCurrency: {
+                    decimals: networkConfiguration.nativeCurrency.decimals,
+                    iconUrl: networkConfiguration.nativeCurrency.iconUrl,
+                    name: networkConfiguration.nativeCurrency.name,
+                    symbol: networkConfiguration.nativeCurrency.symbol
+                },
+                networkId: networkConfiguration.networkId,
+                rpcUrls: {
+                    http: [
+                        ...(_networkConfiguration_privateCustomerRpcUrls = networkConfiguration.privateCustomerRpcUrls) != null ? _networkConfiguration_privateCustomerRpcUrls : [],
+                        ...(_networkConfiguration_rpcUrls = networkConfiguration.rpcUrls) != null ? _networkConfiguration_rpcUrls : []
+                    ]
+                },
+                testnet: (_networkConfiguration_isTestnet = networkConfiguration.isTestnet) != null ? _networkConfiguration_isTestnet : false
+            };
+        });
+    }).flat();
+    return networksData;
+};
+
+const createNetworkProviderBuilderRegistry = ()=>{
+    const registry = new Map();
+    return {
+        get: ()=>registry,
+        register: (networkProviderBuilder)=>{
+            registry.set(networkProviderBuilder.chain, networkProviderBuilder);
+        }
+    };
+};
+
+const getNetworkProviderBuilderRegistry = createRuntimeServiceAccessKey('networkProviderBuilderRegistry', createNetworkProviderBuilderRegistry);
+
+/**
+ * This function provides access to the list of network providers.
+ *
+ * @returns The list of network providers
+ *
+ * @example
+ * ```typescript
+ * const networkProviders = getNetworkProviders(client);
+ */ const getNetworkProviders = (client = getDefaultClient())=>{
+    const networkProviderBuilderRegistry = getNetworkProviderBuilderRegistry(client);
+    const registeredNetworkProviderBuilders = Array.from(networkProviderBuilderRegistry.get().values());
+    const networksData = getNetworksData(client);
+    const networkProviders = registeredNetworkProviderBuilders.map(({ builder, chain })=>{
+        const networksDataForChain = networksData.filter((networkData)=>networkData.chain === chain);
+        return networksDataForChain.map(builder);
+    });
+    return networkProviders.flat();
+};
+
+const getNetworkProviderFromNetworkId = ({ networkId, chain }, client)=>{
+    const networkProviders = getNetworkProviders(client);
+    if (networkProviders.length === 0) {
+        throw new NoNetworkProvidersError();
+    }
+    const networkProvider = networkProviders.find((networkProvider)=>networkProvider.networkId === networkId && networkProvider.chain === chain);
+    assertDefined(networkProvider, `No network provider found for chain ${chain} with network id ${networkId}`);
+    return networkProvider;
+};
+
+/**
+ * Formats a sign in message to prove ownership of an address.
+ */ const formatSignInMessage = async ({ domain, blockchainName, address, uri, chainId, nonce, issuedAt, requestId, statement, resources })=>{
+    // This format follows the sign-in with ethereum (SIWE) standard,
+    // but we are using it also for non-ethereum wallets for now (eg. Solana)
+    // for more context on format and fields, please see:
+    // https://docs.login.xyz/general-information/siwe-overview/eip-4361
+    const header = `${domain} wants you to sign in with your ${blockchainName} account:`;
+    const prefix = [
+        header,
+        address
+    ].join('\n');
+    // If there is a statement, we want to add a gap between the prefix and the statement
+    // two times '\n', first to move statement to next line and second to add a gap between prefix and statement
+    const prefixWithStatementGap = statement ? '\n\n' : '\n';
+    const prefixWithStatement = `${[
+        prefix,
+        statement
+    ].join(prefixWithStatementGap)}\n`;
+    const suffixFields = [];
+    suffixFields.push(`URI: ${uri}`);
+    suffixFields.push('Version: 1');
+    if (chainId) {
+        suffixFields.push(`Chain ID: ${chainId}`);
+    }
+    suffixFields.push(`Nonce: ${nonce}`);
+    suffixFields.push(`Issued At: ${issuedAt}`);
+    if (requestId) {
+        suffixFields.push(`Request ID: ${requestId}`);
+    }
+    if (resources == null ? void 0 : resources.length) {
+        suffixFields.push(`Resources:${resources.map((resource)=>'\n- ' + resource).join()}`);
+    }
+    const suffix = suffixFields.join('\n');
+    return [
+        prefixWithStatement,
+        suffix
+    ].join('\n');
+};
+
+export { CannotTrackError as C, InvalidStorageSet as I, NoNetworkProvidersError as N, createLogger as a, getNetworkProviderFromNetworkId as b, createStorageKeySchema as c, getNetworkProviders as d, getNetworkProviderBuilderRegistry as e, formatSignInMessage as f, getNetworksData as g, hasExtension as h, isEqualShallow as i, subscribeWithSelector as s };

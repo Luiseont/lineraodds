@@ -1,0 +1,7 @@
+import type { NetworkProvider } from '@dynamic-labs-sdk/client';
+import type { Chain } from 'viem';
+/**
+ * Created a viem Chain object from a NetworkProvider object.
+ */
+export declare const mapNetworkProviderToChain: (networkProvider: NetworkProvider) => Chain;
+//# sourceMappingURL=mapNetworkProviderToChain.d.ts.map

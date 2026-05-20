@@ -1,0 +1,8 @@
+type GetConnectedAddressesParams = {
+    walletProviderKey: string;
+};
+export declare const getConnectedAddresses: ({ walletProviderKey }: GetConnectedAddressesParams, client?: import("../../../exports").DynamicClient) => Promise<{
+    addresses: string[];
+}>;
+export {};
+//# sourceMappingURL=getConnectedAddresses.d.ts.map

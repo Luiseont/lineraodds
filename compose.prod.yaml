@@ -1,0 +1,27 @@
+services:
+  service:
+    image: ghcr.io/luiseont/lineraodds-service:latest
+    container_name: service
+    volumes:
+      - service-wallet:/home/appuser/.config/linera
+    restart: unless-stopped
+
+  front:
+    image: ghcr.io/luiseont/lineraodds-front:latest
+    container_name: front
+    entrypoint: ["bash", "/front/build-prod.bash"]
+    restart: unless-stopped
+    depends_on:
+      service:
+        condition: service_started
+
+  oracle:
+    image: ghcr.io/luiseont/lineraodds-oracle:latest
+    container_name: oracle
+    volumes:
+      - linera-wallet:/home/appuser/.config/linera
+    entrypoint: ["bash", "/oracle/start-prod.bash"]
+
+volumes:
+  service-wallet:
+  linera-wallet:

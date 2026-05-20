@@ -1,0 +1,2 @@
+export { registerEvmNetworkProviderBuilder } from './registerEvmNetworkProviderBuilder';
+//# sourceMappingURL=index.d.ts.map

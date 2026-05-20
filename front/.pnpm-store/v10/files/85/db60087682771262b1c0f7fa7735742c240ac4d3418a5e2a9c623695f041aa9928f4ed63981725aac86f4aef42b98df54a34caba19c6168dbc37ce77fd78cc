@@ -1,0 +1,82 @@
+'use strict';
+
+var assertPackageVersion = require('@dynamic-labs-sdk/assert-package-version');
+var constants$1 = require('./constants.cjs.js');
+var getWalletProviderByKey = require('./getWalletProviderByKey.cjs.js');
+var formatWalletProviderKey = require('./formatWalletProviderKey.cjs.js');
+var constants = require('./constants.cjs2.js');
+var sdkApiCore = require('@dynamic-labs/sdk-api-core');
+
+const isWaasWalletProvider = (walletProvider)=>{
+    return walletProvider.key.includes(constants.DYNAMIC_WAAS_METADATA.key);
+};
+
+const createWaasWalletAccount = async ({ chain }, client = getWalletProviderByKey.getDefaultClient())=>{
+    const walletProviderKey = formatWalletProviderKey.formatWalletProviderKey(constants.DYNAMIC_WAAS_METADATA.name, chain);
+    const waasWalletProvider = getWalletProviderByKey.getWalletProviderByKey({
+        walletProviderKey
+    }, client);
+    if (!waasWalletProvider || !isWaasWalletProvider(waasWalletProvider)) {
+        throw new getWalletProviderByKey.NoWalletProviderFoundError({
+            walletProviderKey
+        });
+    }
+    await waasWalletProvider.createWalletAccount();
+};
+
+const isDynamicWaasEnabled = (client = getWalletProviderByKey.getDefaultClient())=>{
+    const projectSettings = client.projectSettings;
+    constants$1.assertDefined(projectSettings, 'Project settings are not available');
+    const embeddedWalletSettings = projectSettings.sdk.embeddedWallets;
+    const dynamicWaasIsEnabled = (embeddedWalletSettings == null ? void 0 : embeddedWalletSettings.defaultWalletVersion) === sdkApiCore.EmbeddedWalletVersionEnum.V3;
+    return dynamicWaasIsEnabled;
+};
+
+const userHasEmbeddedWalletForChain = ({ user, chain })=>{
+    const hasEmbeddedWalletForChain = user.verifiedCredentials.some((vc)=>vc.walletProvider === sdkApiCore.WalletProviderEnum.EmbeddedWallet && vc.chain && getWalletProviderByKey.getChainFromVerifiedCredentialChain(vc.chain) === chain);
+    return hasEmbeddedWalletForChain;
+};
+
+const userHasExternalWallet = (user)=>{
+    const hasExternalWallet = user == null ? void 0 : user.verifiedCredentials.some((vc)=>vc.format === sdkApiCore.JwtVerifiedCredentialFormatEnum.Blockchain && vc.walletProvider !== sdkApiCore.WalletProviderEnum.EmbeddedWallet);
+    return hasExternalWallet;
+};
+
+const getChainsMissingAutoCreatedWallet = (client)=>{
+    var _embeddedWalletSettings_chainConfigurations;
+    const projectSettings = client.projectSettings;
+    constants$1.assertDefined(projectSettings, 'Project settings are not available');
+    const embeddedWalletSettings = projectSettings.sdk.embeddedWallets;
+    const isWaasEnabled = isDynamicWaasEnabled(client);
+    const automaticEmbeddedWalletCreationEnabled = embeddedWalletSettings == null ? void 0 : embeddedWalletSettings.automaticEmbeddedWalletCreation;
+    const user = client.user;
+    if (!user || !isWaasEnabled || !automaticEmbeddedWalletCreationEnabled) {
+        return [];
+    }
+    const automaticEmbeddedWalletCreationForExternalEnabled = embeddedWalletSettings == null ? void 0 : embeddedWalletSettings.automaticEmbeddedWalletCreationForExternal;
+    // If user has an external wallet (e.g metamask, phantom, etc), should only
+    // create if automaticEmbeddedWalletCreationForExternalEnabled is true
+    const shouldCreateDynamicWaasWallet = !userHasExternalWallet(user) || automaticEmbeddedWalletCreationForExternalEnabled;
+    if (!shouldCreateDynamicWaasWallet) {
+        return [];
+    }
+    var _embeddedWalletSettings_chainConfigurations_filter;
+    const enabledChainForWaas = ((_embeddedWalletSettings_chainConfigurations_filter = embeddedWalletSettings == null ? void 0 : (_embeddedWalletSettings_chainConfigurations = embeddedWalletSettings.chainConfigurations) == null ? void 0 : _embeddedWalletSettings_chainConfigurations.filter((chain)=>chain.enabled)) != null ? _embeddedWalletSettings_chainConfigurations_filter : []).map((chain)=>chain.name);
+    // For each enabled chain, if user does NOT have an embedded wallet, add to missing
+    const chainsMissingAutoCreatedWallet = enabledChainForWaas.filter((chain)=>!userHasEmbeddedWalletForChain({
+            chain,
+            user
+        }));
+    return chainsMissingAutoCreatedWallet;
+};
+
+const shouldAutoCreateWalletForChain = ({ chain }, client = getWalletProviderByKey.getDefaultClient())=>{
+    const chainsMissingAutoCreatedWallet = getChainsMissingAutoCreatedWallet(client);
+    return chainsMissingAutoCreatedWallet.includes(chain);
+};
+
+assertPackageVersion.assertPackageVersion(constants$1.name, constants$1.version);
+
+exports.createWaasWalletAccount = createWaasWalletAccount;
+exports.isDynamicWaasEnabled = isDynamicWaasEnabled;
+exports.shouldAutoCreateWalletForChain = shouldAutoCreateWalletForChain;

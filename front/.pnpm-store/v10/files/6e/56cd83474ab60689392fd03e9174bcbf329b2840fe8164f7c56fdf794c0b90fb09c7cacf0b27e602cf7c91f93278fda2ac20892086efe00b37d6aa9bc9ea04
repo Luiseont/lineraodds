@@ -1,0 +1,2 @@
+export declare const signInWithPasskey: (client?: import("../../../../exports").DynamicClient) => Promise<import("@dynamic-labs/sdk-api-core").VerifyResponse>;
+//# sourceMappingURL=signInWithPasskey.d.ts.map

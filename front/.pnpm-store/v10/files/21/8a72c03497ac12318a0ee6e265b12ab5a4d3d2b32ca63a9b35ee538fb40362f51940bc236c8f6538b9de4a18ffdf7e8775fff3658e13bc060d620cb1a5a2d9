@@ -1,0 +1,1 @@
+{"version":3,"file":"detectOAuthRedirect.d.ts","sourceRoot":"","sources":["../../../../../../../../packages/client/src/modules/auth/social/oauth/detectOAuthRedirect/detectOAuthRedirect.ts"],"names":[],"mappings":"AAIA,KAAK,yBAAyB,GAAG;IAC/B,GAAG,EAAE,GAAG,CAAC;CACV,CAAC;AAEF,+DAA+D;AAC/D,eAAO,MAAM,mBAAmB,YACrB,yBAAyB,8DAEjC,OAAO,CAAC,OAAO,CAyBjB,CAAC"}

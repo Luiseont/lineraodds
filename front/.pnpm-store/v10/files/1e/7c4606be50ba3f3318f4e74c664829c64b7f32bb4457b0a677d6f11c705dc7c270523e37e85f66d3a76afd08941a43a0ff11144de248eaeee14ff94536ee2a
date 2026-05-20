@@ -1,0 +1,9 @@
+import type { WalletAccount } from '../../walletAccount';
+type GetActiveNetworkIdParams = {
+    walletAccount: WalletAccount;
+};
+export declare const getActiveNetworkId: ({ walletAccount }: GetActiveNetworkIdParams, client?: import("../../../../exports").DynamicClient) => Promise<{
+    networkId: string;
+}>;
+export {};
+//# sourceMappingURL=getActiveNetworkId.d.ts.map

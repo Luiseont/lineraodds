@@ -1,0 +1,7 @@
+import type { MFAAction } from '@dynamic-labs/sdk-api-core';
+type IsMfaRequiredForActionParams = {
+    mfaAction: MFAAction;
+};
+export declare const isMfaRequiredForAction: ({ mfaAction }: IsMfaRequiredForActionParams, client?: import("../../../exports").DynamicClient) => boolean | undefined;
+export {};
+//# sourceMappingURL=isMfaRequiredForAction.d.ts.map

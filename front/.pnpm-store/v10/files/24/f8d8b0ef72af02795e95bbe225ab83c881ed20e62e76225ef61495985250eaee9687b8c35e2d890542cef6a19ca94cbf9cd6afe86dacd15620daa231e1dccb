@@ -1,0 +1,3 @@
+import { type DynamicClient } from '@dynamic-labs-sdk/client';
+export declare const registerEvmNetworkProviderBuilder: (client: DynamicClient) => void;
+//# sourceMappingURL=registerEvmNetworkProviderBuilder.d.ts.map

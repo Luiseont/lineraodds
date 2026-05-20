@@ -1,0 +1,2 @@
+export { addWaasEvmExtension } from './addWaasEvmExtension';
+//# sourceMappingURL=index.d.ts.map

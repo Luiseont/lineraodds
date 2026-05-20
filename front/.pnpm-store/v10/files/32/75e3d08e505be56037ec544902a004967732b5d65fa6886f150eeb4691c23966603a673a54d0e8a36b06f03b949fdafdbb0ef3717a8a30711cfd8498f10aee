@@ -1,0 +1,1 @@
+{"version":3,"file":"isEip9693Event.d.ts","sourceRoot":"","sources":["../../../../../../../packages/evm/src/eip6963/utils/isEip9693Event/isEip9693Event.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,4BAA4B,EAAE,MAAM,qBAAqB,CAAC;AAExE,eAAO,MAAM,cAAc,UAClB,OAAO,KACb,KAAK,IAAI,4BAK6C,CAAC"}

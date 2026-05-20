@@ -1,0 +1,7 @@
+import type { WalletAccount } from '@dynamic-labs-sdk/client';
+import type { EvmWalletAccount } from '../../EvmWalletAccount.types';
+/**
+ * Checks if a wallet account is an EVM wallet account.
+ */
+export declare const isEvmWalletAccount: (walletAccount: WalletAccount) => walletAccount is EvmWalletAccount;
+//# sourceMappingURL=isEvmWalletAccount.d.ts.map

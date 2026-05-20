@@ -1,0 +1,13 @@
+import type { WalletAccount } from '../walletAccount';
+type ProveWalletAccountOwnershipParams = {
+    walletAccount: WalletAccount;
+};
+/**
+ * Proves ownership of the wallet account
+ */
+export declare const proveWalletAccountOwnership: ({ walletAccount }: ProveWalletAccountOwnershipParams, client?: import("../../../exports").DynamicClient) => Promise<{
+    messageToSign: string;
+    signedMessage: string;
+}>;
+export {};
+//# sourceMappingURL=proveWalletAccountOwnership.d.ts.map

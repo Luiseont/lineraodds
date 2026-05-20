@@ -1,0 +1,7 @@
+import type { WalletAccount } from '../../walletAccount';
+type IsProgrammaticNetworkSwitchAvailableParams = {
+    walletAccount: WalletAccount;
+};
+export declare const isProgrammaticNetworkSwitchAvailable: ({ walletAccount }: IsProgrammaticNetworkSwitchAvailableParams, client?: import("../../../../exports").DynamicClient) => boolean;
+export {};
+//# sourceMappingURL=isProgrammaticNetworkSwitchAvailable.d.ts.map

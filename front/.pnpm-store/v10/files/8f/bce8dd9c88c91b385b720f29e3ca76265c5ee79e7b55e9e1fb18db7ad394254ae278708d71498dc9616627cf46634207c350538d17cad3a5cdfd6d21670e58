@@ -1,0 +1,3 @@
+export declare const EIP6963_EXTENSION_KEY = "eip6963";
+export declare const addEIP6963Extension: (client?: any) => void;
+//# sourceMappingURL=addEIP6963Extension.d.ts.map

@@ -1,0 +1,7 @@
+import type { EIP1193Provider, EvmWalletProvider } from '../../../EvmWalletProvider';
+type GetActiveNetworkId = (args: {
+    eip1193: EIP1193Provider;
+}) => ReturnType<EvmWalletProvider['getActiveNetworkId']>;
+export declare const getActiveNetworkId: GetActiveNetworkId;
+export {};
+//# sourceMappingURL=getActiveNetworkId.d.ts.map

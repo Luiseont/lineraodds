@@ -1,0 +1,2 @@
+export { isEvmNetworkProvider } from './isEvmNetworkProvider';
+//# sourceMappingURL=index.d.ts.map

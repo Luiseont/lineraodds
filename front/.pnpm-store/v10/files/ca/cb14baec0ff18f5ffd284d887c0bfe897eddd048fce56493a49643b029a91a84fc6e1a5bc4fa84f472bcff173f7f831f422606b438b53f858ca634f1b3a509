@@ -1,0 +1,12 @@
+import type { WalletAccount } from '../walletAccount';
+type VerifyWalletAccountParams = {
+    walletAccount: WalletAccount;
+};
+/**
+ * Verify the ownership of a wallet account and add to the user's verified credentials
+ *
+ * Throws the WalletAlreadyLinkedToAnotherUserError error in case the wallet is already linked to another user.
+ */
+export declare const verifyWalletAccount: ({ walletAccount }: VerifyWalletAccountParams, client?: import("../../../exports").DynamicClient) => Promise<WalletAccount>;
+export {};
+//# sourceMappingURL=verifyWalletAccount.d.ts.map

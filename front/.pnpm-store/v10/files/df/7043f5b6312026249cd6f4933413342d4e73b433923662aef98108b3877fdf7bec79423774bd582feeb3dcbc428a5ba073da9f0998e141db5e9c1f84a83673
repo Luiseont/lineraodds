@@ -1,0 +1,3 @@
+import type { NetworkData } from '../networkProvider/networkProvider.types';
+export declare const getNetworksData: (client?: import("../../../../exports").DynamicClient) => NetworkData[];
+//# sourceMappingURL=getNetworksData.d.ts.map

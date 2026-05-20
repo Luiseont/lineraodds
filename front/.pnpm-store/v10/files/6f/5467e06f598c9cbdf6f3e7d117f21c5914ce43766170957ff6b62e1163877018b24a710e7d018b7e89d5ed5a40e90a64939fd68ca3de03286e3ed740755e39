@@ -1,0 +1,4 @@
+import { type NetworkData } from '@dynamic-labs-sdk/client';
+import type { EvmNetworkProvider } from '../../EvmNetworkProvider';
+export declare const createEvmNetworkProvider: (networkData: NetworkData, client?: any) => EvmNetworkProvider;
+//# sourceMappingURL=createEvmNetworkProvider.d.ts.map

@@ -1,0 +1,2 @@
+export { getChainsMissingAutoCreatedWallet } from './getChainsMissingAutoCreatedWallet';
+//# sourceMappingURL=index.d.ts.map

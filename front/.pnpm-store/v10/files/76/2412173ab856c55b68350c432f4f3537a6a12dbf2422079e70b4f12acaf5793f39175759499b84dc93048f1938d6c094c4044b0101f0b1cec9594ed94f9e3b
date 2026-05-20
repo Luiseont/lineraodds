@@ -1,0 +1,1 @@
+{"version":3,"file":"authMfaRecoveryCode.d.ts","sourceRoot":"","sources":["../../../../../../../packages/client/src/modules/mfa/authMfaRecoveryCode/authMfaRecoveryCode.ts"],"names":[],"mappings":"AAMA,KAAK,yBAAyB,GAAG;IAC/B,IAAI,EAAE,MAAM,CAAC;CACd,CAAC;AAEF;;GAEG;AACH,eAAO,MAAM,mBAAmB,aACpB,yBAAyB,oHAmCpC,CAAC"}

@@ -1,0 +1,13 @@
+'use strict';
+
+const DEFAULT_WAAS_BASE_API_URL = 'https://app.dynamicauth.com';
+const DEFAULT_WAAS_BASE_MPC_RELAY_API_URL = 'https://relay.dynamicauth.com';
+const DYNAMIC_WAAS_METADATA = {
+    icon: 'https://iconic.dynamic-static-assets.com/icons/sprite.svg#dynamicwaas',
+    key: 'dynamicwaas',
+    name: 'Dynamic WaaS'
+};
+
+exports.DEFAULT_WAAS_BASE_API_URL = DEFAULT_WAAS_BASE_API_URL;
+exports.DEFAULT_WAAS_BASE_MPC_RELAY_API_URL = DEFAULT_WAAS_BASE_MPC_RELAY_API_URL;
+exports.DYNAMIC_WAAS_METADATA = DYNAMIC_WAAS_METADATA;

@@ -1,0 +1,8 @@
+import type { DynamicClient } from '../../../client/types';
+import type { WalletAccount } from '../../wallets/walletAccount';
+type CreateVisitParams = {
+    walletAccount: WalletAccount;
+};
+export declare const createVisit: ({ walletAccount }: CreateVisitParams, client: DynamicClient) => Promise<void>;
+export {};
+//# sourceMappingURL=createVisit.d.ts.map

@@ -1,0 +1,9 @@
+import type { EIP1193Provider, EvmWalletProvider } from '../../EvmWalletProvider';
+type CreateWalletProviderFromEIP1193ProviderParams = {
+    displayName: string;
+    eip1193: EIP1193Provider;
+    icon: string;
+};
+export declare const createWalletProviderFromEIP1193Provider: ({ eip1193, icon, displayName, }: CreateWalletProviderFromEIP1193ProviderParams) => EvmWalletProvider;
+export {};
+//# sourceMappingURL=createWalletProviderFromEIP1193Provider.d.ts.map

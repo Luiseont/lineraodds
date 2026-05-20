@@ -1,0 +1,9 @@
+import { ProviderEnum } from '@dynamic-labs/sdk-api-core';
+/** The schema to track the state of the OAuth flow. */
+export declare const redirectStateStorageSchema: import("../../../../../services/storage/storage.types").StorageKeySchema<{
+    provider: ProviderEnum;
+    state: string;
+    captchaToken?: string | undefined;
+    codeVerifier?: string | undefined;
+}>;
+//# sourceMappingURL=redirectStateStorageSchema.d.ts.map

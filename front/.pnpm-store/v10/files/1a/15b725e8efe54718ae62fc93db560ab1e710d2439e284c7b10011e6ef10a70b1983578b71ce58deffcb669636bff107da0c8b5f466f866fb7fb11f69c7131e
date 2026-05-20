@@ -1,0 +1,58 @@
+'use strict';
+
+var isMfaRequiredForAction = require('./isMfaRequiredForAction.cjs.js');
+var getChainFromVerifiedCredentialChain = require('./getChainFromVerifiedCredentialChain.cjs.js');
+
+const consumeMfaTokenIfRequiredForAction = async ({ mfaAction }, client)=>{
+    const isRequiredForAction = await isMfaRequiredForAction.isMfaRequiredForAction({
+        mfaAction
+    }, client);
+    if (!isRequiredForAction) {
+        return;
+    }
+    return isMfaRequiredForAction.consumeMfaToken(client);
+};
+
+const p256Sign = async ({ privateKeyJwk, message })=>{
+    const privateKey = await crypto.subtle.importKey('jwk', privateKeyJwk, {
+        name: 'ECDSA',
+        namedCurve: 'P-256'
+    }, false, [
+        'sign'
+    ]);
+    const signature = await crypto.subtle.sign({
+        hash: 'SHA-256',
+        name: 'ECDSA'
+    }, privateKey, new TextEncoder().encode(message));
+    return isMfaRequiredForAction.bufferToHex(signature);
+};
+
+const generateSessionSignature = async ({ sessionId }, client)=>{
+    const sessionKeys = isMfaRequiredForAction.getSessionKeys(client);
+    getChainFromVerifiedCredentialChain.assertDefined(sessionKeys, 'Session keys not found');
+    const { privateKeyJwk } = sessionKeys;
+    const signature = await p256Sign({
+        message: sessionId,
+        privateKeyJwk
+    });
+    return {
+        signature
+    };
+};
+
+const getSignedSessionId = async (client)=>{
+    var _core_state_get_user;
+    const core = getChainFromVerifiedCredentialChain.getCore(client);
+    const sessionId = (_core_state_get_user = core.state.get().user) == null ? void 0 : _core_state_get_user.sessionId;
+    getChainFromVerifiedCredentialChain.assertDefined(sessionId, 'Session ID is required');
+    const { signature } = await generateSessionSignature({
+        sessionId
+    }, client);
+    getChainFromVerifiedCredentialChain.assertDefined(signature, 'Signed session ID is required');
+    return {
+        signature
+    };
+};
+
+exports.consumeMfaTokenIfRequiredForAction = consumeMfaTokenIfRequiredForAction;
+exports.getSignedSessionId = getSignedSessionId;

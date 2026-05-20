@@ -1,0 +1,178 @@
+'use strict';
+
+var name = "@dynamic-labs-sdk/client";
+var version = "0.0.1-alpha.25";
+var dependencies = {
+    "@dynamic-labs/sdk-api-core": "0.0.762"};
+
+function _extends() {
+    _extends = Object.assign || function assign(target) {
+        for(var i = 1; i < arguments.length; i++){
+            var source = arguments[i];
+            for(var key in source)if (Object.prototype.hasOwnProperty.call(source, key)) target[key] = source[key];
+        }
+        return target;
+    };
+    return _extends.apply(this, arguments);
+}
+
+const getDetails = ({ details, cause })=>{
+    if (cause instanceof BaseError) {
+        return cause.details;
+    }
+    if (cause == null ? void 0 : cause.message) {
+        return cause.message;
+    }
+    return details;
+};
+/**
+ * Formats the error message with all available information
+ */ const formatMessage = ({ shortMessage, details, docsUrl, metaMessages })=>{
+    return [
+        shortMessage,
+        '',
+        ...metaMessages ? [
+            ...metaMessages,
+            ''
+        ] : [],
+        ...docsUrl ? [
+            `Docs: ${docsUrl}`
+        ] : [],
+        ...details ? [
+            `Details: ${details}`
+        ] : [],
+        `Version: ${version}`,
+        `Timestamp: ${new Date().toISOString()}`
+    ].join('\n');
+};
+/**
+ * Base error class that provides structured error handling with detailed information
+ */ class BaseError extends Error {
+    /**
+   * Walks the cause chain of the error and returns the root error
+   */ walk() {
+        const cause = this.cause;
+        if (cause instanceof BaseError) {
+            return cause.walk();
+        }
+        return cause;
+    }
+    toString() {
+        return this.formattedMessage;
+    }
+    constructor(args){
+        const details = getDetails(args);
+        const formattedMessage = formatMessage(_extends({}, args, {
+            details
+        }));
+        var _args_shortMessage;
+        super((_args_shortMessage = args.shortMessage) != null ? _args_shortMessage : formattedMessage, args.cause ? {
+            cause: args.cause
+        } : undefined);
+        this.name = 'BaseError';
+        this.formattedMessage = formattedMessage;
+        this.details = details;
+        var _args_name;
+        this.name = (_args_name = args.name) != null ? _args_name : this.name;
+        var _args_cause;
+        this.cause = (_args_cause = args.cause) != null ? _args_cause : this.cause;
+        this.code = args.code;
+    }
+}
+
+const getCore = (client)=>{
+    // @ts-expect-error - this was hidden from the public API
+    return client.__core;
+};
+
+class ValueMustBeDefinedError extends BaseError {
+    constructor(message){
+        super({
+            cause: null,
+            code: 'value_must_be_defined_error',
+            docsUrl: null,
+            name: 'ValueMustBeDefined',
+            shortMessage: message
+        });
+    }
+}
+
+/**
+ * Asserts that a value is not null or undefined, throwing an error if it is.
+ * This function acts as a type guard, narrowing the type to exclude null and undefined.
+ *
+ * @template T - The type of the value being checked
+ * @param value - The value to check for null or undefined
+ * @param message - The error message to throw if the value is null or undefined
+ * @throws Throws an error with the provided message if value is null or undefined
+ * @example
+ * ```typescript
+ * const maybeString: string | null = getValue();
+ * assertDefined(maybeString, 'String value is required');
+ * // maybeString is now typed as string (null is excluded)
+ * ```
+ */ function assertDefined(value, message) {
+    if (value === null || value === undefined) {
+        throw new ValueMustBeDefinedError(message);
+    }
+}
+
+const CHAINS_INFO_MAP = {
+    ALGO: {
+        apiChainName: 'algo',
+        blockchainName: 'Algorand',
+        verifiedCredentialChainName: 'algorand'
+    },
+    BTC: {
+        apiChainName: 'btc',
+        blockchainName: 'Bitcoin',
+        verifiedCredentialChainName: 'bip122'
+    },
+    COSMOS: {
+        apiChainName: 'cosmos',
+        blockchainName: 'Cosmos',
+        verifiedCredentialChainName: 'cosmos'
+    },
+    EVM: {
+        apiChainName: 'evm',
+        // eslint-disable-next-line custom-rules/ban-ethereum-eth-terms
+        blockchainName: 'Ethereum',
+        verifiedCredentialChainName: 'eip155'
+    },
+    FLOW: {
+        apiChainName: 'flow',
+        blockchainName: 'Flow',
+        verifiedCredentialChainName: 'flow'
+    },
+    SOL: {
+        apiChainName: 'solana',
+        blockchainName: 'Solana',
+        verifiedCredentialChainName: 'solana',
+        waasChainNameOverride: 'SVM'
+    },
+    SPARK: {
+        apiChainName: 'spark',
+        blockchainName: 'Spark',
+        verifiedCredentialChainName: 'spark'
+    },
+    STARK: {
+        apiChainName: 'starknet',
+        blockchainName: 'Starknet',
+        verifiedCredentialChainName: 'starknet'
+    },
+    SUI: {
+        apiChainName: 'sui',
+        blockchainName: 'Sui',
+        verifiedCredentialChainName: 'sui'
+    }
+};
+
+exports.BaseError = BaseError;
+exports.CHAINS_INFO_MAP = CHAINS_INFO_MAP;
+exports.ValueMustBeDefinedError = ValueMustBeDefinedError;
+exports._extends = _extends;
+exports.assertDefined = assertDefined;
+exports.dependencies = dependencies;
+exports.getCore = getCore;
+exports.name = name;
+exports.version = version;
